@@ -1,0 +1,358 @@
+pragma ComponentBehavior: Bound
+import QtQuick
+import QtQuick.Effects
+import Swiftify
+
+// the immersive player's left side (FullscreenNowPlaying): the cover with its
+// glow, inside the ring visualizer when that is on, then the song, the seek
+// line in the cover's colour, the transport around a white play button, and
+// the volume.
+Item {
+    id: root
+
+    required property ImmersiveLayout layout
+    property real metadataWidth: 300
+    /// the panel is coming or going, so sizes ease rather than jump
+    property bool animateLayout: false
+    property MaterialScheme scheme: PlayerStyle.darkScheme
+
+    readonly property bool showsRing: Settings.visualizersEnabled && Settings.circularVisualizer
+    /// round inside the ring, or round on its own with visualizers off
+    readonly property bool roundCover: showsRing || (!Settings.visualizersEnabled && Settings.roundArtwork)
+    property real artworkSize: layout.artworkSize
+    readonly property real innerSize: showsRing ? artworkSize * ring.innerRadiusRatio : artworkSize
+    readonly property real artworkRadius: Math.max(18, innerSize * 0.055)
+
+    component Time: StyledText {
+        tabularNumbers: true
+        font.pixelSize: Appearance.fontSize.smallest + 1
+        font.weight: Font.Medium
+        color: Qt.rgba(1, 1, 1, 0.78)
+        style: Text.Raised
+        styleColor: Qt.rgba(0, 0, 0, 0.45)
+    }
+
+    component Control: TransportButton {
+        anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+        scheme: root.scheme
+        size: 40
+        iconSize: 24
+        fillWhenToggled: false
+        iconColor: toggled ? root.scheme.primary : "white"
+        // a button with a shape has it for its state layer
+        colBackgroundHover: hasShape ? "transparent" : Qt.rgba(1, 1, 1, 0.1)
+        colBackgroundToggled: "transparent"
+        colBackgroundToggledHover: hasShape ? "transparent" : Qt.rgba(1, 1, 1, 0.1)
+    }
+
+    Behavior on artworkSize {
+        enabled: root.animateLayout
+        ElementMove {}
+    }
+
+    implicitWidth: Math.max(artworkSize, metadataWidth, transport.implicitWidth)
+    implicitHeight: column.implicitHeight
+
+    Column {
+        id: column
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: root.layout.contentSpacing
+
+        Item {
+            id: artwork
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.artworkSize
+            height: root.artworkSize
+            // a new song's cover pops in with a spring
+            transform: Scale {
+                id: pop
+                origin.x: artwork.width / 2
+                origin.y: artwork.height / 2
+            }
+
+            Connections {
+                target: Player
+                function onCurrentSongChanged() {
+                    if (!Appearance.performanceMode) {
+                        popIn.restart()
+                    }
+                }
+            }
+            NumberAnimation {
+                id: popIn
+                target: pop
+                properties: "xScale,yScale"
+                from: 0.9
+                to: 1
+                duration: 640
+                easing.type: Easing.OutBack
+                easing.overshoot: 2
+            }
+
+            ArtworkGlow {
+                anchors.centerIn: parent
+                width: root.innerSize
+                height: root.innerSize
+                intensity: 0.42
+                glowRadius: 44
+                cornerRadius: root.artworkRadius
+                circular: root.roundCover
+                primary: PlayerStyle.primary
+                secondary: PlayerStyle.secondary
+            }
+
+            SpectrumView {
+                id: ring
+                anchors.fill: parent
+                Reveal.shown: root.showsRing
+                kind: SpectrumView.Ring
+                wave: Settings.visualizerShape === "wave"
+                sensitivity: Settings.visualizerSensitivity
+                active: Player.playing
+                // the bars rise from under the cover and are cut along its
+                // squiggle line, so they start where the line is
+                cutWaves: cover.showsSquiggle ? cover.squiggleWaves : 0
+                cutRadius: cover.squiggleMiddle
+                cutAmplitude: cover.squiggleAmplitude
+                cutPhase: cover.squigglePhase
+            }
+
+            ArtworkImage {
+                id: cover
+                anchors.centerIn: parent
+                width: root.innerSize
+                height: root.innerSize
+                radius: root.artworkRadius
+                circular: root.roundCover
+                // its edge squiggles with the music, in the cover's colour
+                squiggleFollowsPlayback: true
+                squiggleColor: PlayerStyle.primary
+                source: Player.currentSong.artworkUrl
+                crossfade: true
+            }
+
+            Toast {
+                id: phrasePill
+                anchors.centerIn: parent
+            }
+
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                acceptedModifiers: Qt.AltModifier
+                onTapped: phrasePill.show(UiState.catchphrase)
+            }
+        }
+
+        Column {
+            id: metadata
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.metadataWidth
+            spacing: 5
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: PlayerStyle.primary
+                shadowOpacity: 0.12
+                shadowBlur: 1
+                blurMax: 18
+                shadowHorizontalOffset: 0
+                shadowVerticalOffset: 0
+            }
+
+            TitleText {
+                width: parent.width
+                height: root.layout.titleHeight
+                text: Player.currentSong.name
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
+                font.pixelSize: root.layout.titleFontSize
+                font.weight: Font.Bold
+                color: "white"
+                animateChange: true
+            }
+
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 5
+
+                StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(implicitWidth, root.metadataWidth - more.width - 5)
+                    text: Player.currentSong.artists
+                    elide: Text.ElideRight
+                    font.pixelSize: Appearance.fontSize.larger
+                    font.weight: Font.Medium
+                    color: Qt.rgba(1, 1, 1, 0.62)
+                }
+                IconButton {
+                    id: more
+                    anchors.verticalCenter: parent.verticalCenter
+                    scheme: root.scheme
+                    symbol: "more_horiz"
+                    size: 28
+                    iconSize: 20
+                    iconColor: Qt.rgba(1, 1, 1, 0.62)
+                    colBackgroundHover: Qt.rgba(1, 1, 1, 0.1)
+                    tooltip: "More"
+                    onClicked: SongMenus.open(Player.currentSong, false)
+                }
+            }
+
+            StyledText {
+                width: parent.width
+                visible: Player.currentSong.albumName.length > 0
+                text: Player.currentSong.albumName
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                font.pixelSize: Appearance.fontSize.smallie
+                color: Qt.rgba(1, 1, 1, 0.4)
+            }
+        }
+
+        Item {
+            id: progress
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.min(root.artworkSize + 80, 500)
+            height: 18
+
+
+            Time {
+                id: elapsed
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 42
+                horizontalAlignment: Text.AlignRight
+                text: Format.playbackTime(seek.displayPositionMs)
+            }
+            SeekBar {
+                id: seek
+                anchors.left: elapsed.right
+                anchors.leftMargin: 12
+                anchors.right: remainingTime.left
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                height: 18
+                scheme: root.scheme
+                activeColor: PlayerStyle.primary
+                trackColor: Qt.rgba(1, 1, 1, 0.2)
+            }
+            Time {
+                id: remainingTime
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: 48
+                text: "−" + Format.playbackTime(Math.max(seek.durationMs - seek.displayPositionMs, 0))
+            }
+        }
+
+        Row {
+            id: transport
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 28
+
+
+            Control {
+                effect: TransportButton.Bounce
+                symbol: "shuffle"
+                toggledShape: "clover4"
+                toggled: Player.shuffle
+                enabled: Player.hasSong
+                tooltip: "Shuffle"
+                onClicked: Player.toggleShuffle()
+            }
+            Control {
+                effect: TransportButton.NudgeLeft
+                symbol: "skip_previous"
+                hoverShape: "arrow"
+                hoverAngle: -90
+                iconSize: 30
+                alwaysFilled: true
+                enabled: Player.canSkipBackward
+                tooltip: "Previous song"
+                onClicked: Player.skipBackward()
+            }
+
+            // play is the soft cookie that springs into a turning scalloped
+            // one while music plays, in white here
+            Item {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 60
+                height: 60
+
+                SoftShadow {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    radius: width / 2
+                    blur: 15
+                    color: Qt.rgba(PlayerStyle.primary.r, PlayerStyle.primary.g, PlayerStyle.primary.b, 0.34)
+                }
+                PlayButton {
+                    anchors.fill: parent
+                    enabled: Player.hasSong
+                    color: "white"
+                    hoverColor: "#ececec"
+                    iconColor: "black"
+                    iconSize: 32
+                    onClicked: Player.togglePlayback()
+                }
+            }
+
+            Control {
+                effect: TransportButton.NudgeRight
+                symbol: "skip_next"
+                hoverShape: "arrow"
+                hoverAngle: 90
+                iconSize: 30
+                alwaysFilled: true
+                enabled: Player.canSkipForward
+                tooltip: "Next song"
+                onClicked: Player.skipForward()
+            }
+            Control {
+                effect: TransportButton.Bounce
+                symbol: Player.repeatMode === Player.RepeatMode.One ? "repeat_one" : "repeat"
+                toggledShape: Player.repeatMode === Player.RepeatMode.One ? "cookie4" : "cookie6"
+                toggled: Player.repeatMode !== Player.RepeatMode.Off
+                enabled: Player.hasSong
+                tooltip: Player.repeatMode === Player.RepeatMode.One ? "Repeat song" : (Player.repeatMode === Player.RepeatMode.All ? "Repeat queue" : "Repeat off")
+                onClicked: Player.cycleRepeatMode()
+            }
+        }
+
+        // the speaker mutes; the slider is locked while the sleep timer fades
+        Row {
+            id: volume
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+
+            IconButton {
+                anchors.verticalCenter: parent.verticalCenter
+                scheme: root.scheme
+                symbol: Player.volume <= 0.01 ? "volume_off" : (Player.volume <= 0.5 ? "volume_down" : "volume_up")
+                size: 30
+                iconSize: 20
+                iconColor: Qt.rgba(1, 1, 1, 0.78)
+                colBackgroundHover: Qt.rgba(1, 1, 1, 0.1)
+                tooltip: Player.volume <= 0.01 ? "Unmute" : "Mute"
+                onClicked: Player.toggleMute()
+            }
+            StyledSlider {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(progress.width - 80, 300)
+                scheme: root.scheme
+                trackThickness: 8
+                handleLength: 20
+                showStopIndicator: false
+                showValueTip: true
+                activeColor: "white"
+                inactiveColor: Qt.rgba(1, 1, 1, 0.2)
+                enabled: !Player.volumeManagedBySleepTimer
+                value: Player.volume
+                onMoved: Player.setVolume(value)
+            }
+        }
+    }
+}

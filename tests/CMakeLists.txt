@@ -1,0 +1,39 @@
+function(swiftify_test name)
+    qt_add_executable(${name} ${name}.cpp ${ARGN})
+    target_link_libraries(${name} PRIVATE swiftify_app Qt6::Test)
+    add_test(NAME ${name} COMMAND ${name})
+    set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endfunction()
+
+swiftify_test(tst_settings)
+swiftify_test(tst_theme)
+swiftify_test(tst_playback FakeCore.h)
+swiftify_test(tst_palette)
+swiftify_test(tst_spectrum FakeCore.h)
+swiftify_test(tst_covers)
+swiftify_test(tst_views FakeCore.h)
+swiftify_test(tst_local FakeCore.h)
+swiftify_test(tst_session FakeCore.h)
+# frames are read back through qrhi, which is only offered as a private api
+# only this test binary, which is rebuilt with qt anyway
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
+find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
+target_link_libraries(tst_views PRIVATE swiftify_appplugin Qt6::GuiPrivate)
+
+# what a frame of the main window costs: run by hand, not by ctest
+find_package(Qt6 REQUIRED COMPONENTS QuickPrivate)
+qt_add_executable(bench_frames bench_frames.cpp FakeCore.h ViewRig.h)
+target_link_libraries(bench_frames PRIVATE swiftify_app swiftify_appplugin Qt6::Test Qt6::GuiPrivate Qt6::QuickPrivate)
+
+# every material symbol the qml names exists in the pinned font
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND AND SWIFTIFY_ICON_CODEPOINTS)
+    add_test(NAME icon_names
+        COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/check_icon_names.py
+            ${SWIFTIFY_ICON_CODEPOINTS} ${PROJECT_SOURCE_DIR}/qml)
+endif()
+# a script line opening with a bracket runs on from the one before
+if(Python3_FOUND)
+    add_test(NAME qml_statements
+        COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/check_qml_statements.py ${PROJECT_SOURCE_DIR}/qml)
+endif()

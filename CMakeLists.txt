@@ -17,11 +17,14 @@ if(APPLE)
     set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
 endif()
 
-# msvc reads the sources as utf-8, gives <cmath>'s M_PI, and keeps
-# windows.h's min and max macros off std::min and std::max
+# on windows <cmath> gives M_PI only when asked, and windows.h's min and
+# max macros are kept off std::min and std::max; msvc also reads the
+# sources as utf-8
+if(WIN32)
+    add_compile_definitions(_USE_MATH_DEFINES NOMINMAX)
+endif()
 if(MSVC)
     add_compile_options(/utf-8)
-    add_compile_definitions(_USE_MATH_DEFINES NOMINMAX)
 endif()
 
 include(GNUInstallDirs)
@@ -211,18 +214,29 @@ qt_add_shaders(swiftify_app "swiftify_shaders"
 
 # material 3's shapes as distance fields, for MaterialShape: drawn at build
 # time from the vendored rounded-polygon-qmljs (tools/shape_atlas)
-add_executable(shape_atlas tools/shape_atlas/main.cpp tools/shape_atlas/ShapeAtlasLayout.h)
-target_include_directories(shape_atlas PRIVATE tools/shape_atlas)
-target_link_libraries(shape_atlas PRIVATE Qt6::Core Qt6::Gui Qt6::Qml)
-# it runs on every fresh build, so it is optimised even in a debug one
-target_compile_options(shape_atlas PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>:-O2>)
+# the tool runs during the build, so a cross build (windows from a mac, say)
+# takes one built for the machine doing the building
+set(SWIFTIFY_SHAPE_ATLAS_TOOL "" CACHE FILEPATH
+    "a shape_atlas built for the build machine, for cross builds")
+if(SWIFTIFY_SHAPE_ATLAS_TOOL)
+    set(SWIFTIFY_SHAPE_ATLAS_COMMAND ${SWIFTIFY_SHAPE_ATLAS_TOOL})
+elseif(CMAKE_CROSSCOMPILING)
+    message(FATAL_ERROR "a cross build needs -DSWIFTIFY_SHAPE_ATLAS_TOOL=<shape_atlas built for this machine>")
+else()
+    add_executable(shape_atlas tools/shape_atlas/main.cpp tools/shape_atlas/ShapeAtlasLayout.h)
+    target_include_directories(shape_atlas PRIVATE tools/shape_atlas)
+    target_link_libraries(shape_atlas PRIVATE Qt6::Core Qt6::Gui Qt6::Qml)
+    # it runs on every fresh build, so it is optimised even in a debug one
+    target_compile_options(shape_atlas PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>:-O2>)
+    set(SWIFTIFY_SHAPE_ATLAS_COMMAND shape_atlas)
+endif()
 set(SWIFTIFY_SHAPE_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/rounded-polygon-qmljs)
 file(GLOB_RECURSE SWIFTIFY_SHAPE_SOURCES CONFIGURE_DEPENDS ${SWIFTIFY_SHAPE_LIBRARY}/*.js)
 set(SWIFTIFY_SHAPE_ATLAS ${CMAKE_CURRENT_BINARY_DIR}/shapes/shape_atlas.png)
 add_custom_command(OUTPUT ${SWIFTIFY_SHAPE_ATLAS}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shapes
-    COMMAND shape_atlas ${SWIFTIFY_SHAPE_LIBRARY} ${SWIFTIFY_SHAPE_ATLAS}
-    DEPENDS shape_atlas ${SWIFTIFY_SHAPE_SOURCES}
+    COMMAND ${SWIFTIFY_SHAPE_ATLAS_COMMAND} ${SWIFTIFY_SHAPE_LIBRARY} ${SWIFTIFY_SHAPE_ATLAS}
+    DEPENDS ${SWIFTIFY_SHAPE_ATLAS_COMMAND} ${SWIFTIFY_SHAPE_SOURCES}
     COMMENT "Drawing the shape atlas")
 qt_add_resources(swiftify_app "swiftify_shape_atlas"
     PREFIX "/shapes"
@@ -269,6 +283,11 @@ qt_add_executable(swiftify src/main.cpp)
 target_link_libraries(swiftify PRIVATE swiftify_app swiftify_appplugin)
 # a windowed app on windows, with no console window of its own
 set_target_properties(swiftify PROPERTIES WIN32_EXECUTABLE ON)
+if(MINGW)
+    # qt's WinMain shim reads msvcrt's __argc, which a mingw on ucrt (as
+    # homebrew's is) lacks; mingw's own start-up calls main() just as well
+    set_target_properties(swiftify PROPERTIES qt_no_entrypoint ON)
+endif()
 
 # on macos, an app bundle: its own name in the menu bar and the dock, its own
 # icon, and an identifier apart from the swift app's (com.addenator.Swiftify)

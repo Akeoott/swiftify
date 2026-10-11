@@ -6,7 +6,9 @@
 
 #include <QCoroSignal>
 
+#ifndef Q_OS_WIN
 #include <unistd.h>
+#endif
 
 namespace swiftify {
 
@@ -67,12 +69,24 @@ void RustCore::open()
     if (!m_core) {
         qFatal("spotify-core could not start");
     }
+#ifdef Q_OS_WIN
+    // no descriptor to watch on windows: the core calls back from whichever
+    // thread finished, and the drain is queued onto this one
+    swiftify_core_set_completion_callback(m_core, [](void *context) {
+        QMetaObject::invokeMethod(static_cast<RustCore *>(context), &RustCore::drainCompletions, Qt::QueuedConnection);
+    }, this);
+#else
     m_notifier = std::make_unique<QSocketNotifier>(swiftify_core_completion_fd(m_core), QSocketNotifier::Read);
     connect(m_notifier.get(), &QSocketNotifier::activated, this, &RustCore::drainCompletions);
+#endif
 }
 
 void RustCore::close()
 {
+#ifdef Q_OS_WIN
+    // waits for a callback under way, so none reaches this after
+    swiftify_core_set_completion_callback(m_core, nullptr, nullptr);
+#endif
     m_notifier.reset();
     // nothing will complete these now. waking them as cancelled is what lets
     // their callers unwind, as swift's task cancellation would.
@@ -93,9 +107,11 @@ void RustCore::reset()
 
 void RustCore::drainCompletions()
 {
+#ifndef Q_OS_WIN
     char buffer[64];
     while (::read(swiftify_core_completion_fd(m_core), buffer, sizeof buffer) > 0) {
     }
+#endif
 
     uint64_t id = 0;
     bool ok = false;

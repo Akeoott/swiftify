@@ -11,12 +11,15 @@
 //! hands out is owned by the caller and released with `swiftify_string_free`.
 //! a null error string means success.
 
+#[cfg(unix)]
 use std::{
-    collections::VecDeque,
-    ffi::{CStr, CString, c_char, c_int},
-    future::Future,
     io::Write,
     os::{fd::AsRawFd, unix::net::UnixStream},
+};
+use std::{
+    collections::VecDeque,
+    ffi::{CStr, CString, c_char, c_int, c_void},
+    future::Future,
     ptr,
     sync::{Arc, Mutex, OnceLock},
 };
@@ -47,24 +50,46 @@ struct Completion {
     payload: CString,
 }
 
+/// what the front end asked to be called with when a completion is queued,
+/// from whichever thread queued it (`swiftify_core_set_completion_callback`)
+struct Waker {
+    callback: extern "C" fn(*mut c_void),
+    context: *mut c_void,
+}
+
+// SAFETY: the front end hands over a callback that may be called from any
+// thread, with a context it keeps alive until it takes the callback back.
+unsafe impl Send for Waker {}
+
 struct CompletionQueue {
     pending: Mutex<VecDeque<Completion>>,
     /// written to whenever a completion is queued
+    #[cfg(unix)]
     notifier: UnixStream,
     /// the end the front end polls. kept here so the descriptor lives exactly
     /// as long as anything can still queue a completion.
+    #[cfg(unix)]
     receiver: UnixStream,
+    /// called too, where there is no descriptor to poll (windows)
+    waker: Mutex<Option<Waker>>,
 }
 
 impl CompletionQueue {
     fn new() -> std::io::Result<Self> {
-        let (notifier, receiver) = UnixStream::pair()?;
-        notifier.set_nonblocking(true)?;
-        receiver.set_nonblocking(true)?;
+        #[cfg(unix)]
+        let (notifier, receiver) = {
+            let (notifier, receiver) = UnixStream::pair()?;
+            notifier.set_nonblocking(true)?;
+            receiver.set_nonblocking(true)?;
+            (notifier, receiver)
+        };
         Ok(Self {
             pending: Mutex::new(VecDeque::new()),
+            #[cfg(unix)]
             notifier,
+            #[cfg(unix)]
             receiver,
+            waker: Mutex::new(None),
         })
     }
 
@@ -83,7 +108,15 @@ impl CompletionQueue {
         }
         // a full socket already has unread bytes waiting, which wakes the
         // reader just the same, so a would-block write needs no retry.
+        #[cfg(unix)]
         let _ = (&self.notifier).write(&[1]);
+        // held while calling, so taking the callback back waits for a call
+        // under way
+        if let Ok(waker) = self.waker.lock()
+            && let Some(waker) = waker.as_ref()
+        {
+            (waker.callback)(waker.context);
+        }
     }
 
     fn pop(&self) -> Option<Completion> {
@@ -193,10 +226,41 @@ pub unsafe extern "C" fn swiftify_core_free(core: *mut SwiftifyCore) {
 /// `core` is null or live.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn swiftify_core_completion_fd(core: *const SwiftifyCore) -> c_int {
+    #[cfg(unix)]
+    {
+        // SAFETY: forwarded from the caller.
+        unsafe { handle(core) }
+            .map(|core| core.completions.receiver.as_raw_fd())
+            .unwrap_or(-1)
+    }
+    // no descriptor to poll here: swiftify_core_set_completion_callback
+    #[cfg(not(unix))]
+    {
+        let _ = core;
+        -1
+    }
+}
+
+/// `callback(context)` is called, from whichever thread finished the call,
+/// each time a completion is queued; null takes it back, waiting for a call
+/// under way to return. for where there is no descriptor to poll (windows).
+///
+/// # Safety
+/// `core` is null or live; `context` stays valid until the callback is taken
+/// back or `core` is freed.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn swiftify_core_set_completion_callback(
+    core: *const SwiftifyCore,
+    callback: Option<extern "C" fn(*mut c_void)>,
+    context: *mut c_void,
+) {
     // SAFETY: forwarded from the caller.
-    unsafe { handle(core) }
-        .map(|core| core.completions.receiver.as_raw_fd())
-        .unwrap_or(-1)
+    let Some(core) = (unsafe { handle(core) }) else {
+        return;
+    };
+    if let Ok(mut waker) = core.completions.waker.lock() {
+        *waker = callback.map(|callback| Waker { callback, context });
+    }
 }
 
 /// takes the oldest finished async call. `payload` receives the call's value on

@@ -28,6 +28,11 @@ void swiftify_core_free(SwiftifyCore *core);
 void swiftify_string_free(char *value);
 
 int swiftify_core_completion_fd(const SwiftifyCore *core);
+/* where there is no descriptor (windows: it is -1), callback(context) is
+ * called from the finishing thread instead each time a completion is queued;
+ * null takes it back. context lives until then. */
+void swiftify_core_set_completion_callback(const SwiftifyCore *core, void (*callback)(void *),
+                                           void *context);
 bool swiftify_core_take_completion(const SwiftifyCore *core, uint64_t *request_id, bool *ok,
                                    char **payload);
 

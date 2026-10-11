@@ -36,10 +36,10 @@ grab the latest build from [releases](https://github.com/shredos67/swiftify-qt/r
 | windows (x64 / arm64) | `swiftify-windows-x64.zip` / `swiftify-windows-arm64.zip` |
 | linux (x64 / arm64) | `swiftify-linux-x64.AppImage` / `swiftify-linux-arm64.AppImage`, or the `.tar.gz` |
 
-**macos:** unzip, drag `Swiftify Qt.app` into applications. macos blocks the first launch, so clear the quarantine flag, thanks apple :)
+**macos:** unzip, drag `Swiftify.app` into applications. macos blocks the first launch, so clear the quarantine flag, thanks apple :)
 
 ```sh
-xattr -dr com.apple.quarantine "/Applications/Swiftify Qt.app"
+xattr -dr com.apple.quarantine /Applications/Swiftify.app
 ```
 
 **windows:** unzip and run `swiftify.exe`. dont move the exe out of its folder, it loads the dlls next to it. if u want it somewhere else, move the whole folder and make a shortcut to the exe. on arm64 u also need the [visual c++ redistributable (arm64)](https://aka.ms/vs/17/release/vc_redist.arm64.exe), if it complains about a missing MSVCP140.dll thats why.
@@ -82,11 +82,10 @@ git clone https://github.com/shredos67/swiftify-qt.git
 cd swiftify-qt
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 cmake --build build
-ditto build/swiftify.app "/Applications/Swiftify Qt.app"
+ditto build/swiftify.app /Applications/Swiftify.app
 ```
 
-it gets copied as `Swiftify Qt.app` on purpose: the mac disk ignores case, so `swiftify.app`
-would overwrite the native swiftify app. it's signed ad hoc, so no developer account needed.
+it's signed ad hoc, so no developer account needed.
 with full xcode installed the icon gets compiled with `actool` and picks up macos 26's glass,
 dark and tinted looks; with just the command line tools it's built from the PNGs.
 

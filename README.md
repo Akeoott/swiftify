@@ -6,7 +6,16 @@ Material 3 Expressive (heavy inspo from end4) and has an immersive player,
 synced lyrics, visualizers, an equalizer, and local files with local playlists
 where u can edit the tracks metadata.
 
-runs on linux (made for wayland and hyprland) and macos. haven't tested winslop though...
+this apps purpose is to replace spotifys heavy webview client, but its also mostly eyecandy lol
+it runs significantly lighter than the spotify client. but also lighter than other native gui replacements that are available, though only with all the extra eyecandy features disabled of course.
+
+**EVEN WITH THE EYECANDY TURNED ON....** it is lighter than spotify + spotifys renderers both on cpu AND ram!!!!!
+
+
+anyways runs on linux (made for wayland and hyprland) and macos. haven't tested winslop though...
+
+> ### Note
+> i will probably not be maintaining it, if you are interested in taking over this project you can send me an email
 
 - [Before you start](#before-you-start)
 - [Download](#download)

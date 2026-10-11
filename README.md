@@ -30,72 +30,59 @@ The configure step needs network access: it fetches
 Rust core inside the CMake build, and two fonts (Material Symbols Rounded and
 Google Sans Flex), each are checked against a pinned hash.
 
-The tests build by default. The commands below turn them off with
-`-DBUILD_TESTING=OFF`; leave that out and run `ctest --test-dir build` to
-run them.
+The install scripts below leave the tests out; give them `--tests`
+(`-Tests` on Windows) to build and run the tests before installing.
 
 ## macOS
 
-Install the tools, then build:
+You need [Homebrew](https://brew.sh) and Apple's command line tools
+(`xcode-select --install`, or the full Xcode). Then:
 
 ```sh
-xcode-select --install
-brew install qtbase qtdeclarative qtshadertools qtkeychain qcoro6 cmake ninja
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-cmake --build build
+git clone https://github.com/shredos67/swiftify-qt.git
+cd swiftify-qt
+./scripts/install-macos.sh
 ```
 
-This makes `build/swiftify.app`, signed ad hoc so it opens without a
-developer account. With the full Xcode installed, the app icon is compiled
-with `actool` and gets macOS 26's glass, dark and tinted looks; with only the
-command line tools it is made from the PNGs.
+The script installs the dependencies with Homebrew (and Rust with rustup if
+it's missing), builds the app and installs it as
+`/Applications/Swiftify Qt.app`. It goes in under that name because the disk
+ignores case, so `swiftify.app` would replace the native Swiftify app.
+`--to ~/Applications` installs it there instead, and `--no-deps` skips the
+dependencies.
 
-move the .app bundle to /Applications
-
-```sh
-ditto build/swiftify.app "/Applications/Swiftify Qt.app"
-```
+The app is signed ad hoc, so it opens without a developer account. With the
+full Xcode installed, the app icon is compiled with `actool` and gets macOS
+26's glass, dark and tinted looks; with only the command line tools it is
+made from the PNGs.
 
 ## Linux
 
-Install the dependencies. On Arch:
+```sh
+git clone https://github.com/shredos67/swiftify-qt.git
+cd swiftify-qt
+./scripts/install-linux.sh
+```
+
+The script installs the dependencies on Arch (and its derivatives), Gentoo
+(with the USE flags QtBase and QtKeychain need) and Fedora, builds Swiftify
+and installs it under `~/.local`: `swiftify` in `~/.local/bin` (which has to
+be on your `PATH`), and the desktop entry, icons and fonts in
+`~/.local/share`. `--system` installs it under `/usr/local` for everyone
+instead.
+
+Elsewhere you need the same reqs: Qt 6.9 or newer with D-Bus, OpenGL and
+Wayland, QtKeychain and QCoro for Qt 6, libpulse, and the ALSA, OpenSSL and
+pkg-config development packages. Install those yourself, then run the script
+with `--no-deps`.
+
+On Arch you can build a package instead, which installs under `/usr`:
 
 ```sh
-sudo pacman -S --needed qt6-base qt6-declarative qt6-shadertools qt6-wayland qtkeychain-qt6 qcoro libpulse alsa-lib openssl cmake ninja rust pkgconf
+git clone https://github.com/shredos67/swiftify-qt.git
+cd swiftify-qt/packaging/arch
+makepkg -si
 ```
-
-On Gentoo, with these USE flags in `/etc/portage/package.use/swiftify`:
-
-```
-dev-qt/qtbase dbus opengl wayland
-dev-libs/qtkeychain keyring
-```
-
-```sh
-sudo emerge --ask --noreplace dev-qt/qtbase dev-qt/qtdeclarative dev-qt/qtshadertools dev-libs/qtkeychain dev-libs/qcoro media-libs/libpulse media-libs/alsa-lib dev-libs/openssl dev-build/cmake dev-build/ninja virtual/rust virtual/pkgconfig
-```
-
-Elsewhere you need the same reqs: Qt 6 with D-Bus, OpenGL and Wayland,
-QtKeychain and QCoro for Qt 6, libpulse, and the ALSA, OpenSSL and
-pkg-config development packages.
-
-Then build and install into your home:
-
-```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$HOME/.local"
-cmake --build build
-cmake --install build
-```
-
-**Where it goes:** `cmake --install` puts `swiftify` in `~/.local/bin`
-(which has to be on your `PATH`), the desktop entry in
-`~/.local/share/applications`, the icons under `~/.local/share/icons` and the
-fonts in `~/.local/share/swiftify/fonts`. For everyone on the machine,
-configure with `-DCMAKE_INSTALL_PREFIX=/usr/local` and run
-`sudo cmake --install build`. On Arch you can build a package instead:
-`cd packaging/arch && makepkg -si` installs it under `/usr`.
 
 The login is saved through QtKeychain in the Secret Service, so something
 has to provide one: gnome-keyring, KWallet or KeePassXC.
@@ -107,48 +94,23 @@ PipeWire/PulseAudio device changes, and the tray.
 
 ## Windows (untested)
 
-Swiftify has not been built on Windows yet. These are the expected steps.
+Swiftify has not been built on Windows yet; the script is the expected route.
 
 Install Visual Studio 2022 (or its Build Tools) with *Desktop development
 with C++*, Qt 6.9 or newer for *MSVC 2022 64-bit* with *Qt Shader Tools* from
-the Qt online installer, Rust from rustup (its default MSVC toolchain), and
-Git. CMake and Ninja come with Visual Studio.
+the Qt online installer, Rust from [rustup](https://rustup.rs), and Git.
+Then, in PowerShell:
 
-Open an *x64 Native Tools Command Prompt for VS 2022*. Set `QT` to your Qt
-install, then build QtKeychain and QCoro into `C:\deps`:
-
-```bat
-set QT=C:\Qt\6.9.3\msvc2022_64
-
-git clone https://github.com/frankosterfeld/qtkeychain
-cmake -S qtkeychain -B qtkeychain\build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_QT6=ON -DBUILD_TEST_APPLICATION=OFF -DBUILD_TRANSLATIONS=OFF -DCMAKE_PREFIX_PATH=%QT% -DCMAKE_INSTALL_PREFIX=C:\deps
-cmake --build qtkeychain\build --target install
-
-git clone https://github.com/qcoro/qcoro
-cmake -S qcoro -B qcoro\build -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_QT_VERSION=6 -DQCORO_WITH_QTDBUS=OFF -DQCORO_WITH_QTWEBSOCKETS=OFF -DQCORO_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH=%QT% -DCMAKE_INSTALL_PREFIX=C:\deps
-cmake --build qcoro\build --target install
+```powershell
+git clone https://github.com/shredos67/swiftify-qt.git
+cd swiftify-qt
+powershell -ExecutionPolicy Bypass -File scripts\install-windows.ps1
 ```
 
-Then build Swiftify from this folder:
-
-```bat
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH="%QT%;C:\deps"
-cmake --build build
-```
-
-**Where it goes:** your user's Programs folder. Install it there, then
-gather Qt's libraries and plugins next to it with `windeployqt`, and copy in
-QtKeychain's and QCoro's DLLs, which `windeployqt` does not know about:
-
-```bat
-cmake --install build --prefix "%LOCALAPPDATA%\Programs\Swiftify"
-%QT%\bin\windeployqt --release --qmldir qml "%LOCALAPPDATA%\Programs\Swiftify\bin\swiftify.exe"
-copy C:\deps\bin\*.dll "%LOCALAPPDATA%\Programs\Swiftify\bin\"
-```
-
-Start it from `%LOCALAPPDATA%\Programs\Swiftify\bin\swiftify.exe`, or pin
-that to Start. The fonts are installed to `...\Swiftify\share\swiftify\fonts`,
-where the app looks for them.
+The script finds Visual Studio and the newest Qt under `C:\Qt` (`-QtDir`
+points it at another), builds QtKeychain and QCoro once, then Swiftify, and
+installs it to `%LOCALAPPDATA%\Programs\Swiftify` with a Start menu entry.
+Quit Swiftify before running it again to update.
 
 ## Command line
 

@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QtQml/qqmlregistration.h>
 
+#include <algorithm>
+
 namespace swiftify {
 
 /// sizes the immersive player from its window (ImmersivePlayerLayout.swift).

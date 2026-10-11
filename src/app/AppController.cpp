@@ -22,6 +22,7 @@
 #include <QtGui/qevent.h>
 
 #include <algorithm>
+#include <utility>
 
 #ifdef Q_OS_MACOS
 #include <malloc/malloc.h>

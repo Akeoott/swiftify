@@ -5,6 +5,7 @@
 
 #include <QQmlEngine>
 
+#include <array>
 #include <cmath>
 
 namespace swiftify {

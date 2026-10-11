@@ -7,6 +7,8 @@
 #include <QQuickWindow>
 #include <QtMath>
 
+#include <algorithm>
+
 namespace swiftify {
 
 PlaylistCoverItem::PlaylistCoverItem(QQuickItem *parent)

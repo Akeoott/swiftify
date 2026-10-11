@@ -12,6 +12,7 @@
 #include <QSGMaterialShader>
 #include <QSGTexture>
 
+#include <algorithm>
 #include <cmath>
 
 namespace swiftify {

@@ -11,6 +11,7 @@
 #include <QSGOpacityNode>
 
 #include <cmath>
+#include <utility>
 
 namespace swiftify {
 

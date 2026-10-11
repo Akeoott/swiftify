@@ -18,6 +18,7 @@
 #include <QUrl>
 #include <QVariantList>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <memory>

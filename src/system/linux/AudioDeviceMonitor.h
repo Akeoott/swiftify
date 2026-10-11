@@ -4,6 +4,8 @@
 #include <QHash>
 #include <QObject>
 
+#include <cstdint>
+
 struct pa_context;
 struct pa_server_info;
 struct pa_sink_info;

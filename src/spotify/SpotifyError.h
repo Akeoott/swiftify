@@ -3,6 +3,7 @@
 #include <QString>
 
 #include <exception>
+#include <utility>
 
 namespace swiftify {
 

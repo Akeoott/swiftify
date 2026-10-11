@@ -12,7 +12,10 @@
 #include <QCoroTimer>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <iterator>
+#include <utility>
 
 namespace swiftify {
 

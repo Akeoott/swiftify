@@ -6,6 +6,8 @@
 #include <QTimer>
 #include <QtQml/qqmlregistration.h>
 
+#include <array>
+
 class QQmlEngine;
 class QJSEngine;
 

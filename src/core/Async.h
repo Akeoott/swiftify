@@ -5,6 +5,7 @@
 #include <QCoroTask>
 
 #include <memory>
+#include <utility>
 
 namespace swiftify {
 

@@ -20,6 +20,8 @@
 #include <QtConcurrent>
 
 #include <algorithm>
+#include <cstdint>
+#include <utility>
 
 namespace swiftify {
 

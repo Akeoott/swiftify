@@ -473,3 +473,6 @@ private slots:
 
 QTEST_GUILESS_MAIN(SessionTest)
 #include "tst_session.moc"
+
+#include <algorithm>
+#include <utility>

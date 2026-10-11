@@ -207,3 +207,8 @@ int RustCore::spectrumLevels(float *out, int capacity) const
 } // namespace swiftify
 
 #include "RustCore.moc"
+
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <utility>

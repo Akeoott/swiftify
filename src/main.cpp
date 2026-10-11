@@ -50,6 +50,7 @@
 #include <unistd.h>
 
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #endif
 

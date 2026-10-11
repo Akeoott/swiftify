@@ -12,6 +12,8 @@
 #include <QScopeGuard>
 #include <QCoroSignal>
 
+#include <utility>
+
 namespace swiftify {
 
 Q_LOGGING_CATEGORY(lcSession, "swiftify.session")

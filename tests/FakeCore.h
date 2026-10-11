@@ -11,8 +11,10 @@
 #include <QSet>
 #include <QStringList>
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
+#include <utility>
 
 namespace swiftify::testing {
 

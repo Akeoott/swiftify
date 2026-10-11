@@ -9,6 +9,8 @@
 #include <QQmlEngine>
 #include <QtConcurrent>
 
+#include <utility>
+
 namespace swiftify {
 
 namespace {

@@ -25,6 +25,8 @@
 #include <malloc/malloc.h>
 #include <ctime>
 #include <map>
+#include <utility>
+#include <vector>
 
 using namespace swiftify;
 using namespace Qt::StringLiterals;

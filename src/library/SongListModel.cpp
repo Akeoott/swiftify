@@ -2,6 +2,8 @@
 
 #include <QHash>
 
+#include <functional>
+
 namespace swiftify {
 
 SongListModel::SongListModel(QObject *parent)

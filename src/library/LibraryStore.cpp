@@ -14,6 +14,7 @@
 #include <QCoroTimer>
 
 #include <algorithm>
+#include <chrono>
 
 namespace swiftify {
 

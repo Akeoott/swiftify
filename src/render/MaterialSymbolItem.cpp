@@ -15,9 +15,11 @@
 #include <QSGTexture>
 #include <QTextLayout>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <optional>
+#include <utility>
 
 namespace swiftify {
 

@@ -2343,3 +2343,5 @@ private slots:
 
 QTEST_MAIN(ViewsTest)
 #include "tst_views.moc"
+
+#include <utility>

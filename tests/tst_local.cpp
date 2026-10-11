@@ -545,3 +545,5 @@ private slots:
 
 QTEST_MAIN(LocalTest)
 #include "tst_local.moc"
+
+#include <utility>

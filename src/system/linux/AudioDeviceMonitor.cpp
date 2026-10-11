@@ -8,6 +8,8 @@
 #include <pulse/subscribe.h>
 #include <pulse/thread-mainloop.h>
 
+#include <cstdint>
+
 namespace swiftify {
 
 Q_LOGGING_CATEGORY(lcDevices, "swiftify.devices")

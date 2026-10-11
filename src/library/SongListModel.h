@@ -5,6 +5,8 @@
 #include <QAbstractListModel>
 #include <QtQml/qqmlregistration.h>
 
+#include <functional>
+
 namespace swiftify {
 
 /// songs for a list view. holds plain c++ songs, so a playlist of thousands

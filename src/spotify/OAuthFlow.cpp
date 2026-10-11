@@ -14,6 +14,7 @@
 #include <QCoroNetworkReply>
 
 #include <memory>
+#include <utility>
 
 namespace swiftify {
 

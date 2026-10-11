@@ -10,6 +10,8 @@
 #include <QUrl>
 #include <QtQml/qqmlregistration.h>
 
+#include <utility>
+
 class QQmlEngine;
 class QJSEngine;
 

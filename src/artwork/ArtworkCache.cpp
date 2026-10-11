@@ -14,6 +14,8 @@
 #include <QtConcurrent>
 
 #include <algorithm>
+#include <optional>
+#include <utility>
 #include <QCoroSignal>
 
 namespace swiftify {

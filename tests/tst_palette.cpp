@@ -66,3 +66,5 @@ private slots:
 
 QTEST_GUILESS_MAIN(PaletteTest)
 #include "tst_palette.moc"
+
+#include <algorithm>

@@ -1,25 +1,24 @@
 # Swiftify
 
-A Spotify player for the desktop, built with Qt Quick on top of a Rust core
+A Spotify player for desktop, built with Qt Quick on top of a Rust core
 that wraps [librespot](https://github.com/librespot-org/librespot). It follows
-Material 3 Expressive and has an immersive player, synced lyrics,
-visualizers, an equalizer, and local files with local playlists.
+Material 3 Expressive (heavy inspo from end4) and has an immersive player, synced lyrics,
+visualizers, an equalizer, and local files with local playlists where you can change the tracks metadata.
 
-It runs on Linux (made for Wayland and Hyprland) and macOS. Windows builds
-are untested so far.
+It runs on Linux (made for Wayland and Hyprland) and macOS. Haven't tested winslop though...
 
 ## Before you start
 
 - **Spotify Premium.** Playback goes through librespot, which needs a
   Premium account.
-- **Your own Spotify Client ID.** Your library, playlists and search come
+- **Spotify Client ID.** library, playlists and search come
   from the Spotify Web API through a developer app of your own. The first
   launch walks you through it: create an app in the
   [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), add
-  `http://127.0.0.1:8898/login` as a redirect URI, and paste the app's
+  `http://127.0.0.1:8898/login` as a redirect URI, and paste the apps
   Client ID into Swiftify. The Client Secret is not needed.
 
-## What every build needs
+## Build requirements
 
 - Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools
 - QtKeychain and QCoro 0.10 or newer, both built for Qt 6
@@ -29,7 +28,7 @@ are untested so far.
 The configure step needs network access: it fetches
 [Corrosion](https://github.com/corrosion-rs/corrosion), which builds the
 Rust core inside the CMake build, and two fonts (Material Symbols Rounded and
-Google Sans Flex), each checked against a pinned hash.
+Google Sans Flex), each are checked against a pinned hash.
 
 The tests build by default. The commands below turn them off with
 `-DBUILD_TESTING=OFF`; leave that out and run `ctest --test-dir build` to
@@ -53,9 +52,7 @@ developer account. With the full Xcode installed, the app icon is compiled
 with `actool` and gets macOS 26's glass, dark and tinted looks; with only the
 command line tools it is made from the PNGs.
 
-**Where it goes:** `/Applications` (or `~/Applications`). Copy it under a
-name of its own: the disk ignores case, so `swiftify.app` would replace the
-native Swiftify app if you have it.
+move the .app bundle to /Applications
 
 ```sh
 ditto build/swiftify.app "/Applications/Swiftify Qt.app"
@@ -80,7 +77,7 @@ dev-libs/qtkeychain keyring
 sudo emerge --ask --noreplace dev-qt/qtbase dev-qt/qtdeclarative dev-qt/qtshadertools dev-libs/qtkeychain dev-libs/qcoro media-libs/libpulse media-libs/alsa-lib dev-libs/openssl dev-build/cmake dev-build/ninja virtual/rust virtual/pkgconfig
 ```
 
-Elsewhere you need the same pieces: Qt 6 with D-Bus, OpenGL and Wayland,
+Elsewhere you need the same reqs: Qt 6 with D-Bus, OpenGL and Wayland,
 QtKeychain and QCoro for Qt 6, libpulse, and the ALSA, OpenSSL and
 pkg-config development packages.
 
@@ -171,16 +168,3 @@ On Hyprland, for example:
 bind = SUPER SHIFT, M, exec, swiftify --immersive
 bind = , XF86AudioPlay, exec, swiftify --play-pause
 ```
-
-## What's where
-
-| Path | |
-|---|---|
-| `src` | the C++ side: settings, the Spotify session and library, playback, rendering, system integration |
-| `qml` | the interface |
-| `shaders` | GLSL, compiled to `.qsb` at build time |
-| `spotify-core` | the Rust core: librespot, audio output, the spectrum analyser, local files |
-| `third_party` | material-color-utilities and rounded-polygon-qmljs (both Apache-2.0) |
-| `tools/shape_atlas` | draws Material 3's shapes into the atlas the app reads, at build time |
-| `packaging` | the desktop entry, icons, the macOS Info.plist and an Arch PKGBUILD |
-| `tests` | Qt Test suites |

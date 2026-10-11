@@ -28,7 +28,7 @@ runs on linux (made for wayland and hyprland) and macos. haven't tested winslop 
 
 ## Download
 
-grab the latest build from [releases](https://github.com/shredos67/swiftify-qt/releases), no building needed.
+grab the latest build from [releases](https://github.com/shredos67/swiftify/releases), no building needed.
 
 | platform | file |
 |---|---|
@@ -78,8 +78,8 @@ brew install qtbase qtdeclarative qtshadertools qtkeychain qcoro6 cmake ninja
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 
-git clone https://github.com/shredos67/swiftify-qt.git
-cd swiftify-qt
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 cmake --build build
 ditto build/swiftify.app /Applications/Swiftify.app
@@ -96,8 +96,8 @@ on arch:
 ```sh
 sudo pacman -S --needed git qt6-base qt6-declarative qt6-shadertools qt6-wayland qtkeychain-qt6 qcoro libpulse alsa-lib openssl cmake ninja rust pkgconf
 
-git clone https://github.com/shredos67/swiftify-qt.git
-cd swiftify-qt
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 cmake --build build
 cmake --install build
@@ -115,8 +115,8 @@ then:
 ```sh
 sudo emerge --ask --noreplace dev-vcs/git dev-qt/qtbase dev-qt/qtdeclarative dev-qt/qtshadertools dev-libs/qtkeychain dev-libs/qcoro media-libs/libpulse media-libs/alsa-lib dev-libs/openssl dev-build/cmake dev-build/ninja virtual/rust virtual/pkgconfig
 
-git clone https://github.com/shredos67/swiftify-qt.git
-cd swiftify-qt
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 cmake --build build
 cmake --install build
@@ -131,8 +131,8 @@ and the desktop entry, icons and fonts in `~/.local/share`. on arch u can build 
 proper package instead, which installs to `/usr`:
 
 ```sh
-git clone https://github.com/shredos67/swiftify-qt.git
-cd swiftify-qt/packaging/arch
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify/packaging/arch
 makepkg -si
 ```
 
@@ -162,8 +162,8 @@ git clone https://github.com/qcoro/qcoro
 cmake -S qcoro -B qcoro\build -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_QT_VERSION=6 -DQCORO_WITH_QTDBUS=OFF -DQCORO_WITH_QTWEBSOCKETS=OFF -DQCORO_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH=%QT% -DCMAKE_INSTALL_PREFIX=C:\deps
 cmake --build qcoro\build --target install
 
-git clone https://github.com/shredos67/swiftify-qt.git
-cd swiftify-qt
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH="%QT%;C:\deps"
 cmake --build build
 cmake --install build --prefix "%LOCALAPPDATA%\Programs\Swiftify"

@@ -101,37 +101,18 @@ dark and tinted looks; with just the command line tools it's built from the PNGs
 
 ### Linux
 
-on arch:
-either build a proper package, which installs to `/usr`:
+on arch either build a proper package, which installs to `/usr`:
 
 ```sh
 git clone https://github.com/shredos67/swiftify.git
 cd swiftify/packaging/arch
 makepkg -si
 ```
-or:
+or use cmake:
 
 ```sh
+# replace with your package manager if not on arch
 sudo pacman -S --needed git qt6-base qt6-declarative qt6-shadertools qt6-wayland qtkeychain-qt6 qcoro libpulse alsa-lib openssl cmake ninja rust pkgconf
-
-git clone https://github.com/shredos67/swiftify.git
-cd swiftify
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="$HOME/.local"
-cmake --build build
-cmake --install build
-```
-
-on gentoo, add these USE flags to `/etc/portage/package.use/swiftify` first:
-
-```
-dev-qt/qtbase dbus opengl wayland
-dev-libs/qtkeychain keyring
-```
-
-then:
-
-```sh
-sudo emerge --ask --noreplace dev-vcs/git dev-qt/qtbase dev-qt/qtdeclarative dev-qt/qtshadertools dev-libs/qtkeychain dev-libs/qcoro media-libs/libpulse media-libs/alsa-lib dev-libs/openssl dev-build/cmake dev-build/ninja virtual/rust virtual/pkgconfig
 
 git clone https://github.com/shredos67/swiftify.git
 cd swiftify

@@ -41,6 +41,9 @@ public:
     virtual void setVolume(float volume) = 0;
     virtual float volume() const = 0;
     virtual void setStreamQuality(int kbps) = 0;
+    /// keeps streamed songs in `path`, up to `limitBytes`; both apply the
+    /// next time playback connects
+    virtual void setAudioCache(const QString &path, qint64 limitBytes) = 0;
     virtual void setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch) = 0;
     virtual void setEqualizer(const QList<float> &gainsDb) = 0;
 

@@ -10,6 +10,11 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <utility>
+
 namespace swiftify {
 
 /// one async call in flight
@@ -79,6 +84,15 @@ void RustCore::open()
     m_notifier = std::make_unique<QSocketNotifier>(swiftify_core_completion_fd(m_core), QSocketNotifier::Read);
     connect(m_notifier.get(), &QSocketNotifier::activated, this, &RustCore::drainCompletions);
 #endif
+    // a fresh core after a reset gets what the last one was told; both were
+    // taken once already, so a refusal now has nothing new to say
+    if (m_streamKbps > 0) {
+        swiftify_string_free(swiftify_core_set_stream_quality(m_core, uint32_t(m_streamKbps)));
+    }
+    if (!m_cachePath.isEmpty()) {
+        swiftify_string_free(swiftify_core_set_audio_cache(m_core, m_cachePath.toUtf8().constData(),
+                                                           quint64(std::max<qint64>(0, m_cacheBytes))));
+    }
 }
 
 void RustCore::close()
@@ -192,7 +206,18 @@ void RustCore::pause() { throwIfError(swiftify_core_pause(m_core)); }
 void RustCore::seek(quint32 positionMs) { throwIfError(swiftify_core_seek(m_core, positionMs)); }
 void RustCore::setVolume(float volume) { throwIfError(swiftify_core_set_volume(m_core, volume)); }
 float RustCore::volume() const { return swiftify_core_volume(m_core); }
-void RustCore::setStreamQuality(int kbps) { throwIfError(swiftify_core_set_stream_quality(m_core, uint32_t(kbps))); }
+void RustCore::setStreamQuality(int kbps)
+{
+    m_streamKbps = kbps;
+    throwIfError(swiftify_core_set_stream_quality(m_core, uint32_t(kbps)));
+}
+
+void RustCore::setAudioCache(const QString &path, qint64 limitBytes)
+{
+    m_cachePath = path;
+    m_cacheBytes = limitBytes;
+    throwIfError(swiftify_core_set_audio_cache(m_core, path.toUtf8().constData(), quint64(std::max<qint64>(0, limitBytes))));
+}
 
 void RustCore::setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch)
 {
@@ -223,8 +248,3 @@ int RustCore::spectrumLevels(float *out, int capacity) const
 } // namespace swiftify
 
 #include "RustCore.moc"
-
-#include <algorithm>
-#include <cstdint>
-#include <iterator>
-#include <utility>

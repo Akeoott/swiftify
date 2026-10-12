@@ -45,6 +45,8 @@
 #include <QtMath>
 #include <rhi/qrhi.h>
 
+#include <utility>
+
 using namespace swiftify;
 using swiftify::testing::FakeCore;
 
@@ -2343,5 +2345,3 @@ private slots:
 
 QTEST_MAIN(ViewsTest)
 #include "tst_views.moc"
-
-#include <utility>

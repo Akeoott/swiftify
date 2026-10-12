@@ -10,7 +10,8 @@ use std::{
 
 use librespot::{
     core::{
-        SpotifyId, SpotifyUri, authentication::Credentials, config::SessionConfig, session::Session,
+        SpotifyId, SpotifyUri, authentication::Credentials, cache::Cache, config::SessionConfig,
+        session::Session,
     },
     metadata::{Lyrics, lyrics::SyncType},
     playback::{
@@ -82,6 +83,8 @@ struct SpotifyState {
     mixer: Option<Arc<dyn Mixer>>,
     volume: f32,
     stream_bitrate: Bitrate,
+    /// where streamed songs are kept, and the most it may hold in bytes
+    audio_cache: Option<(String, u64)>,
     local_playback: Option<file_playback::LocalPlayback>,
     /// the output sink files play through. the backing outputstream is leaked so the
     /// sink keeps a live device connection without breaking send on the state.
@@ -96,6 +99,7 @@ impl Default for SpotifyState {
             mixer: None,
             volume: 0.75,
             stream_bitrate: Bitrate::default(),
+            audio_cache: None,
             local_playback: None,
             local_sink: None,
         }
@@ -254,7 +258,16 @@ impl SpotifyCore {
         };
 
         self.output_health.clear();
-        let session = Session::new(session_config, None);
+        // the songs streamed are kept (still encrypted, as spotify sends them)
+        // so playing one again does not fetch it again; the oldest go first
+        // once the cache is full. a cache that cannot be made is done without
+        let audio_cache = self.lock_state()?.audio_cache.clone();
+        let cache = audio_cache.and_then(|(path, limit)| {
+            Cache::new(None, None, Some(path.as_str()), Some(limit))
+                .map_err(|error| eprintln!("spotify-core: no song cache: {error}"))
+                .ok()
+        });
+        let session = Session::new(session_config, cache);
         session
             .connect(credentials, false)
             .await
@@ -643,6 +656,13 @@ impl SpotifyCore {
     pub fn set_stream_quality(&self, kbps: u32) -> Result<(), String> {
         let bitrate = Self::bitrate(kbps)?;
         self.lock_state()?.stream_bitrate = bitrate;
+        Ok(())
+    }
+
+    /// keeps streamed songs in `path`, up to `limit_bytes`; an empty path
+    /// keeps none. like the bitrate, it applies the next time playback connects
+    pub fn set_audio_cache(&self, path: String, limit_bytes: u64) -> Result<(), String> {
+        self.lock_state()?.audio_cache = (!path.trim().is_empty()).then_some((path, limit_bytes));
         Ok(())
     }
 

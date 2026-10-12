@@ -502,6 +502,28 @@ fallible_call!(swiftify_core_pause() => |core| core.pause());
 fallible_call!(swiftify_core_seek(position_ms: u32) => |core| core.seek(position_ms));
 fallible_call!(swiftify_core_set_volume(volume: f32) => |core| core.set_volume(volume));
 fallible_call!(swiftify_core_set_stream_quality(kbps: u32) => |core| core.set_stream_quality(kbps));
+/// keeps streamed songs in `path`, up to `limit_bytes`; an empty path keeps
+/// none. applies the next time playback connects. returns null on success, or
+/// an error message to free.
+///
+/// # Safety
+/// `core` is null or live; `path` is a nul-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn swiftify_core_set_audio_cache(
+    core: *const SwiftifyCore,
+    path: *const c_char,
+    limit_bytes: u64,
+) -> *mut c_char {
+    // SAFETY: forwarded from the caller.
+    let Some(handle) = (unsafe { handle(core) }) else {
+        return into_raw(MISSING_CORE.to_owned());
+    };
+    // SAFETY: forwarded from the caller.
+    match unsafe { read_str(path) } {
+        Ok(path) => error_string(handle.core.set_audio_cache(path, limit_bytes)),
+        Err(error) => into_raw(error),
+    }
+}
 fallible_call!(swiftify_core_set_playback_shaping(tempo: f32, pitch_semitones: f32, preserves_pitch: bool)
     => |core| core.set_playback_shaping(tempo, pitch_semitones, preserves_pitch));
 

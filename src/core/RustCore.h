@@ -40,6 +40,7 @@ public:
     void setVolume(float volume) override;
     float volume() const override;
     void setStreamQuality(int kbps) override;
+    void setAudioCache(const QString &path, qint64 limitBytes) override;
     void setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch) override;
     void setEqualizer(const QList<float> &gainsDb) override;
 
@@ -65,6 +66,10 @@ private:
     QHash<quint64, std::shared_ptr<CoreRequest>> m_pending;
     quint64 m_nextRequestId = 0;
     quint64 m_generation = 0;
+    /// given again to each core opened (a reset makes a fresh one)
+    int m_streamKbps = 0;
+    QString m_cachePath;
+    qint64 m_cacheBytes = 0;
 };
 
 } // namespace swiftify

@@ -27,6 +27,9 @@ class Settings : public QObject {
     Q_PROPERTY(QString visualizerShape READ visualizerShape WRITE setVisualizerShape NOTIFY visualizerShapeChanged FINAL)
     Q_PROPERTY(double visualizerSensitivity READ visualizerSensitivity WRITE setVisualizerSensitivity NOTIFY visualizerSensitivityChanged FINAL)
     Q_PROPERTY(int streamingQuality READ streamingQuality WRITE setStreamingQuality NOTIFY streamingQualityChanged FINAL)
+    /// how much of the songs streamed is kept, so playing one again needs no
+    /// download: 500, 1000 or 2000 megabytes
+    Q_PROPERTY(int songCacheMegabytes READ songCacheMegabytes WRITE setSongCacheMegabytes NOTIFY songCacheMegabytesChanged FINAL)
     Q_PROPERTY(bool livingBackdrop READ livingBackdrop WRITE setLivingBackdrop NOTIFY livingBackdropChanged FINAL)
     Q_PROPERTY(double backdropBlur READ backdropBlur WRITE setBackdropBlur NOTIFY backdropBlurChanged FINAL)
     Q_PROPERTY(double backdropReactivity READ backdropReactivity WRITE setBackdropReactivity NOTIFY backdropReactivityChanged FINAL)
@@ -81,6 +84,8 @@ public:
     void setVisualizerSensitivity(double value);
     /// kbps: 96, 160 or 320
     int streamingQuality() const { return m_streamingQuality; }
+    int songCacheMegabytes() const { return m_songCacheMegabytes; }
+    void setSongCacheMegabytes(int megabytes);
     void setStreamingQuality(int value);
     /// animate the immersive background with the music
     bool livingBackdrop() const { return m_livingBackdrop; }
@@ -131,6 +136,7 @@ signals:
     void visualizerShapeChanged();
     void visualizerSensitivityChanged();
     void streamingQualityChanged();
+    void songCacheMegabytesChanged();
     void livingBackdropChanged();
     void backdropBlurChanged();
     void backdropReactivityChanged();
@@ -159,9 +165,10 @@ private:
     QString m_visualizerShape = QStringLiteral("bars");
     double m_visualizerSensitivity = 1.0;
     int m_streamingQuality = 160;
+    int m_songCacheMegabytes = 1000;
     bool m_livingBackdrop = true;
     double m_backdropBlur = 16.0;
-    double m_backdropReactivity = 1.0;
+    double m_backdropReactivity = 0.3;
     bool m_debuggingEnabled = false;
     bool m_pinnedPlaylistsExpanded = false;
     bool m_allPlaylistsExpanded = false;

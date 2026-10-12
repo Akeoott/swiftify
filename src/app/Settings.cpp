@@ -112,6 +112,8 @@ void Settings::load()
     {
         const int raw = stored<int>(m_store, "streamingQuality", m_streamingQuality);
         m_streamingQuality = quality(raw, 160);
+        const int cache = stored<int>(m_store, "songCacheMegabytes", m_songCacheMegabytes);
+        m_songCacheMegabytes = cache == 500 || cache == 2000 ? cache : 1000;
     }
     m_livingBackdrop = stored<bool>(m_store, "livingBackdrop", m_livingBackdrop);
     {
@@ -216,6 +218,17 @@ void Settings::setStreamingQuality(int raw)
     m_streamingQuality = value;
     m_store.setValue(QStringLiteral("streamingQuality"), value);
     emit streamingQualityChanged();
+}
+
+void Settings::setSongCacheMegabytes(int megabytes)
+{
+    const int value = megabytes == 500 || megabytes == 2000 ? megabytes : 1000;
+    if (m_songCacheMegabytes == value) {
+        return;
+    }
+    m_songCacheMegabytes = value;
+    m_store.setValue(QStringLiteral("songCacheMegabytes"), value);
+    emit songCacheMegabytesChanged();
 }
 
 void Settings::setLivingBackdrop(bool value)

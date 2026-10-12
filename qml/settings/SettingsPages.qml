@@ -13,6 +13,7 @@ Item {
     property int page: 0
     readonly property list<string> fades: ["none", "finalSeconds", "entire"]
     readonly property list<int> qualities: [96, 160, 320]
+    readonly property list<int> cacheSizes: [500, 1000, 2000]
 
     component Page: Column {
         width: parent ? parent.width : 0
@@ -192,8 +193,18 @@ Item {
                     ]
                     onActivated: (index) => Settings.streamingQuality = root.qualities[index]
                 }
+                ConfigSelection {
+                    text: "Song cache"
+                    currentIndex: Math.max(0, root.cacheSizes.indexOf(Settings.songCacheMegabytes))
+                    segments: [
+                        Segment { text: "500 MB" },
+                        Segment { text: "1 GB" },
+                        Segment { text: "2 GB" }
+                    ]
+                    onActivated: (index) => Settings.songCacheMegabytes = root.cacheSizes[index]
+                }
                 NoteText {
-                    text: "streaming quality applies the next time playback connects"
+                    text: "songs you play are kept (still encrypted, like spotify sends them) so playing them again doesnt download them again, oldest go first once its full. both apply the next time playback connects"
                 }
             }
         }

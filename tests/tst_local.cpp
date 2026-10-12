@@ -20,6 +20,8 @@
 #include <QTest>
 #include <QtEndian>
 
+#include <utility>
+
 using namespace swiftify;
 
 namespace {
@@ -545,5 +547,3 @@ private slots:
 
 QTEST_MAIN(LocalTest)
 #include "tst_local.moc"
-
-#include <utility>

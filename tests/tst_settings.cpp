@@ -19,9 +19,10 @@ private slots:
         QCOMPARE(settings.visualizerShape(), QStringLiteral("bars"));
         QCOMPARE(settings.visualizerSensitivity(), 1.0);
         QCOMPARE(settings.streamingQuality(), 160);
+        QCOMPARE(settings.songCacheMegabytes(), 1000);
         QCOMPARE(settings.livingBackdrop(), true);
         QCOMPARE(settings.backdropBlur(), 16.0);
-        QCOMPARE(settings.backdropReactivity(), 1.0);
+        QCOMPARE(settings.backdropReactivity(), 0.3);
         QCOMPARE(settings.immersivePlayerPanel(), QStringLiteral("lyrics"));
         QCOMPARE(settings.sleepTimerFade(), QStringLiteral("finalSeconds"));
     }
@@ -38,6 +39,9 @@ private slots:
         QCOMPARE(settings.visualizerShape(), QStringLiteral("bars"));
         settings.setBackdropBlur(-3);
         QCOMPARE(settings.backdropBlur(), 0.0);
+        // only the sizes offered: anything else is the default
+        settings.setSongCacheMegabytes(750);
+        QCOMPARE(settings.songCacheMegabytes(), 1000);
     }
 
     void changesNotifyOnceAndPersistUnderTheMacKeys()
@@ -51,6 +55,7 @@ private slots:
             settings.setVisualizerShape(QStringLiteral("wave"));
             QCOMPARE(spy.count(), 1);
             settings.setStreamingQuality(96);
+            settings.setSongCacheMegabytes(2000);
             settings.setPerformanceMode(true);
             settings.setNoShapes(true);
         }
@@ -60,6 +65,7 @@ private slots:
         Settings reopened(path);
         QCOMPARE(reopened.visualizerShape(), QStringLiteral("wave"));
         QCOMPARE(reopened.streamingQuality(), 96);
+        QCOMPARE(reopened.songCacheMegabytes(), 2000);
         QVERIFY(reopened.performanceMode());
         QVERIFY(reopened.noShapes());
         QVERIFY(!reopened.reduceMotion());

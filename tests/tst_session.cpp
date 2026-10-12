@@ -18,6 +18,9 @@
 #include <QTimer>
 #include <QUrlQuery>
 
+#include <algorithm>
+#include <utility>
+
 using namespace swiftify;
 using swiftify::testing::FakeCore;
 
@@ -473,6 +476,3 @@ private slots:
 
 QTEST_GUILESS_MAIN(SessionTest)
 #include "tst_session.moc"
-
-#include <algorithm>
-#include <utility>

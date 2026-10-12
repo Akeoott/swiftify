@@ -83,6 +83,10 @@ char *swiftify_core_pause(const SwiftifyCore *core);
 char *swiftify_core_seek(const SwiftifyCore *core, uint32_t position_ms);
 char *swiftify_core_set_volume(const SwiftifyCore *core, float volume);
 char *swiftify_core_set_stream_quality(const SwiftifyCore *core, uint32_t kbps);
+/* keeps streamed songs in path (empty: none), up to limit_bytes; applies the
+ * next time playback connects */
+char *swiftify_core_set_audio_cache(const SwiftifyCore *core, const char *path,
+                                    uint64_t limit_bytes);
 char *swiftify_core_set_playback_shaping(const SwiftifyCore *core, float tempo,
                                          float pitch_semitones, bool preserves_pitch);
 char *swiftify_core_set_equalizer(const SwiftifyCore *core, const float *gains_db, size_t count);

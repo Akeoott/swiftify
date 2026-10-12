@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QTest>
 
+#include <algorithm>
+
 using namespace swiftify;
 
 class PaletteTest : public QObject {
@@ -66,5 +68,3 @@ private slots:
 
 QTEST_GUILESS_MAIN(PaletteTest)
 #include "tst_palette.moc"
-
-#include <algorithm>

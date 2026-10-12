@@ -1,6 +1,7 @@
 #include "app/AppController.h"
 #include "app/ErrorCenter.h"
 #include "app/Fonts.h"
+#include "app/Paths.h"
 #include "app/Settings.h"
 #include "artwork/ArtworkCache.h"
 #include "audio/AudioShaping.h"
@@ -227,6 +228,16 @@ int main(int argc, char *argv[])
     ErrorCenter errors(nullptr);
     QNetworkAccessManager network;
     RustCore core;
+    // what playback connects with: the streaming quality, and how much of
+    // what it streams is kept so a song played again needs no download
+    const auto applyStreaming = [&] {
+        core.setStreamQuality(settings.streamingQuality());
+        core.setAudioCache(paths::cacheDirectory() + QStringLiteral("/songs"),
+                           qint64(settings.songCacheMegabytes()) * 1000 * 1000);
+    };
+    applyStreaming();
+    QObject::connect(&settings, &Settings::streamingQualityChanged, &core, applyStreaming);
+    QObject::connect(&settings, &Settings::songCacheMegabytesChanged, &core, applyStreaming);
     KeychainCredentialStore credentials;
     SpotifySession session(&core, &credentials, &network, &errors);
     PlaybackController player(&core, &session, &settings, &errors);

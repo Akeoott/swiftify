@@ -5,7 +5,7 @@ wraps [librespot](https://github.com/librespot-org/librespot). it follows
 Material 3 Expressive (heavy inspo from end4) and has an immersive player,
 synced lyrics, visualizers, an equalizer, and local files with local playlists
 where u can edit the tracks metadata.
-
+![Alt text](/assets/home.png)
 this apps purpose is to replace spotifys heavy webview client, but its also mostly eyecandy lol
 it runs significantly lighter than the spotify client.
 
@@ -14,6 +14,15 @@ it runs significantly lighter than the spotify client.
 id recommend turning the visualizers and background off if the app runs in the background tho lol
 
 anyways runs on linux (made for wayland and hyprland) and macos. haven't tested winslop though...
+
+## previews
+first image shows equalizer, tempo and pitch settings. second picture shows how the immersive player and the visualizer/lyrics look
+<table border="0">
+  <tr>
+    <td><img src="/assets/eq.png" alt="equalizer and tempo" width="400"/></td>
+    <td><img src="/assets/immersive.png" alt="immersive player with visualizers" width="400"/></td>
+  </tr>
+</table>
 
 > ### Note
 > i will probably not be maintaining it, if you are interested in taking over this project you can send me an email

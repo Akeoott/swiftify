@@ -101,6 +101,14 @@ dark and tinted looks; with just the command line tools it's built from the PNGs
 ### Linux
 
 on arch:
+either build a proper package, which installs to `/usr`:
+
+```sh
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify/packaging/arch
+makepkg -si
+```
+or:
 
 ```sh
 sudo pacman -S --needed git qt6-base qt6-declarative qt6-shadertools qt6-wayland qtkeychain-qt6 qcoro libpulse alsa-lib openssl cmake ninja rust pkgconf
@@ -136,14 +144,7 @@ and QCoro for Qt 6, libpulse, plus the ALSA, OpenSSL and pkg-config dev packages
 run the last five lines above.
 
 `cmake --install` drops `swiftify` in `~/.local/bin` (make sure that's on your `PATH`)
-and the desktop entry, icons and fonts in `~/.local/share`. on arch u can build a
-proper package instead, which installs to `/usr`:
-
-```sh
-git clone https://github.com/shredos67/swiftify.git
-cd swiftify/packaging/arch
-makepkg -si
-```
+and the desktop entry, icons and fonts in `~/.local/share`. 
 
 ur login gets saved in the secret service through QtKeychain, so u need something
 providing one: gnome-keyring, kwallet or keepassxc.

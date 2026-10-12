@@ -19,7 +19,6 @@ anyways runs on linux (made for wayland and hyprland) and macos. haven't tested 
 > i will probably not be maintaining it, if you are interested in taking over this project you can send me an email
 
 - [Before you start](#before-you-start)
-- [Download](#download)
 - [Building from source](#building-from-source)
   - [Build requirements](#build-requirements)
   - [macOS](#macos)
@@ -35,33 +34,6 @@ anyways runs on linux (made for wayland and hyprland) and macos. haven't tested 
   make an app in the [spotify developer dashboard](https://developer.spotify.com/dashboard),
   add `http://127.0.0.1:8898/login` as a redirect uri, and paste the apps client id
   into swiftify. u dont need the client secret.
-
-## Download
-
-grab the latest build from [releases](https://github.com/shredos67/swiftify/releases), no building needed.
-
-| platform | file |
-|---|---|
-| macos (apple silicon) | `swiftify-macos-arm64.zip` |
-| windows (x64 / arm64) | `swiftify-windows-x64.zip` / `swiftify-windows-arm64.zip` |
-| linux (x64 / arm64) | `swiftify-linux-x64.AppImage` / `swiftify-linux-arm64.AppImage`, or the `.tar.gz` |
-
-**macos:** unzip, drag `Swiftify.app` into applications. macos blocks the first launch, so clear the quarantine flag, thanks apple :)
-
-```sh
-xattr -dr com.apple.quarantine /Applications/Swiftify.app
-```
-
-**windows:** unzip and run `swiftify.exe`. dont move the exe out of its folder, it loads the dlls next to it. if u want it somewhere else, move the whole folder and make a shortcut to the exe. on arm64 u also need the [visual c++ redistributable (arm64)](https://aka.ms/vs/17/release/vc_redist.arm64.exe), if it complains about a missing MSVCP140.dll thats why.
-
-**linux:** make the appimage executable, then run it:
-
-```sh
-chmod +x swiftify-linux-*.AppImage
-./swiftify-linux-*.AppImage
-```
-
-if it complains about fuse, install `fuse2` (arch) or `libfuse2` (debian/ubuntu), or grab the tar.gz instead, it comes with an INSTALL.txt. the builds want a pretty recent distro (glibc 2.43, so fedora 44, arch, that kinda thing). on anything older, build it urself.
 
 ## Building from source
 

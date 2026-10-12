@@ -23,8 +23,8 @@ StyledDialog {
 symbol: "key"
 iconShape: "clover4"
     body: Session.loginIsForLibrary
-        ? "Sign in to Spotify in the browser window that just opened to connect your library. Swiftify picks up as soon as you're done."
-        : "Sign in to Spotify in the browser window that just opened to connect playback. Swiftify picks up as soon as you're done."
+        ? "Sign in to Spotify in the browser window that just opened to connect your library."
+        : "Sign in to Spotify in the browser window that just opened to connect playback."
     onRejected: Session.cancelLogin()
 
     buttons: [

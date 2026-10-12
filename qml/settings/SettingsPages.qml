@@ -175,7 +175,7 @@ Item {
                     onActivated: (index) => Settings.sleepTimerFade = root.fades[index]
                 }
                 NoteText {
-                    text: "The timer itself is in the player, beside lyrics and the queue. Fading lowers the volume as the timer runs down and restores it once playback stops."
+                    text: "fading lowers the volume as the timer runs down and restores it once playback stops."
                 }
             }
 
@@ -204,7 +204,7 @@ Item {
                     onActivated: (index) => Settings.songCacheMegabytes = root.cacheSizes[index]
                 }
                 NoteText {
-                    text: "songs you play are kept (still encrypted, like spotify sends them) so playing them again doesnt download them again, oldest go first once its full. both apply the next time playback connects"
+                    text: "both cache and quality apply the next time playback connects"
                 }
             }
         }

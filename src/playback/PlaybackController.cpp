@@ -64,6 +64,7 @@ PlaybackController::PlaybackController(PlaybackCore *core, SpotifySession *sessi
     }
 
     m_visualizersEnabled = m_settings->visualizersEnabled();
+    connect(m_settings, &Settings::crossfadeEnabledChanged, this, [this] { preloadNextTrack(); });
     connect(m_settings, &Settings::visualizersEnabledChanged, this, [this] {
         m_visualizersEnabled = m_settings->visualizersEnabled();
         updatePlaybackWorkers();
@@ -128,6 +129,9 @@ void PlaybackController::setPlaying(bool playing)
     m_playing = playing;
     emit playingChanged();
     updatePlaybackWorkers();
+    if (m_playing) {
+        preloadNextTrack();
+    }
 }
 
 void PlaybackController::setLoading(bool loading)
@@ -141,7 +145,11 @@ void PlaybackController::setLoading(bool loading)
 void PlaybackController::setLivePosition(quint32 positionMs)
 {
     const bool couldRestart = m_livePositionMs > kRestartThresholdMs;
+    const bool liveChanged = m_livePositionMs != positionMs;
     m_livePositionMs = positionMs;
+    if (liveChanged) {
+        emit livePositionChanged();
+    }
     // the clock and the bar only show whole seconds' worth of change. going
     // backwards is a seek or a new song, and always shows at once.
     if (positionMs / 1000 != m_publishedPositionMs / 1000 || positionMs < m_publishedPositionMs) {
@@ -319,6 +327,23 @@ void PlaybackController::queueDidChange()
     m_upNext->setSongs(upNextSongs());
     m_previouslyPlayed->setSongs(previouslyPlayedSongs());
     emit queueChanged();
+    preloadNextTrack();
+}
+
+void PlaybackController::preloadNextTrack()
+{
+    if (!m_playing || !m_currentSong || m_currentSong->isLocalFile()) {
+        return;
+    }
+    const std::optional<Song> next = m_repeatMode == RepeatMode::One ? m_currentSong : upcomingSong();
+    if (!next || next->isLocalFile()) {
+        return;
+    }
+    try {
+        m_core->preloadTrack(next->uri, m_settings->crossfadeEnabled());
+    } catch (const SpotifyError &error) {
+        qCDebug(lcPlayer) << "Could not preload the next track:" << error.message();
+    }
 }
 
 void PlaybackController::syncMediaSession()
@@ -453,13 +478,16 @@ void PlaybackController::playFromQueue(const Song &song)
     startPlayback(song);
 }
 
-void PlaybackController::startPlayback(const Song &song, bool recordHistory, bool fromSearch)
+void PlaybackController::startPlayback(const Song &song, bool recordHistory, bool fromSearch,
+                                       quint32 crossfadeDurationMs)
 {
     if (recordHistory && m_currentSong && !m_currentSong->isSameInstance(song)) {
         m_history.append(*m_currentSong);
     }
 
     const CancelToken token = m_playbackRequest.renew();
+    m_crossfadeStarted = crossfadeDurationMs > 0;
+    const quint64 crossfadeSerial = ++m_crossfadeSerial;
     m_playbackNeedsLoad = true;
     setCurrentSong(song);
     setPlaying(false);
@@ -470,10 +498,19 @@ void PlaybackController::startPlayback(const Song &song, bool recordHistory, boo
     queueDidChange();
     syncMediaSession();
 
-    detach(runStartPlayback(song, token, fromSearch));
+    detach(runStartPlayback(song, token, fromSearch, crossfadeDurationMs));
+    if (crossfadeDurationMs > 0) {
+        QTimer::singleShot(int(crossfadeDurationMs + 100), this, [this, crossfadeSerial] {
+            if (crossfadeSerial == m_crossfadeSerial) {
+                m_crossfadeStarted = false;
+                preloadNextTrack();
+            }
+        });
+    }
 }
 
-QCoro::Task<> PlaybackController::runStartPlayback(Song song, CancelToken token, bool fromSearch)
+QCoro::Task<> PlaybackController::runStartPlayback(Song song, CancelToken token, bool fromSearch,
+                                                    quint32 crossfadeDurationMs)
 {
     QString failure;
     bool cancelled = false;
@@ -525,10 +562,31 @@ QCoro::Task<> PlaybackController::runStartPlayback(Song song, CancelToken token,
             // or in its place
             throwIfCancelled(token);
             bool retry = false;
+            bool fallbackFromCrossfade = false;
             try {
-                co_await m_core->playTrack(song.uri);
+                if (crossfadeDurationMs > 0) {
+                    try {
+                        co_await m_core->crossfadeTrack(song.uri, crossfadeDurationMs);
+                    } catch (const SpotifyError &error) {
+                        if (error.kind() == SpotifyError::Kind::Superseded) {
+                            throw;
+                        }
+                        qCDebug(lcPlayer) << "Crossfade could not start; loading normally:" << error.message();
+                        throwIfCancelled(token);
+                        fallbackFromCrossfade = true;
+                    }
+                } else {
+                    co_await m_core->playTrack(song.uri);
+                }
             } catch (const SpotifyError &) {
                 retry = true;
+            }
+            if (fallbackFromCrossfade && !retry) {
+                try {
+                    co_await m_core->playTrack(song.uri);
+                } catch (const SpotifyError &) {
+                    retry = true;
+                }
             }
             if (retry) {
                 throwIfCancelled(token);
@@ -930,6 +988,28 @@ void PlaybackController::pollPlayback()
         return;
     }
     syncPositionAndDuration();
+    if (m_playing && !m_crossfadeStarted && m_settings->crossfadeEnabled() && m_currentSong
+        && !m_currentSong->isLocalFile() && m_durationMs > 0) {
+        std::optional<Song> next;
+        bool recordHistory = true;
+        if (m_repeatMode == RepeatMode::One) {
+            next = m_currentSong;
+            recordHistory = false;
+        } else {
+            next = upcomingSong();
+        }
+        if (next && !next->isLocalFile()) {
+            quint32 duration = quint32(m_settings->crossfadeDurationSeconds() * 1000);
+            duration = std::min(duration, m_durationMs / 2);
+            if (next->durationMs > 0) {
+                duration = std::min(duration, quint32(next->durationMs) / 2);
+            }
+            if (duration >= 500 && m_livePositionMs >= m_durationMs - duration) {
+                startPlayback(*next, recordHistory, false, duration);
+                return;
+            }
+        }
+    }
     if (m_core->takeEndOfTrack() && isPlaybackAtEnd()) {
         handleEndOfTrack();
     }

@@ -30,6 +30,8 @@ public:
     quint64 generation() const override { return m_generation; }
 
     QCoro::Task<> playTrack(QString spotifyUri) override;
+    void preloadTrack(const QString &spotifyUri, bool preloadStandby) override;
+    QCoro::Task<> crossfadeTrack(QString spotifyUri, quint32 durationMs) override;
     QCoro::Task<> playFile(QString path) override;
     QCoro::Task<> restartAudioOutput() override;
     QCoro::Task<QString> lyricsJson(QString spotifyUri) override;

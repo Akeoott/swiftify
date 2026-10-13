@@ -2322,6 +2322,144 @@ private slots:
         QVERIFY(publicRow()->isVisible());
     }
 
+    void aNarrowWindowClosesItsRightPanels()
+    {
+        Rig rig;
+        rig.settings.setTrayIcon(false);
+        rig.settings.setPerformanceMode(true);
+        QQmlComponent component(&rig.engine, QUrl(QStringLiteral("qrc:/qt/qml/Swiftify/qml/Main.qml")));
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto *window = qobject_cast<QQuickWindow *>(object.get());
+        QVERIFY(window);
+        QCOMPARE(window->minimumWidth(), 526);
+        window->setWidth(1000);
+        Rig::settle();
+        QVERIFY(window->property("rightPanelFits").toBool());
+        rig.player.setShowingLyrics(true);
+        QVERIFY(rig.player.isShowingLyrics());
+        // 980 - 232 sidebar - 320 inspector - 32 gutters = 396 points.
+        window->setWidth(980);
+        Rig::settle();
+        QVERIFY(!rig.player.isShowingLyrics());
+        QVERIFY(!rig.player.isShowingQueue());
+        window->setWidth(526);
+        rig.player.setShowingQueue(true);
+        Rig::settle();
+        QVERIFY(!rig.player.isShowingQueue());
+        window->setWidth(1000);
+        Rig::settle();
+        QVERIFY(!rig.player.isShowingLyrics());
+        QVERIFY(!rig.player.isShowingQueue());
+    }
+
+    void narrowShelfHeadingsKeepTheirActionsClear()
+    {
+        Rig rig;
+        QQmlComponent component(&rig.engine);
+        component.setData("import QtQuick\nimport Swiftify\n"
+                          "SectionHeader { title: 'Pinned Playlists'; symbol: 'push_pin'; showsSeeAll: true }", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto *header = qobject_cast<QQuickItem *>(object.get());
+        header->setParentItem(rig.window->contentItem());
+        auto *title = header->findChild<QQuickItem *>(QStringLiteral("sectionTitle"));
+        auto *action = header->findChild<QQuickItem *>(QStringLiteral("sectionSeeAll"));
+        QVERIFY(title && action);
+        for (const int width : {500, 340, 280, 240}) {
+            header->setWidth(width);
+            Rig::settle();
+            rig.render();
+            QVERIFY(title->width() > 0);
+            QVERIFY(title->x() + title->width() <= action->x());
+            QVERIFY(action->x() + action->width() <= header->width());
+            if (width <= 280) QVERIFY(action->property("iconOnly").toBool());
+        }
+    }
+
+    void narrowPlayerControlsNeverOverlapTheSong()
+    {
+        Rig rig;
+        rig.playSomething();
+        const auto bar = rig.show(QStringLiteral("PlayerBar"));
+        QVERIFY(bar);
+        auto *transport = bar->findChild<QQuickItem *>(QStringLiteral("playerTransport"));
+        auto *song = bar->findChild<QQuickItem *>(QStringLiteral("playerNowPlaying"));
+        auto *utilities = bar->findChild<QQuickItem *>(QStringLiteral("playerUtilities"));
+        QVERIFY(transport && song && utilities);
+        for (const int width : {720, 560, 480, 400, 354, 319, 280}) {
+            bar->setWidth(width);
+            Rig::settle();
+            rig.render();
+            QVERIFY(song->width() >= 0);
+            QVERIFY(transport->x() + transport->width() <= song->x());
+            QVERIFY(song->x() + song->width() <= utilities->x());
+            QVERIFY(utilities->x() + utilities->width() <= bar->width());
+        }
+    }
+
+    void focusedSearchOverlaysStationaryPlaylistActions()
+    {
+        Rig rig;
+        rig.settings.setPerformanceMode(true);
+        const Playlist playlist = rig.localFiles.createPlaylist(QStringLiteral("Mine"), {}, {}, {});
+        rig.library.selectPlaylist(playlist);
+        QQmlComponent component(&rig.engine);
+        component.setData("import QtQuick\nimport Swiftify\n"
+                          "Item { width: 355; height: 160\n"
+                          "Window { id: host; visible: false }\n"
+                          "Rectangle { id: page; anchors.fill: parent; color: 'green' }\n"
+                          "TopBar { objectName: 'bar'; width: parent.width; window: host; backdropSource: page } }", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto *holder = qobject_cast<QQuickItem *>(object.get());
+        holder->setParentItem(rig.window->contentItem());
+        Rig::settle();
+        rig.render();
+        auto *bar = holder->findChild<QQuickItem *>(QStringLiteral("bar"));
+        auto *actions = holder->findChild<QQuickItem *>(QStringLiteral("playlistActions"));
+        auto *search = holder->findChild<QQuickItem *>(QStringLiteral("toolbarSearch"));
+        QVERIFY(bar && actions && search);
+        const qreal actionX = actions->x();
+        const qreal actionWidth = actions->width();
+        const qreal collapsedWidth = search->width();
+        QVERIFY(QMetaObject::invokeMethod(bar, "focusSearch"));
+        Rig::settle();
+        rig.render();
+        QVERIFY(search->property("editing").toBool());
+        QCOMPARE(actions->x(), actionX);
+        QCOMPARE(actions->width(), actionWidth);
+        QVERIFY(search->width() > collapsedWidth);
+        QVERIFY(search->x() < actions->x() + actions->width());
+        QVERIFY(search->z() > actions->z());
+    }
+
+    void compactCollectionActionsStayWithinTheirHero()
+    {
+        Rig rig;
+        const Playlist playlist = rig.localFiles.createPlaylist(QStringLiteral("A playlist with a long title"), {}, {}, {});
+        rig.library.selectPlaylist(playlist);
+        const auto page = rig.show(QStringLiteral("PlaylistView"));
+        QVERIFY(page);
+        for (const int width : {404, 355, 280}) {
+            page->setWidth(width);
+            Rig::settle();
+            rig.render();
+            int actions = 0;
+            for (QQuickItem *item : page->findChildren<QQuickItem *>()) {
+                if (!QString::fromLatin1(item->metaObject()->className()).startsWith(QLatin1StringView("TextButton_QMLTYPE"))) continue;
+                const QString label = item->property("text").toString();
+                if (label != QStringLiteral("Play") && label != QStringLiteral("Shuffle") && label != QStringLiteral("Add Tracks")) continue;
+                ++actions;
+                QVERIFY(item->property("iconOnly").toBool());
+                QCOMPARE(item->width(), item->height());
+                QVERIFY(item->x() >= 0);
+                QVERIFY(item->x() + item->width() <= item->parentItem()->width());
+            }
+            QCOMPARE(actions, 3);
+        }
+    }
+
     void views_data()
     {
         QTest::addColumn<QString>("type");

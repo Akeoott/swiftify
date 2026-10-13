@@ -40,6 +40,7 @@ class PlaybackController : public QObject {
     Q_PROPERTY(bool loading READ isLoading NOTIFY loadingChanged FINAL)
     /// whole seconds' worth of change only, or a jump back
     Q_PROPERTY(int positionMs READ positionMs NOTIFY positionChanged FINAL)
+    Q_PROPERTY(quint32 livePositionMs READ livePositionMs NOTIFY livePositionChanged FINAL)
     Q_PROPERTY(int durationMs READ durationMs NOTIFY durationChanged FINAL)
     Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY volumeChanged FINAL)
     Q_PROPERTY(bool shuffle READ isShuffleEnabled NOTIFY shuffleChanged FINAL)
@@ -186,6 +187,7 @@ signals:
     void playingChanged();
     void loadingChanged();
     void positionChanged();
+    void livePositionChanged();
     void durationChanged();
     void volumeChanged();
     void shuffleChanged();
@@ -203,8 +205,9 @@ signals:
 
 private:
     void beginPlayback(const Song &song, const QList<Song> &queue, bool fromSearch);
-    void startPlayback(const Song &song, bool recordHistory = true, bool fromSearch = false);
-    QCoro::Task<> runStartPlayback(Song song, CancelToken token, bool fromSearch);
+    void startPlayback(const Song &song, bool recordHistory = true, bool fromSearch = false,
+                       quint32 crossfadeDurationMs = 0);
+    QCoro::Task<> runStartPlayback(Song song, CancelToken token, bool fromSearch, quint32 crossfadeDurationMs);
     QCoro::Task<> runResume(CancelToken token);
     QCoro::Task<> restartAudioOutput(CancelToken token);
     QCoro::Task<> runLoadLyrics(Song song, CancelToken token);
@@ -223,6 +226,7 @@ private:
     void rebuildShuffledQueue(const std::optional<Song> &startingWith);
     std::optional<Song> nextQueueSong(bool allowWrap) const;
     void queueDidChange();
+    void preloadNextTrack();
     void syncMediaSession();
     void reset();
     bool isCurrent(const Song &song) const { return m_currentSong && m_currentSong->isSameInstance(song); }
@@ -257,6 +261,8 @@ private:
     quint32 m_publishedPositionMs = 0;
     quint32 m_durationMs = 0;
     quint32 m_lastSyncedMediaPosition = std::numeric_limits<quint32>::max();
+    quint64 m_crossfadeSerial = 0;
+    bool m_crossfadeStarted = false;
     QTimer m_pollTimer;
 
     double m_volume = 0.75;

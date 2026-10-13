@@ -184,6 +184,20 @@ QCoro::Task<> RustCore::playTrack(QString spotifyUri)
     co_await request([&](quint64 id) { swiftify_core_play_track(m_core, id, uri.constData()); });
 }
 
+void RustCore::preloadTrack(const QString &spotifyUri, bool preloadStandby)
+{
+    const QByteArray uri = spotifyUri.toUtf8();
+    throwIfError(swiftify_core_preload_track(m_core, uri.constData(), preloadStandby ? 1 : 0));
+}
+
+QCoro::Task<> RustCore::crossfadeTrack(QString spotifyUri, quint32 durationMs)
+{
+    const QByteArray uri = spotifyUri.toUtf8();
+    co_await request([&](quint64 id) {
+        swiftify_core_crossfade_track(m_core, id, uri.constData(), uint32_t(durationMs));
+    });
+}
+
 QCoro::Task<> RustCore::playFile(QString path)
 {
     const QByteArray file = path.toUtf8();

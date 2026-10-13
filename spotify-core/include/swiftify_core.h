@@ -53,6 +53,12 @@ void swiftify_core_connect_stored(const SwiftifyCore *core, uint64_t request_id,
                                   const char *client_id);
 void swiftify_core_play_track(const SwiftifyCore *core, uint64_t request_id,
                               const char *spotify_uri);
+/* prepares the next Spotify track on the standby player without starting it. */
+char *swiftify_core_preload_track(const SwiftifyCore *core, const char *spotify_uri,
+                                  int preload_standby);
+/* starts the preloaded track and overlaps it with the current one for duration_ms. */
+void swiftify_core_crossfade_track(const SwiftifyCore *core, uint64_t request_id,
+                                   const char *spotify_uri, uint32_t duration_ms);
 void swiftify_core_restart_audio_output(const SwiftifyCore *core, uint64_t request_id);
 void swiftify_core_lyrics_json(const SwiftifyCore *core, uint64_t request_id,
                                const char *spotify_uri);

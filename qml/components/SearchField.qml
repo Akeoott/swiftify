@@ -8,6 +8,7 @@ Rectangle {
     id: root
 
     property alias text: input.text
+    readonly property bool editing: input.activeFocus
     property string placeholder: "Search"
     signal accepted()
 
@@ -19,12 +20,17 @@ Rectangle {
     implicitWidth: 260
     implicitHeight: 40
     radius: height / 2
-    color: input.activeFocus ? Appearance.colors.surfaceContainerHighest : Appearance.colors.surfaceContainerHigh
+    color: input.activeFocus ? Qt.alpha(Appearance.colors.surfaceContainerHighest, 0.5)
+                             : Appearance.colors.surfaceContainerHigh
     border.width: input.activeFocus ? 2 : 0
     border.color: Appearance.colors.primary
 
     Behavior on color {
         ElementMoveFastColor {}
+    }
+
+    TapHandler {
+        onTapped: if (!root.editing) root.focusField()
     }
 
     MaterialSymbol {
@@ -39,10 +45,8 @@ Rectangle {
 
     TextInput {
         id: input
-        anchors.left: icon.right
-        anchors.leftMargin: 10
-        anchors.right: clear.visible ? clear.left : parent.right
-        anchors.rightMargin: 12
+        x: icon.x + icon.width + 10
+        width: Math.max(0, (clear.visible ? clear.x : root.width) - 12 - x)
         anchors.verticalCenter: parent.verticalCenter
         clip: true
         selectByMouse: true
@@ -64,6 +68,8 @@ Rectangle {
         }
 
         StyledText {
+            width: input.width
+            elide: Text.ElideRight
             anchors.verticalCenter: parent.verticalCenter
             Reveal.shown: input.text.length === 0
             text: root.placeholder
@@ -77,7 +83,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: 4
         anchors.verticalCenter: parent.verticalCenter
-        Reveal.shown: input.text.length > 0
+        Reveal.shown: input.text.length > 0 && root.width >= 100
         symbol: "close"
         size: 32
         iconSize: 18

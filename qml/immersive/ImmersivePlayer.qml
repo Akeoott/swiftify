@@ -210,39 +210,6 @@ FocusScope {
         shown: root.visible
     }
 
-    // big faint shapes about the edges, turning while music plays and
-    // breathing with the bass; none with no shapes
-    Item {
-        anchors.fill: parent
-        visible: !Settings.noShapes
-
-        Repeater {
-            model: [
-                { x: 0.06, y: 0.2, size: 0.44, shape: "flower", pace: 7 },
-                { x: 0.93, y: 0.1, size: 0.3, shape: "cookie12", pace: -9 },
-                { x: 0.88, y: 0.88, size: 0.48, shape: "softBoom", pace: 5 },
-                { x: 0.1, y: 0.92, size: 0.34, shape: "clover8", pace: -6 },
-                { x: 0.52, y: 0.02, size: 0.22, shape: "ghostish", pace: 11 }
-            ]
-
-            MaterialShape {
-                id: drift
-
-                required property var modelData
-                readonly property real side: Math.min(root.width, root.height) * modelData.size
-
-                width: side
-                height: side
-                x: modelData.x * root.width - side / 2
-                y: modelData.y * root.height - side / 2
-                shape: modelData.shape
-                color: Qt.rgba(1, 1, 1, 0.045)
-                spinRate: drift.modelData.pace
-                scale: 1 + 0.08 * backdrop.bass
-            }
-        }
-    }
-
     // a click anywhere empty takes the keys back from whatever had them
     TapHandler {
         onTapped: root.forceActiveFocus()

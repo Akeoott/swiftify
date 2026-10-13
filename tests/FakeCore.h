@@ -102,6 +102,12 @@ public:
         // librespot starts the track once loaded, whoever still wants it
         sounding = true;
     }
+    void preloadTrack(const QString &, bool) override {}
+    QCoro::Task<> crossfadeTrack(QString uri, quint32) override
+    {
+        co_await await(QStringLiteral("crossfadeTrack"), uri);
+        sounding = true;
+    }
     QCoro::Task<> playFile(QString path) override
     {
         co_await await(QStringLiteral("playFile"), path);

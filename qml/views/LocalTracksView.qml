@@ -14,9 +14,7 @@ SongListPage {
     showsEmpty: LocalFiles.songs.count === 0
     emptySymbol: "folder_open"
     emptyTitle: LocalFiles.sources.length === 0 ? "No Local Files Yet" : "No Music Found"
-    emptyDescription: LocalFiles.sources.length === 0
-                      ? "Add a folder of music, or drop files onto the window."
-                      : "The folders you added hold no music Swiftify can play."
+    emptyDescription: LocalFiles.sources.length === 0 ? "Add a folder of music, or drop files onto the window." : "The folders you added hold no music Swiftify can play."
 
     MusicPicker {
         id: picker
@@ -25,17 +23,21 @@ SongListPage {
     hero: CollectionHero {
         kind: "LOCAL FILES"
         title: "Local Tracks"
-        description: LocalFiles.sources.length === 1 ? LocalFiles.sources[0]
-                     : LocalFiles.sources.length > 1 ? LocalFiles.sources.length + " folders and files" : ""
-        facts: Format.joined([Format.songCount(LocalFiles.songs.count),
-                              Format.totalDuration(LocalFiles.songs.totalDurationMs)], "  •  ")
+        description: LocalFiles.sources.length === 1 ? LocalFiles.sources[0] : LocalFiles.sources.length > 1 ? LocalFiles.sources.length + " folders and files" : ""
+        facts: Format.joined([Format.songCount(LocalFiles.songs.count), Format.totalDuration(LocalFiles.songs.totalDurationMs)], "  •  ")
 
         artwork: Rectangle {
             anchors.fill: parent
             radius: Appearance.sizes.artworkRadius
             gradient: Gradient {
-                GradientStop { position: 0; color: Appearance.colors.tertiaryContainer }
-                GradientStop { position: 1; color: Appearance.colors.primaryContainer }
+                GradientStop {
+                    position: 0
+                    color: Appearance.colors.tertiaryContainer
+                }
+                GradientStop {
+                    position: 1
+                    color: Appearance.colors.primaryContainer
+                }
             }
 
             MaterialSymbol {
@@ -52,8 +54,10 @@ SongListPage {
                 id: playButton
                 // a little wider than its words, and as wide as shuffle
                 // beside it, whose words are longer
-                width: Math.max(implicitWidth + 28, shuffleButton.implicitWidth)
-                implicitHeight: 48
+                width: iconOnly ? compactSize : Math.max(naturalWidth + 28, shuffleButton.naturalWidth)
+                iconOnly: parent ? parent.compactActions : false
+                compactSize: parent ? parent.actionSize : 48
+                implicitHeight: iconOnly ? compactSize : 48
                 wavy: true
                 symbol: "play_arrow"
                 burst: "play"
@@ -65,7 +69,9 @@ SongListPage {
             TextButton {
                 id: shuffleButton
                 width: playButton.width
-                implicitHeight: 48
+                iconOnly: parent ? parent.compactActions : false
+                compactSize: parent ? parent.actionSize : 48
+                implicitHeight: iconOnly ? compactSize : 48
                 wavy: true
                 symbol: "shuffle"
                 burst: "play"
@@ -78,14 +84,16 @@ SongListPage {
                 onClicked: Player.shufflePlay(LocalFiles.songs)
             },
             TextButton {
-                implicitHeight: 48
+                iconOnly: parent ? parent.compactActions : false
+                compactSize: parent ? parent.actionSize : 48
+                implicitHeight: iconOnly ? compactSize : 48
                 variant: TextButton.Outlined
                 symbol: "create_new_folder"
                 text: "Add Folder"
                 onClicked: picker.pickFolder()
             },
             IconButton {
-                anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                size: parent ? parent.actionSize : 36
                 symbol: "refresh"
                 enabled: LocalFiles.sources.length > 0 && !LocalFiles.scanning
                 tooltip: "Look Again"

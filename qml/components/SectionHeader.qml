@@ -34,10 +34,13 @@ Item {
 
     TitleText {
         id: titleText
+        objectName: "sectionTitle"
         x: badge.visible ? badge.width + 12 : 0
         anchors.verticalCenter: parent.verticalCenter
+        width: Math.min(implicitWidth, Math.max(0, (seeAll.visible ? seeAll.x - 12 : root.width) - x))
         text: root.title
-        font.pixelSize: Appearance.fontSize.title
+        elide: Text.ElideRight
+        font.pixelSize: root.width < 320 ? Appearance.fontSize.larger : Appearance.fontSize.title
     }
 
     WavyLine {
@@ -53,12 +56,15 @@ Item {
 
     TextButton {
         id: seeAll
+        objectName: "sectionSeeAll"
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         visible: root.showsSeeAll
         variant: TextButton.Tonal
         symbol: "arrow_forward"
         text: "See All"
+        iconOnly: root.width < titleText.x + titleText.implicitWidth + naturalWidth + 24
+        compactSize: root.width < 280 ? 32 : 40
         onClicked: root.seeAll()
     }
 }

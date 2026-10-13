@@ -374,6 +374,60 @@ async_call!(
         core.restart_audio_output().await.map(|()| Unit)
     }
 );
+
+/// starts a preloaded track and overlaps it with the one already playing.
+///
+/// # Safety
+/// `core` is null or live; `spotify_uri` is a nul-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn swiftify_core_crossfade_track(
+    core: *const SwiftifyCore,
+    request_id: u64,
+    spotify_uri: *const c_char,
+    duration_ms: u32,
+) {
+    // SAFETY: forwarded from the caller.
+    let Some(handle) = (unsafe { handle(core) }) else {
+        return;
+    };
+    // SAFETY: forwarded from the caller.
+    let spotify_uri = match unsafe { read_str(spotify_uri) } {
+        Ok(uri) => uri,
+        Err(error) => {
+            handle.completions.push(request_id, Err(error));
+            return;
+        }
+    };
+    let ticket = handle.core.begin_playback_request();
+    handle.spawn(request_id, move |core| async move {
+        core.crossfade_track_as(spotify_uri, duration_ms, ticket)
+            .await
+            .map(|()| Unit)
+    });
+}
+
+/// prepares the active player, and optionally the standby player, without starting a track.
+///
+/// # Safety
+/// `core` is null or live; `spotify_uri` is a nul-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn swiftify_core_preload_track(
+    core: *const SwiftifyCore,
+    spotify_uri: *const c_char,
+    preload_standby: c_int,
+) -> *mut c_char {
+    // SAFETY: forwarded from the caller.
+    let Some(handle) = (unsafe { handle(core) }) else {
+        return into_raw(MISSING_CORE.to_owned());
+    };
+    // SAFETY: forwarded from the caller.
+    match unsafe { read_str(spotify_uri) }
+        .and_then(|uri| handle.core.preload_track(uri, preload_standby != 0))
+    {
+        Ok(()) => ptr::null_mut(),
+        Err(error) => into_raw(error),
+    }
+}
 async_call!(
     /// plays a music file from anywhere on disk; replaced by a later play
     /// call, as above

@@ -118,6 +118,65 @@ Item {
                 StyledText {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
+                    text: "Crossfade"
+                    font.pixelSize: Appearance.fontSize.small
+                    font.weight: Font.DemiBold
+                    color: "white"
+                }
+                StyledSwitch {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    scheme: root.scheme
+                    checked: Settings.crossfadeEnabled
+                    onToggled: Settings.crossfadeEnabled = checked
+                }
+            }
+
+            Row {
+                width: parent.width
+                height: 26
+                spacing: 8
+
+                StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Duration"
+                    font.pixelSize: Appearance.fontSize.smaller
+                    color: root.secondaryText
+                }
+                Item { width: Math.max(0, parent.width - durationSlider.width - durationValue.width - parent.spacing * 2); height: 1 }
+                StyledText {
+                    id: durationValue
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Settings.crossfadeDurationSeconds + " s"
+                    tabularNumbers: true
+                    font.pixelSize: Appearance.fontSize.smaller
+                    font.weight: Font.DemiBold
+                    color: "white"
+                }
+            }
+            StyledSlider {
+                id: durationSlider
+                width: parent.width
+                from: 1
+                to: 12
+                stepSize: 1
+                value: Settings.crossfadeDurationSeconds
+                enabled: Settings.crossfadeEnabled
+                opacity: enabled ? 1 : 0.4
+                trackThickness: 10
+                snapMode: T.Slider.SnapAlways
+                onMoved: Settings.crossfadeDurationSeconds = Math.round(value)
+            }
+        }
+
+        Card {
+            Item {
+                width: parent.width
+                height: 32
+
+                StyledText {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
                     text: "Equalizer"
                     font.pixelSize: Appearance.fontSize.small
                     font.weight: Font.DemiBold

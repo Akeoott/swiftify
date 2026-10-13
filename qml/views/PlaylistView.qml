@@ -36,9 +36,7 @@ Item {
         showsEmpty: Library.playlistSongs.count === 0 || Library.displayedPlaylistSongs.count === 0
         emptySymbol: Library.playlistSongs.count === 0 ? "music_note" : "search_off"
         emptyTitle: Library.playlistSongs.count === 0 ? "No Songs" : "No Results for “" + Library.playlistFilterQuery.trim() + "”"
-        emptyDescription: Library.playlistSongs.count > 0 ? "Check the spelling or try a new search."
-                          : root.playlist.isLocal ? "Add tracks from anywhere on your computer, or drop them here."
-                          : "Add songs from Search using the More menu."
+        emptyDescription: Library.playlistSongs.count > 0 ? "Check the spelling or try a new search." : root.playlist.isLocal ? "Add tracks from anywhere on your computer, or drop them here." : "Add songs from Search using the More menu."
 
         MusicPicker {
             id: trackPicker
@@ -50,17 +48,17 @@ Item {
             kind: root.playlist.isLocal ? "LOCAL PLAYLIST" : "PLAYLIST"
             title: root.playlist.name
             description: root.playlist.description
-            facts: Format.joined([root.playlist.ownerDisplayName, Format.songCount(root.playlist.songCount),
-                                  Format.totalDuration(Library.playlistSongs.totalDurationMs)], "  •  ")
+            facts: Format.joined([root.playlist.ownerDisplayName, Format.songCount(root.playlist.songCount), Format.totalDuration(Library.playlistSongs.totalDurationMs)], "  •  ")
 
             actions: [
                 TextButton {
                     id: playButton
-                    anchors.verticalCenter: parent.verticalCenter
                     // a little wider than its words, and as wide as shuffle
                     // beside it, whose words are longer
-                    width: Math.max(implicitWidth + 28, shuffleButton.implicitWidth)
-                    implicitHeight: 48
+                    width: iconOnly ? compactSize : Math.max(naturalWidth + 28, shuffleButton.naturalWidth)
+                    iconOnly: parent ? parent.compactActions : false
+                    compactSize: parent ? parent.actionSize : 48
+                    implicitHeight: iconOnly ? compactSize : 48
                     wavy: true
                     symbol: "play_arrow"
                     burst: "play"
@@ -71,9 +69,10 @@ Item {
                 // play's twin in the primary's softer tone
                 TextButton {
                     id: shuffleButton
-                    anchors.verticalCenter: parent.verticalCenter
                     width: playButton.width
-                    implicitHeight: 48
+                    iconOnly: parent ? parent.compactActions : false
+                    compactSize: parent ? parent.actionSize : 48
+                    implicitHeight: iconOnly ? compactSize : 48
                     wavy: true
                     symbol: "shuffle"
                     burst: "play"
@@ -88,9 +87,10 @@ Item {
                 // a playlist made here takes tracks from anywhere: copies,
                 // so the originals can move or go
                 TextButton {
-                    anchors.verticalCenter: parent.verticalCenter
                     visible: root.playlist.isLocal
-                    implicitHeight: 48
+                    iconOnly: parent ? parent.compactActions : false
+                    compactSize: parent ? parent.actionSize : 48
+                    implicitHeight: iconOnly ? compactSize : 48
                     variant: TextButton.Tonal
                     symbol: "add"
                     text: "Add Tracks"

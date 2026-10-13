@@ -21,6 +21,9 @@ RippleButton {
     property string symbol
     property bool busy: false
     property bool wavy: false
+    property bool iconOnly: false
+    property real compactSize: 40
+    readonly property real naturalWidth: label.implicitWidth + (symbol.length > 0 ? 26 + 16 : 24) + 24
     /// a burst of shapes when clicked (UiState.burst): play, pin, ...
     property string burst
     property color labelColor: {
@@ -31,13 +34,14 @@ RippleButton {
         }
     }
 
-    implicitHeight: 40
-    leftPadding: symbol.length > 0 ? 16 : 24
-    rightPadding: 24
+    implicitWidth: iconOnly ? compactSize : naturalWidth
+    implicitHeight: iconOnly ? compactSize : 40
+    leftPadding: iconOnly ? 0 : (symbol.length > 0 ? 16 : 24)
+    rightPadding: iconOnly ? 0 : 24
     buttonRadius: Appearance.rounding.full
     buttonRadiusPressed: wavy ? buttonRadius : Appearance.rounding.small
-    rippleEnabled: !wavy
-    backgroundItem.visible: !wavy
+    rippleEnabled: !wavy || iconOnly
+    backgroundItem.visible: !wavy || iconOnly
     colBackground: {
         switch (variant) {
         case TextButton.Filled: return scheme.primary
@@ -67,7 +71,7 @@ RippleButton {
     WavyPill {
         anchors.fill: parent
         z: -1
-        visible: root.wavy
+        visible: root.wavy && !root.iconOnly
         hovered: root.hovered
         pressed: root.down
         color: root.down ? root.colRipple : (root.hovered ? root.colBackgroundHover : root.colBackground)
@@ -91,13 +95,15 @@ RippleButton {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.symbol.length > 0
                 text: root.symbol
-                iconSize: 18
+                iconSize: root.iconOnly ? Math.min(22, root.height * 0.55) : 18
                 fill: 1
                 color: root.labelColor
             }
 
             StyledText {
+                id: label
                 anchors.verticalCenter: parent.verticalCenter
+                visible: !root.iconOnly
                 text: root.text
                 font.pixelSize: Appearance.fontSize.small
                 font.weight: Font.DemiBold
@@ -113,6 +119,15 @@ RippleButton {
             Reveal.shown: root.busy
             color: root.labelColor
             trackColor: "transparent"
+        }
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: root.iconOnly && root.hovered
+        sourceComponent: StyledToolTip {
+            visible: true
+            text: root.text
         }
     }
 

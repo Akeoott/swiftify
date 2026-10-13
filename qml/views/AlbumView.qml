@@ -27,12 +27,13 @@ SongListPage {
         kind: "ALBUM"
         title: root.album.name
         description: root.album.artists
-        facts: Format.joined([root.album.releaseDate, Format.songCount(Library.albumSongs.count),
-                              Format.totalDuration(Library.albumSongs.totalDurationMs)], "  •  ")
+        facts: Format.joined([root.album.releaseDate, Format.songCount(Library.albumSongs.count), Format.totalDuration(Library.albumSongs.totalDurationMs)], "  •  ")
 
         actions: [
             TextButton {
-                implicitHeight: 48
+                iconOnly: parent ? parent.compactActions : false
+                compactSize: parent ? parent.actionSize : 48
+                implicitHeight: iconOnly ? compactSize : 48
                 wavy: true
                 symbol: "play_arrow"
                 burst: "play"

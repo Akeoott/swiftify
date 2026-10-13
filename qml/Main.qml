@@ -10,13 +10,27 @@ ApplicationWindow {
     id: window
 
     property real sidebarWidth: 232
+    readonly property real effectiveSidebarWidth: Math.max(132, Math.min(sidebarWidth, width * 0.28))
     /// the strip the traffic lights sit in, kept clear above the sidebar
     readonly property real titleBarInset: App.macOS ? Math.max(28, shell.SafeArea.margins.top) : 0
 
     width: 1280
     height: 780
-    minimumWidth: 1160
-    minimumHeight: 560
+    // The minimum requested from the user's current 526-point window.
+    minimumWidth: 526
+    readonly property bool rightPanelFits: width - effectiveSidebarWidth - Appearance.sizes.sideSheetWidth - 32 >= 404
+
+    function closeCrowdedPanels() {
+        if (!rightPanelFits) {
+            Player.showingLyrics = false
+            Player.showingQueue = false
+        }
+    }
+    onRightPanelFitsChanged: closeCrowdedPanels()
+    Connections {
+        target: Player
+        function onPanelsChanged() { window.closeCrowdedPanels() }
+    }
     title: "Swiftify"
     // on linux the app draws its whole frame. on macos the content runs under
     // a transparent title bar that keeps the traffic lights and nothing else.
@@ -172,7 +186,7 @@ ApplicationWindow {
             anchors.bottom: parent.bottom
             anchors.topMargin: 8 + window.titleBarInset
             anchors.leftMargin: 8
-            width: window.sidebarWidth
+            width: window.effectiveSidebarWidth
         }
 
         // drag the drawer's edge to resize it, within the mac app's 205-270
@@ -189,7 +203,7 @@ ApplicationWindow {
                 startWidth = window.sidebarWidth
             }
             onPositionChanged: (mouse) => {
-                window.sidebarWidth = Math.max(205, Math.min(270, startWidth + mouse.x + x - startX))
+                window.sidebarWidth = Math.max(132, Math.min(270, startWidth + mouse.x + x - startX))
             }
         }
 
@@ -209,6 +223,7 @@ ApplicationWindow {
             // the pages fill the sheet: they scroll up under the top bar,
             // which has no background, only its buttons on their shapes
             PageHost {
+                id: pageContent
                 anchors.fill: parent
                 clip: true
             }
@@ -238,6 +253,7 @@ ApplicationWindow {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 window: window
+                backdropSource: pageContent
             }
 
             Snackbar {
@@ -253,7 +269,7 @@ ApplicationWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 12
-                width: Math.max(560, Math.min(720, sheet.width - 36))
+                width: Math.max(0, Math.min(720, sheet.width - 36))
                 Reveal.shown: !UiState.needsSetup
                 onImmersiveRequested: UiState.immersiveOpen = true
             }
@@ -264,7 +280,7 @@ ApplicationWindow {
         Item {
             id: inspector
             readonly property bool shown: (Player.showingLyrics || Player.showingQueue) && !UiState.immersiveOpen
-                                          && !UiState.needsSetup
+                                          && !UiState.needsSetup && window.rightPanelFits
             anchors.right: parent.right
             anchors.rightMargin: shown ? 8 : 0
             anchors.top: parent.top
@@ -279,7 +295,7 @@ ApplicationWindow {
 
             // opens and shuts on a spring, so the page beside it bounces too
             Behavior on width {
-                enabled: !Appearance.performanceMode
+                enabled: !Appearance.performanceMode && window.rightPanelFits
                 SpringAnimation { spring: 4; damping: 0.32; epsilon: 0.5 }
             }
 

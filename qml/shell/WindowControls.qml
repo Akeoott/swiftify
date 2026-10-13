@@ -8,27 +8,28 @@ Row {
     id: root
 
     required property Window window
+    property bool compact: false
 
     spacing: 4
 
     ToolbarButton {
-        size: 36
-        iconSize: 18
+        size: root.compact ? 28 : 36
+        iconSize: root.compact ? 15 : 18
         shape: "pill"
         turnsOnHover: false
         symbol: "remove"
         onClicked: root.window.showMinimized()
     }
     ToolbarButton {
-        size: 36
-        iconSize: 16
+        size: root.compact ? 28 : 36
+        iconSize: root.compact ? 14 : 16
         shape: "cookie6"
         symbol: root.window.visibility === Window.Maximized ? "close_fullscreen" : "open_in_full"
         onClicked: root.window.visibility === Window.Maximized ? root.window.showNormal() : root.window.showMaximized()
     }
     ToolbarButton {
-        size: 36
-        iconSize: 18
+        size: root.compact ? 28 : 36
+        iconSize: root.compact ? 15 : 18
         shape: "cookie9"
         shapeHoverColor: Appearance.colors.errorContainer
         shapePressedColor: Appearance.colors.errorContainerActive

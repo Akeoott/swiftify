@@ -113,9 +113,13 @@ Flickable {
 
         // the spotlight: what is playing, or what played last
         Rectangle {
+            id: spotlight
+            readonly property bool stacked: width < 460
+            readonly property real inset: stacked ? 20 : 26
             x: root.margin
             width: root.width - 2 * root.margin
-            height: 176 + 52
+            height: stacked ? spotlightArt.height + spotlightDetails.implicitHeight + 3 * inset
+                            : Math.max(spotlightArt.height, spotlightDetails.implicitHeight) + 2 * inset
             Reveal.shown: root.hasSpotlight && !(Library.loadingHome && Library.recentlyPlayed.count === 0)
             radius: 22
             color: Appearance.colors.surfaceContainerLow
@@ -174,8 +178,8 @@ Flickable {
 
             // a wave along the bottom, flowing only while this plays
             WavyLine {
-                anchors.left: spotlightArt.right
-                anchors.leftMargin: 24
+                anchors.left: parent.left
+                anchors.leftMargin: spotlight.stacked ? spotlight.inset : spotlightDetails.x
                 anchors.right: parent.right
                 anchors.rightMargin: 26
                 anchors.bottom: parent.bottom
@@ -187,10 +191,10 @@ Flickable {
 
             Item {
                 id: spotlightArt
-                x: 26
-                y: 26
-                width: 176
-                height: 176
+                x: spotlight.inset
+                y: spotlight.inset
+                width: spotlight.stacked ? Math.min(144, spotlight.width * 0.4) : 176
+                height: width
 
                 ArtworkGlow {
                     anchors.fill: parent
@@ -206,16 +210,18 @@ Flickable {
             }
 
             Column {
-                anchors.left: spotlightArt.right
-                anchors.leftMargin: 24
-                anchors.right: parent.right
-                anchors.rightMargin: 26
-                anchors.verticalCenter: parent.verticalCenter
+                id: spotlightDetails
+                x: spotlight.stacked ? spotlight.inset : spotlightArt.x + spotlightArt.width + 24
+                y: spotlight.stacked ? spotlightArt.y + spotlightArt.height + spotlight.inset
+                                     : (spotlight.height - implicitHeight) / 2
+                width: Math.max(0, spotlight.width - x - spotlight.inset)
                 spacing: 8
 
                 StyledText {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: root.spotlightIsCurrent && Player.playing ? "NOW PLAYING" : "CONTINUE LISTENING"
-                    font.pixelSize: Appearance.fontSize.smaller
+                    font.pixelSize: parent.width < 180 ? Appearance.fontSize.smallest : Appearance.fontSize.smaller
                     font.weight: Font.Bold
                     font.letterSpacing: 0.7
                     color: Appearance.colors.primary
@@ -249,6 +255,7 @@ Flickable {
 
                 Row {
                     id: resume
+                    width: parent.width
 
                     function play() {
                         if (root.spotlightIsCurrent) {
@@ -266,16 +273,17 @@ Flickable {
                     // the play button, as in the player, with what it does beside it
                     PlayButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 52
-                        implicitHeight: 52
+                        implicitWidth: resume.width < 160 ? 36 : 52
+                        implicitHeight: implicitWidth
                         playing: root.spotlightIsCurrent && Player.playing
-                        tooltip: ""
+                        tooltip: resumeLabel.visible ? "" : resumeLabel.text
                         onClicked: resume.play()
                     }
                     // as wide as its longest word, so the button beside it
                     // stays put whichever it says
                     StyledText {
                         id: resumeLabel
+                        visible: resume.width >= 176
                         anchors.verticalCenter: parent.verticalCenter
                         width: Math.ceil(Math.max(labelMetrics.advanceWidth("Pause"), labelMetrics.advanceWidth("Resume"),
                                                   labelMetrics.advanceWidth("Play")))
@@ -299,6 +307,7 @@ Flickable {
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         symbol: "more_horiz"
+                        size: resume.width < 160 ? 28 : 36
                         onClicked: SongMenus.open(root.spotlightSong, false)
                     }
                 }

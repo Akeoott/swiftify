@@ -30,6 +30,8 @@ public:
     virtual quint64 generation() const = 0;
 
     virtual QCoro::Task<> playTrack(QString spotifyUri) = 0;
+    virtual void preloadTrack(const QString &spotifyUri, bool preloadStandby) = 0;
+    virtual QCoro::Task<> crossfadeTrack(QString spotifyUri, quint32 durationMs) = 0;
     /// a music file of the person's own, from anywhere on disk
     virtual QCoro::Task<> playFile(QString path) = 0;
     virtual QCoro::Task<> restartAudioOutput() = 0;

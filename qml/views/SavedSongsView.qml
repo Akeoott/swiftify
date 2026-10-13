@@ -16,16 +16,21 @@ SongListPage {
     hero: CollectionHero {
         kind: "PLAYLIST"
         title: "Favourite Songs"
-        facts: Format.joined([Format.songCount(Library.savedSongs.count),
-                              Format.totalDuration(Library.savedSongs.totalDurationMs)], "  •  ")
+        facts: Format.joined([Format.songCount(Library.savedSongs.count), Format.totalDuration(Library.savedSongs.totalDurationMs)], "  •  ")
 
         artwork: Rectangle {
             anchors.fill: parent
             radius: Appearance.sizes.artworkRadius
             // in the selected theme's colours, as everything without a cover
             gradient: Gradient {
-                GradientStop { position: 0; color: Appearance.colors.primary }
-                GradientStop { position: 1; color: Appearance.colors.tertiary }
+                GradientStop {
+                    position: 0
+                    color: Appearance.colors.primary
+                }
+                GradientStop {
+                    position: 1
+                    color: Appearance.colors.tertiary
+                }
             }
 
             MaterialSymbol {
@@ -39,7 +44,9 @@ SongListPage {
 
         actions: [
             TextButton {
-                implicitHeight: 48
+                iconOnly: parent ? parent.compactActions : false
+                compactSize: parent ? parent.actionSize : 48
+                implicitHeight: iconOnly ? compactSize : 48
                 wavy: true
                 symbol: "play_arrow"
                 burst: "play"

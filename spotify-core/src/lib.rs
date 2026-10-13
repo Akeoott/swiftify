@@ -16,7 +16,7 @@ use librespot::{
     metadata::{Lyrics, lyrics::SyncType},
     playback::{
         config::{Bitrate, PlayerConfig, VolumeCtrl},
-        mixer::{self, Mixer, MixerConfig},
+        mixer::{self, Mixer, MixerConfig, VolumeGetter},
         player::{Player, PlayerEvent, PlayerEventChannel},
     },
     protocol::authentication::AuthenticationType,
@@ -79,7 +79,8 @@ pub fn core_version() -> String {
 
 struct SpotifyState {
     session: Option<Session>,
-    player: Option<Arc<Player>>,
+    player: Option<PlayerSlot>,
+    standby_player: Option<PlayerSlot>,
     mixer: Option<Arc<dyn Mixer>>,
     volume: f32,
     stream_bitrate: Bitrate,
@@ -96,6 +97,7 @@ impl Default for SpotifyState {
         Self {
             session: None,
             player: None,
+            standby_player: None,
             mixer: None,
             volume: 0.75,
             stream_bitrate: Bitrate::default(),
@@ -103,6 +105,31 @@ impl Default for SpotifyState {
             local_playback: None,
             local_sink: None,
         }
+    }
+}
+
+#[derive(Clone)]
+struct PlayerSlot {
+    player: Arc<Player>,
+    gain: Arc<AtomicU64>,
+    active: Arc<AtomicBool>,
+}
+
+impl PlayerSlot {
+    fn set_gain(&self, gain: f64) {
+        self.gain.store(gain.clamp(0.0, 1.0).to_bits(), Ordering::Relaxed);
+    }
+}
+
+struct PlayerVolume {
+    base: Box<dyn VolumeGetter + Send>,
+    gain: Arc<AtomicU64>,
+}
+
+impl VolumeGetter for PlayerVolume {
+    fn attenuation_factor(&self) -> f64 {
+        self.base.attenuation_factor()
+            * f64::from_bits(self.gain.load(Ordering::Relaxed)).clamp(0.0, 1.0)
     }
 }
 
@@ -206,6 +233,43 @@ impl SpotifyCore {
         }
     }
 
+    fn make_player_slot(
+        &self,
+        session: &Session,
+        mixer: &Arc<dyn Mixer>,
+        config: PlayerConfig,
+        initially_active: bool,
+        initial_gain: f64,
+    ) -> PlayerSlot {
+        let gain = Arc::new(AtomicU64::new(initial_gain.clamp(0.0, 1.0).to_bits()));
+        let active = Arc::new(AtomicBool::new(initially_active));
+        let volume = PlayerVolume {
+            base: mixer.get_soft_volume(),
+            gain: Arc::clone(&gain),
+        };
+        let output_volume: Box<dyn VolumeGetter + Send> = Box::new(PlayerVolume {
+            base: mixer.get_soft_volume(),
+            gain: Arc::clone(&gain),
+        });
+        let spectrum = self.spectrum.clone();
+        let dsp = self.dsp.clone();
+        let health = self.output_health.clone();
+        let player = Player::new(config, session.clone(), Box::new(volume), move || {
+            Box::new(SpectrumSink::new(spectrum, output_volume, dsp, health))
+        });
+        tokio::spawn(monitor_player_events(
+            player.get_player_event_channel(),
+            Arc::clone(&self.timeline),
+            Arc::clone(&self.local_playback_active),
+            Arc::clone(&active),
+        ));
+        PlayerSlot {
+            player,
+            gain,
+            active,
+        }
+    }
+
     pub async fn connect(&self, access_token: String, client_id: String) -> Result<(), String> {
         self.connect_returning_login(access_token, client_id)
             .await
@@ -283,47 +347,33 @@ impl SpotifyCore {
             mixer::find(None).ok_or_else(|| "no librespot volume mixer is available".to_owned())?;
         let mixer = mixer_builder(MixerConfig::default())
             .map_err(|error| format!("failed to create volume mixer: {error}"))?;
-        let spectrum_volume = mixer.get_soft_volume();
-
-        let spectrum = self.spectrum.clone();
-        let dsp = self.dsp.clone();
-        let health = self.output_health.clone();
         let stream_bitrate = self.lock_state()?.stream_bitrate;
         let player_config = PlayerConfig {
             position_update_interval: Some(Duration::from_secs(1)),
             bitrate: stream_bitrate,
             ..PlayerConfig::default()
         };
-        let player = Player::new(
-            player_config,
-            session.clone(),
-            mixer.get_soft_volume(),
-            move || Box::new(SpectrumSink::new(spectrum, spectrum_volume, dsp, health)),
-        );
-        let event_channel = player.get_player_event_channel();
-        let timeline = Arc::clone(&self.timeline);
-        let local_playback_active = Arc::clone(&self.local_playback_active);
-        tokio::spawn(monitor_player_events(
-            event_channel,
-            timeline,
-            local_playback_active,
-        ));
+        let player = self.make_player_slot(&session, &mixer, player_config.clone(), true, 1.0);
+        let standby = self.make_player_slot(&session, &mixer, player_config, false, 0.0);
 
         // a request still waiting on the old player would keep it alive, and
         // its song would play beside whatever the new one plays
         self.begin_playback_request();
-        let previous = {
+        let (previous, old_standby) = {
             let _switching = self.lock_switching();
             let mut state = self.lock_state()?;
             mixer.set_volume((state.volume * VolumeCtrl::MAX_VOLUME as f32).round() as u16);
             state.session = Some(session);
             state.mixer = Some(mixer);
-            state.player.replace(player)
+            (state.player.replace(player), state.standby_player.replace(standby))
         };
         // drop outside the state lock because this may wait on the player thread
         if let Some(previous) = previous {
-            previous.stop();
+            previous.player.stop();
             drop(previous);
+        }
+        if let Some(old_standby) = old_standby {
+            old_standby.player.stop();
         }
 
         Ok(login)
@@ -332,15 +382,20 @@ impl SpotifyCore {
     pub fn disconnect(&self) {
         self.begin_playback_request();
         self.clear_local_playback();
-        let player = self.lock_state().ok().and_then(|mut state| {
-            let player = state.player.take();
+        let players = self.lock_state().ok().map(|mut state| {
+            let players = (state.player.take(), state.standby_player.take());
             state.session = None;
             state.mixer = None;
             state.local_sink = None;
-            player
+            players
         });
-        if let Some(player) = player {
-            player.pause();
+        if let Some((active, standby)) = players {
+            if let Some(active) = active {
+                active.player.pause();
+            }
+            if let Some(standby) = standby {
+                standby.player.pause();
+            }
         }
         self.spectrum.set_enabled(false);
         self.reset_timeline();
@@ -434,31 +489,29 @@ impl SpotifyCore {
         // drop outside the state lock because a stalled output may take time
         // to stop. stopped, not paused: a request still waiting on it keeps it
         // alive a little longer, and a paused load would start if played
-        let previous = self.lock_state()?.player.take();
-        if let Some(previous) = previous {
-            previous.stop();
+        let previous = {
+            let mut state = self.lock_state()?;
+            (state.player.take(), state.standby_player.take())
+        };
+        if let Some(previous) = previous.0 {
+            previous.player.stop();
+            drop(previous);
+        }
+        if let Some(previous) = previous.1 {
+            previous.player.stop();
             drop(previous);
         }
 
-        let spectrum = self.spectrum.clone();
-        let dsp = self.dsp.clone();
-        let health = self.output_health.clone();
-        let spectrum_volume = mixer.get_soft_volume();
         let player_config = PlayerConfig {
             position_update_interval: Some(Duration::from_secs(1)),
             bitrate: stream_bitrate,
             ..PlayerConfig::default()
         };
-        let player = Player::new(player_config, session, mixer.get_soft_volume(), move || {
-            Box::new(SpectrumSink::new(spectrum, spectrum_volume, dsp, health))
-        });
-        tokio::spawn(monitor_player_events(
-            player.get_player_event_channel(),
-            Arc::clone(&self.timeline),
-            Arc::clone(&self.local_playback_active),
-        ));
-
-        self.lock_state()?.player = Some(player);
+        let player = self.make_player_slot(&session, &mixer, player_config.clone(), true, 1.0);
+        let standby = self.make_player_slot(&session, &mixer, player_config, false, 0.0);
+        let mut state = self.lock_state()?;
+        state.player = Some(player);
+        state.standby_player = Some(standby);
         self.reset_timeline();
         Ok(())
     }
@@ -494,7 +547,8 @@ impl SpotifyCore {
         if !self.is_latest_request(ticket) {
             return Err(SUPERSEDED.to_owned());
         }
-        let player = self.player()?;
+        let (active, standby) = self.player_slots()?;
+        let player = Arc::clone(&active.player);
         let mut events = player.get_player_event_channel();
 
         {
@@ -507,6 +561,11 @@ impl SpotifyCore {
             // core does not know of and would leave playing under the stream
             silence_cached_local_sink();
             self.spectrum.clear();
+            active.set_gain(1.0);
+            if let Some(standby) = &standby {
+                standby.set_gain(0.0);
+                standby.player.stop();
+            }
             self.reset_timeline();
             player.load(uri.clone(), true, 0);
         }
@@ -542,6 +601,135 @@ impl SpotifyCore {
         }
     }
 
+    /// prepares the active player and, when crossfade is enabled, the standby
+    /// player so the next track is ready for a normal start or a handoff.
+    pub fn preload_track(&self, spotify_uri: String, preload_standby: bool) -> Result<(), String> {
+        let uri = Self::parse_playable_uri(&spotify_uri)?;
+        let (active, standby) = self.player_slots()?;
+        active.player.preload(uri.clone());
+        if preload_standby && let Some(standby) = standby {
+            standby.player.preload(uri);
+        }
+        Ok(())
+    }
+
+    /// loads the next song on the standby player's output and starts an
+    /// equal-power fade between the two players once it is ready.
+    pub async fn crossfade_track_as(
+        self: &Arc<Self>,
+        spotify_uri: String,
+        duration_ms: u32,
+        ticket: u64,
+    ) -> Result<(), String> {
+        let uri = Self::parse_playable_uri(&spotify_uri)?;
+        let mut newer = self.playback_generation.subscribe();
+        if !self.is_latest_request(ticket) {
+            return Err(SUPERSEDED.to_owned());
+        }
+        if self.local_active()? {
+            return Err("crossfade is unavailable for local-file playback".to_owned());
+        }
+        let (outgoing, incoming) = {
+            let state = self.lock_state()?;
+            (
+                state.player.clone().ok_or_else(|| "Spotify player is not initialized".to_owned())?,
+                state.standby_player.clone().ok_or_else(|| "standby Spotify player is not initialized".to_owned())?,
+            )
+        };
+        let mut events = incoming.player.get_player_event_channel();
+
+        {
+            let _switching = self.lock_switching();
+            if !self.is_latest_request(ticket) {
+                return Err(SUPERSEDED.to_owned());
+            }
+            self.clear_local_playback();
+            incoming.set_gain(0.0);
+            incoming.player.load(uri.clone(), true, 0);
+        }
+
+        let mut duration = 0;
+        loop {
+            let event = tokio::select! {
+                event = timeout(Duration::from_secs(30), events.recv()) => event
+                    .map_err(|_| "timed out while loading the Spotify track".to_owned())?
+                    .ok_or_else(|| "the standby Spotify player stopped unexpectedly".to_owned())?,
+                _ = newer.wait_for(|generation| *generation != ticket) => {
+                    incoming.set_gain(0.0);
+                    incoming.player.stop();
+                    return Err(SUPERSEDED.to_owned());
+                }
+            };
+            if !self.is_latest_request(ticket) {
+                incoming.set_gain(0.0);
+                incoming.player.stop();
+                return Err(SUPERSEDED.to_owned());
+            }
+            match event {
+                PlayerEvent::TrackChanged { audio_item } => duration = audio_item.duration_ms,
+                PlayerEvent::Playing { track_id, position_ms, .. } if track_id == uri => {
+                    let mut state = self.lock_state()?;
+                    if !state.player.as_ref().is_some_and(|slot| Arc::ptr_eq(&slot.player, &outgoing.player))
+                        || !state.standby_player.as_ref().is_some_and(|slot| Arc::ptr_eq(&slot.player, &incoming.player))
+                    {
+                        incoming.set_gain(0.0);
+                        incoming.player.stop();
+                        return Err(SUPERSEDED.to_owned());
+                    }
+                    outgoing.active.store(false, Ordering::Release);
+                    incoming.active.store(true, Ordering::Release);
+                    state.player = Some(incoming.clone());
+                    state.standby_player = Some(outgoing.clone());
+                    self.spectrum.clear();
+                    if let Ok(mut timeline) = self.timeline.lock() {
+                        timeline.reset();
+                        timeline.duration_ms = duration;
+                        timeline.observe_position(position_ms, Some(true));
+                    }
+                    break;
+                }
+                PlayerEvent::Unavailable { track_id, .. } if track_id == uri => {
+                    incoming.set_gain(0.0);
+                    incoming.player.stop();
+                    return Err("This song is unavailable on Spotify.".to_owned());
+                }
+                PlayerEvent::Stopped { track_id, .. } if track_id == uri => {
+                    incoming.set_gain(0.0);
+                    incoming.player.stop();
+                    return Err("the Spotify track stopped before playback began".to_owned());
+                }
+                _ => {}
+            }
+        }
+
+        let fade_ms = duration_ms.clamp(500, 12_000);
+        let core = Arc::clone(self);
+        tokio::spawn(async move {
+            let started = Instant::now();
+            let fade_duration = Duration::from_millis(u64::from(fade_ms));
+            loop {
+                if !core.is_latest_request(ticket) {
+                    incoming.set_gain(1.0);
+                    outgoing.set_gain(0.0);
+                    outgoing.player.stop();
+                    return;
+                }
+                let progress = (started.elapsed().as_secs_f64() / fade_duration.as_secs_f64()).clamp(0.0, 1.0);
+                let angle = progress * std::f64::consts::FRAC_PI_2;
+                outgoing.set_gain(angle.cos());
+                incoming.set_gain(angle.sin());
+                if progress >= 1.0 {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+            outgoing.set_gain(0.0);
+            incoming.set_gain(1.0);
+            outgoing.player.stop();
+        });
+        Ok(())
+    }
+
     pub fn load_track(&self, spotify_uri: String) -> Result<(), String> {
         self.clear_local_playback();
         let uri = Self::parse_playable_uri(&spotify_uri)?;
@@ -571,9 +759,9 @@ impl SpotifyCore {
     /// and play over it
     pub fn pause(&self) -> Result<(), String> {
         let local = self.local_active()?;
-        let (player, sink) = {
+        let (active, standby, sink) = {
             let state = self.lock_state()?;
-            (state.player.clone(), state.local_sink.clone())
+            (state.player.clone(), state.standby_player.clone(), state.local_sink.clone())
         };
         if local && let Ok(mut timeline) = self.timeline.lock() {
             let position = timeline.position_ms;
@@ -582,10 +770,13 @@ impl SpotifyCore {
         if let Some(sink) = sink {
             sink.pause();
         }
-        if let Some(player) = player {
-            player.pause();
+        if let Some(active) = active {
+            active.player.pause();
         } else if !local {
             return Err("there is no Spotify player to pause".to_owned());
+        }
+        if let Some(standby) = standby {
+            standby.player.pause();
         }
         self.spectrum.clear();
         Ok(())
@@ -717,8 +908,12 @@ impl SpotifyCore {
         self.clear_local_playback();
         // stopped, not paused: a stream still loading would otherwise be
         // kept, and start when it arrives, over this track
-        if let Ok(player) = self.player() {
-            player.stop();
+        if let Ok((active, standby)) = self.player_slots() {
+            active.player.stop();
+            if let Some(standby) = standby {
+                standby.set_gain(0.0);
+                standby.player.stop();
+            }
         }
         // a file whose header does not say how long it is (a variable rate
         // mp3 without one) is measured, so it can still be seeked
@@ -832,11 +1027,11 @@ impl SpotifyCore {
     /// a player a request was waiting on that has since been replaced, by a
     /// rebuilt output or a new session, would play on unheard of: stop it
     fn release_if_orphaned(&self, player: &Arc<Player>) {
-        let current = self
-            .lock_state()
-            .ok()
-            .and_then(|state| state.player.clone());
-        if !current.is_some_and(|current| Arc::ptr_eq(&current, player)) {
+        let retained = self.lock_state().ok().is_some_and(|state| {
+            state.player.as_ref().is_some_and(|slot| Arc::ptr_eq(&slot.player, player))
+                || state.standby_player.as_ref().is_some_and(|slot| Arc::ptr_eq(&slot.player, player))
+        });
+        if !retained {
             player.stop();
         }
     }
@@ -848,16 +1043,18 @@ impl SpotifyCore {
     }
 
     fn player(&self) -> Result<Arc<Player>, String> {
+        Ok(Arc::clone(&self.player_slots()?.0.player))
+    }
+
+    fn player_slots(&self) -> Result<(PlayerSlot, Option<PlayerSlot>), String> {
         let state = self.lock_state()?;
 
         if state.session.is_none() {
             return Err("not connected to spotify".to_owned());
         }
 
-        state
-            .player
-            .clone()
-            .ok_or_else(|| "spotify player is not initialized".to_owned())
+        let active = state.player.clone().ok_or_else(|| "spotify player is not initialized".to_owned())?;
+        Ok((active, state.standby_player.clone()))
     }
 
     fn session(&self) -> Result<Session, String> {
@@ -1045,18 +1242,19 @@ async fn monitor_player_events(
     mut events: PlayerEventChannel,
     timeline: Arc<Mutex<PlaybackTimeline>>,
     local_playback_active: Arc<AtomicBool>,
+    slot_active: Arc<AtomicBool>,
 ) {
     while let Some(event) = events.recv().await {
         // the connected librespot player remains alive while a file of the
         // person's own is playing. ignore its late position/end events so they cannot advance
         // the local playback queue after a seek.
-        if local_playback_active.load(Ordering::Acquire) {
+        if local_playback_active.load(Ordering::Acquire) || !slot_active.load(Ordering::Acquire) {
             continue;
         }
         let Ok(mut timeline) = timeline.lock() else {
             continue;
         };
-        if local_playback_active.load(Ordering::Acquire) {
+        if local_playback_active.load(Ordering::Acquire) || !slot_active.load(Ordering::Acquire) {
             continue;
         }
 

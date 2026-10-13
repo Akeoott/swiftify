@@ -27,12 +27,14 @@ Flickable {
     /// whether something `top` down the page and `height` tall is in sight,
     /// or within `slack` of it (HomeView.reaches)
     function reaches(top: real, height: real, slack: real): bool {
-        return top + height > root.contentY - slack && top < root.contentY + root.height + slack
+        return top + height > root.contentY - slack && top < root.contentY + root.height + slack;
     }
 
     contentHeight: column.implicitHeight + Appearance.sizes.playerBarClearance
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: StyledScrollBar { topPadding: 3 + Appearance.sizes.topBarHeight }
+    ScrollBar.vertical: StyledScrollBar {
+        topPadding: 3 + Appearance.sizes.topBarHeight
+    }
 
     Column {
         id: column
@@ -48,7 +50,9 @@ Flickable {
 
             actions: [
                 TextButton {
-                    implicitHeight: 48
+                    iconOnly: parent ? parent.compactActions : false
+                    compactSize: parent ? parent.actionSize : 48
+                    implicitHeight: iconOnly ? compactSize : 48
                     wavy: true
                     symbol: "play_arrow"
                     burst: "play"
@@ -67,7 +71,9 @@ Flickable {
             Column {
                 anchors.centerIn: parent
                 spacing: 12
-                LoadingSpinner { anchors.horizontalCenter: parent.horizontalCenter }
+                LoadingSpinner {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
                 StyledText {
                     text: "Loading albums…"
                     color: Appearance.colors.onSurfaceVariant

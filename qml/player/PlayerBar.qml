@@ -12,10 +12,16 @@ Item {
     property MaterialScheme scheme: Appearance.colors
     signal immersiveRequested()
 
-    readonly property bool showsMeter: Settings.visualizersEnabled && Player.hasSong
+    // Give the title useful space before the controls start colliding with it.
+    readonly property bool compact: width < 560
+    readonly property bool tiny: width < 400
+    readonly property real buttonSize: tiny ? 26 : (compact ? 28 : 32)
+    readonly property real innerGap: tiny ? 6 : (compact ? 8 : 14)
+    readonly property bool titleFits: nowPlaying.width - artwork.width - 8 >= 48
+    readonly property bool showsMeter: !compact && Settings.visualizersEnabled && Player.hasSong
     property bool progressExpanded: seek.expanded
 
-    implicitHeight: 64
+    implicitHeight: tiny ? 56 : 64
     opacity: Window.active ? 1 : 0.82
 
     Behavior on opacity {
@@ -50,19 +56,21 @@ Item {
 
     Row {
         id: transport
+        objectName: "playerTransport"
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: root.compact ? 8 : 12
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 4
+        spacing: root.tiny ? 0 : 4
 
         TransportButton {
+            visible: !root.tiny
             anchors.verticalCenter: parent.verticalCenter
             scheme: root.scheme
             effect: TransportButton.Bounce
             symbol: "shuffle"
             toggledShape: "clover4"
-            size: 32
-            iconSize: 20
+            size: root.buttonSize
+            iconSize: root.tiny ? 18 : 20
             toggled: Player.shuffle
             fillWhenToggled: false
             tooltip: Player.shuffle ? "Disable shuffle" : "Enable shuffle"
@@ -75,8 +83,8 @@ Item {
             symbol: "skip_previous"
             hoverShape: "arrow"
             hoverAngle: -90
-            size: 32
-            iconSize: 24
+            size: root.buttonSize
+            iconSize: root.tiny ? 20 : 24
             fillWhenToggled: false
             enabled: Player.canSkipBackward
             tooltip: "Previous song"
@@ -86,8 +94,8 @@ Item {
 
         PlayButton {
             anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: 44
-            implicitHeight: 44
+            implicitWidth: root.tiny ? 36 : (root.compact ? 40 : 44)
+            implicitHeight: implicitWidth
             enabled: Player.hasSong
             color: root.scheme.primary
             hoverColor: root.scheme.primaryHover
@@ -102,8 +110,8 @@ Item {
             symbol: "skip_next"
             hoverShape: "arrow"
             hoverAngle: 90
-            size: 32
-            iconSize: 24
+            size: root.buttonSize
+            iconSize: root.tiny ? 20 : 24
             enabled: Player.canSkipForward
             tooltip: "Next song"
             onClicked: Player.skipForward()
@@ -114,9 +122,10 @@ Item {
             scheme: root.scheme
             effect: TransportButton.Bounce
             symbol: Player.repeatMode === Player.RepeatMode.One ? "repeat_one" : "repeat"
+            visible: !root.tiny
             toggledShape: Player.repeatMode === Player.RepeatMode.One ? "cookie4" : "cookie6"
-            size: 32
-            iconSize: 20
+            size: root.buttonSize
+            iconSize: root.tiny ? 18 : 20
             toggled: Player.repeatMode !== Player.RepeatMode.Off
             fillWhenToggled: false
             enabled: Player.hasSong
@@ -127,10 +136,11 @@ Item {
 
     Item {
         id: nowPlaying
+        objectName: "playerNowPlaying"
         anchors.left: transport.right
-        anchors.leftMargin: 14
+        anchors.leftMargin: root.innerGap
         anchors.right: utilities.left
-        anchors.rightMargin: 14
+        anchors.rightMargin: root.innerGap
         anchors.top: parent.top
         anchors.bottom: parent.bottom
 
@@ -140,8 +150,8 @@ Item {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             anchors.verticalCenterOffset: -4
-            width: 40
-            height: 40
+            width: root.tiny ? 30 : 40
+            height: width
             z: 2
             scale: artHover.hovered ? 1.12 : 1
             // a new song's cover pops in with a spring
@@ -233,6 +243,8 @@ Item {
 
         Item {
             id: info
+            visible: root.titleFits
+            clip: true
 
             // the song blurs away behind the seek line's times while the line is
             // hovered, easing in rather than switching
@@ -243,7 +255,7 @@ Item {
             }
 
             anchors.left: artwork.right
-            anchors.leftMargin: 11
+            anchors.leftMargin: 8
             anchors.right: root.showsMeter ? meter.left : parent.right
             anchors.rightMargin: root.showsMeter ? 9 : 0
             anchors.top: parent.top
@@ -259,8 +271,8 @@ Item {
 
             Column {
                 anchors.left: parent.left
-                anchors.right: more.left
-                anchors.rightMargin: 4
+                anchors.right: more.visible ? more.left : parent.right
+                anchors.rightMargin: more.visible ? 4 : 0
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 1
 
@@ -321,7 +333,7 @@ Item {
                 id: more
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                Reveal.shown: Player.hasSong
+                Reveal.shown: Player.hasSong && !root.compact
                 scheme: root.scheme
                 symbol: "more_horiz"
                 size: 28
@@ -358,8 +370,8 @@ Item {
             transform: Translate {
                 y: seek.lift
             }
-            anchors.left: artwork.right
-            anchors.leftMargin: 11
+            anchors.left: root.titleFits ? artwork.right : parent.left
+            anchors.leftMargin: root.titleFits ? 8 : 0
             anchors.right: parent.right
             anchors.rightMargin: root.showsMeter ? 39 : 0
             anchors.bottom: parent.bottom
@@ -406,18 +418,19 @@ Item {
 
     Row {
         id: utilities
+        objectName: "playerUtilities"
         anchors.right: parent.right
-        anchors.rightMargin: 12
+        anchors.rightMargin: root.compact ? 8 : 12
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
+        spacing: root.tiny ? 0 : 6
         z: 3
 
         IconButton {
             anchors.verticalCenter: parent.verticalCenter
             scheme: root.scheme
             symbol: "lyrics"
-            size: 32
-            iconSize: 20
+            size: root.buttonSize
+            iconSize: root.tiny ? 18 : 20
             toggled: Player.showingLyrics
             tooltip: "Lyrics"
             onClicked: Player.toggleLyricsPanel()
@@ -426,8 +439,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             scheme: root.scheme
             symbol: "queue_music"
-            size: 32
-            iconSize: 20
+            size: root.buttonSize
+            iconSize: root.tiny ? 18 : 20
             toggled: Player.showingQueue
             tooltip: "Playing Next"
             onClicked: Player.toggleQueuePanel()

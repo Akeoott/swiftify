@@ -17,8 +17,12 @@ Item {
     property real titleSize: 34
     property alias actions: actionSlot.data
     property alias artwork: artworkSlot.data
+    readonly property bool stacked: width < 640
+    readonly property real artworkSize: stacked ? Math.min(176, (width - 2 * Appearance.sizes.pageMargin) * 0.5)
+                                              : Appearance.sizes.headerArtwork
 
-    implicitHeight: Math.max(Appearance.sizes.headerArtwork, details.implicitHeight) + 80
+    implicitHeight: stacked ? artworkSize + details.implicitHeight + 100
+                            : Math.max(artworkSize, details.implicitHeight) + 80
 
     // the collection's own scatter of faint shapes, behind it all
     Stickers {
@@ -35,8 +39,8 @@ Item {
         objectName: "heroArtwork"
         x: Appearance.sizes.pageMargin
         y: 40
-        width: Appearance.sizes.headerArtwork
-        height: Appearance.sizes.headerArtwork
+        width: root.artworkSize
+        height: width
 
         /// a clicked cover is flying in to land here; until it does, the
         /// page's own stays hidden under it
@@ -85,16 +89,15 @@ Item {
 
     Column {
         id: details
-        anchors.left: artworkBox.right
-        anchors.leftMargin: 30
-        anchors.right: parent.right
-        anchors.rightMargin: Appearance.sizes.pageMargin
-        anchors.bottom: artworkBox.bottom
+        x: root.stacked ? Appearance.sizes.pageMargin : artworkBox.x + artworkBox.width + 30
+        y: root.stacked ? artworkBox.y + artworkBox.height + 20
+                        : 40 + Math.max(0, artworkBox.height - implicitHeight)
+        width: Math.max(0, root.width - x - Appearance.sizes.pageMargin)
         spacing: 9
 
         // the kind, as a chip with a symbol
         Rectangle {
-            width: kindRow.implicitWidth + 20
+            width: Math.min(parent.width, kindRow.implicitWidth + 20)
             height: 26
             radius: height / 2
             color: Appearance.colors.primaryContainer
@@ -158,7 +161,7 @@ Item {
                     required property string modelData
 
                     visible: modelData.length > 0
-                    width: factText.implicitWidth + 18
+                    width: Math.min(parent.width, factText.implicitWidth + 18)
                     height: 24
                     radius: height / 2
                     color: Appearance.colors.surfaceContainerHigh
@@ -166,6 +169,8 @@ Item {
                     StyledText {
                         id: factText
                         anchors.centerIn: parent
+                        width: Math.max(0, parent.width - 18)
+                        elide: Text.ElideRight
                         text: chip.modelData
                         font.pixelSize: Appearance.fontSize.smaller
                         color: Appearance.colors.onSurfaceVariant
@@ -174,8 +179,11 @@ Item {
             }
         }
 
-        Row {
+        Flow {
             id: actionSlot
+            width: parent.width
+            readonly property bool compactActions: width < 420
+            readonly property real actionSize: Math.max(28, Math.min(48, (width - 30) / 4))
             topPadding: 6
             spacing: 10
         }

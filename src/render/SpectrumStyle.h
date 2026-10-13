@@ -84,13 +84,14 @@ struct SpectrumStyle {
 
     static SpectrumStyle equalizer()
     {
+        // The palette follows PlayerStyle: the cover's extracted colours, or
+        // the selected theme when no cover palette is available.
         SpectrumStyle style = immersive();
         style.layout = Layout::Ascending;
         style.count = 40;
         style.glowOpacity = 0.85f;
         style.glowRadius = 9;
         style.symmetricGradient = false;
-        style.paletteOverride = {QColor(0xff, 0x3d, 0x8a), QColor(0xd6, 0x24, 0x6c)};
         return style;
     }
 

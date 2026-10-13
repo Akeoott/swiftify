@@ -115,6 +115,9 @@ void Settings::load()
         const int cache = stored<int>(m_store, "songCacheMegabytes", m_songCacheMegabytes);
         m_songCacheMegabytes = cache == 500 || cache == 2000 ? cache : 1000;
     }
+    m_crossfadeEnabled = stored<bool>(m_store, "crossfadeEnabled", m_crossfadeEnabled);
+    m_crossfadeDurationSeconds = std::clamp(
+        stored<int>(m_store, "crossfadeDurationSeconds", m_crossfadeDurationSeconds), 1, 12);
     m_livingBackdrop = stored<bool>(m_store, "livingBackdrop", m_livingBackdrop);
     {
         const double raw = stored<double>(m_store, "backdropBlur", m_backdropBlur);
@@ -229,6 +232,27 @@ void Settings::setSongCacheMegabytes(int megabytes)
     m_songCacheMegabytes = value;
     m_store.setValue(QStringLiteral("songCacheMegabytes"), value);
     emit songCacheMegabytesChanged();
+}
+
+void Settings::setCrossfadeEnabled(bool value)
+{
+    if (m_crossfadeEnabled == value) {
+        return;
+    }
+    m_crossfadeEnabled = value;
+    m_store.setValue(QStringLiteral("crossfadeEnabled"), value);
+    emit crossfadeEnabledChanged();
+}
+
+void Settings::setCrossfadeDurationSeconds(int raw)
+{
+    const int value = std::clamp(raw, 1, 12);
+    if (m_crossfadeDurationSeconds == value) {
+        return;
+    }
+    m_crossfadeDurationSeconds = value;
+    m_store.setValue(QStringLiteral("crossfadeDurationSeconds"), value);
+    emit crossfadeDurationSecondsChanged();
 }
 
 void Settings::setLivingBackdrop(bool value)

@@ -161,6 +161,27 @@ Item {
             visible: root.page === 2
 
             ContentSection {
+                title: "Crossfade"
+                symbol: "play_circle"
+
+                ConfigSwitch {
+                    text: "Crossfade between songs"
+                    checked: Settings.crossfadeEnabled
+                    onToggledTo: (checked) => Settings.crossfadeEnabled = checked
+                }
+                ConfigSlider {
+                    text: "Crossfade duration"
+                    enabled: Settings.crossfadeEnabled
+                    from: 1
+                    to: 12
+                    stepSize: 1
+                    value: Settings.crossfadeDurationSeconds
+                    valueText: Settings.crossfadeDurationSeconds + " s"
+                    onMoved: (value) => Settings.crossfadeDurationSeconds = Math.round(value)
+                }
+            }
+
+            ContentSection {
                 title: "Sleep Timer"
                 symbol: "bedtime"
 
@@ -577,22 +598,6 @@ Item {
             ContentSection {
                 title: "Playback"
                 symbol: "play_circle"
-
-                ConfigSwitch {
-                    text: "Crossfade between songs"
-                    checked: Settings.crossfadeEnabled
-                    onToggledTo: (checked) => Settings.crossfadeEnabled = checked
-                }
-                ConfigSlider {
-                    text: "Crossfade duration"
-                    enabled: Settings.crossfadeEnabled
-                    from: 1
-                    to: 12
-                    stepSize: 1
-                    value: Settings.crossfadeDurationSeconds
-                    valueText: Settings.crossfadeDurationSeconds + " s"
-                    onMoved: (value) => Settings.crossfadeDurationSeconds = Math.round(value)
-                }
 
                 StatusRow {
                     label: "Status"

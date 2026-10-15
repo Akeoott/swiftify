@@ -45,9 +45,9 @@ class Settings : public QObject {
     /// no shapes behind the pages or the immersive player, and every other
     /// shape a plain circle, but for the favourite songs' heart
     Q_PROPERTY(bool noShapes READ noShapes WRITE setNoShapes NOTIFY noShapesChanged FINAL)
-    /// "system" (the desktop's matugen scheme), "builtin", or a theme id
+    /// "system" (a Matugen scheme), "builtin", or a theme id
     Q_PROPERTY(QString themeSource READ themeSource WRITE setThemeSource NOTIFY themeSourceChanged FINAL)
-    /// "system", "light" or "dark", for every source but the desktop's scheme
+    /// "system", "light" or "dark"; selects a variant when Matugen provides both
     Q_PROPERTY(QString themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged FINAL)
     Q_PROPERTY(QString matugenColorsPath READ matugenColorsPath WRITE setMatugenColorsPath NOTIFY matugenColorsPathChanged FINAL)
     Q_PROPERTY(bool showWindowControls READ showWindowControls WRITE setShowWindowControls NOTIFY showWindowControlsChanged FINAL)
@@ -120,12 +120,12 @@ public:
     void setPerformanceMode(bool value);
     bool noShapes() const { return m_noShapes; }
     void setNoShapes(bool value);
-    /// linux only. system follows the end4/matugen scheme when one exists
+    /// system follows a discovered or explicitly selected Matugen scheme
     QString themeSource() const { return m_themeSource; }
     void setThemeSource(const QString &value);
     QString themeMode() const { return m_themeMode; }
     void setThemeMode(const QString &value);
-    /// linux only. empty uses end4's default location
+    /// empty discovers Matugen JSON in common config/cache locations
     QString matugenColorsPath() const { return m_matugenColorsPath; }
     void setMatugenColorsPath(const QString &value);
     /// linux only. minimise, maximise and close in the top bar
@@ -187,7 +187,7 @@ private:
     bool m_reduceMotion = false;
     bool m_performanceMode = false;
     bool m_noShapes = false;
-    // macos has no matugen scheme to follow
+    // Keep the existing macOS default; Matugen can be selected in Appearance.
 #ifdef Q_OS_MACOS
     QString m_themeSource = QStringLiteral("builtin");
 #else

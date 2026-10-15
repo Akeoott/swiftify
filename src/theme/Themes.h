@@ -35,7 +35,7 @@ public:
 };
 
 /// the colour schemes people rice their desktops with, for when there is no
-/// matugen scheme to follow (macos, or by choice). each comes as a light and
+/// Matugen scheme to follow, or by choice. each comes as a light and
 /// a dark variant from its own palette, and the app maps the palette onto
 /// material's roles rather than reseeding it, so a theme keeps its own
 /// grounds and accents.

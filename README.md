@@ -44,6 +44,23 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   add `http://127.0.0.1:8898/login` as a redirect uri, and paste the apps client id
   into swiftify. u dont need the client secret.
 
+## Matugen colours
+
+in Settings → Appearance, choose **Matugen** on macOS (**Desktop** on Linux).
+leave the JSON path empty to find a scheme automatically. Swiftify checks Matugen
+folders under `~/.config`, `~/.cache`, `~/.local/state`, and the corresponding XDG
+locations. on macOS it also checks `~/Library/Application Support` and
+`~/Library/Caches` for `com.InioX.matugen`, `matugen`, and `Matugen` folders.
+end4's `~/.local/state/quickshell/user/generated/colors.json` is supported too.
+
+`colors.json` is preferred, but other JSON filenames and generated subfolders work.
+Swiftify validates each file and skips templates and unrelated JSON. it reads flat
+Material roles, nested light/dark schemes, and Matugen's per-colour mode objects,
+including hex, stripped hex, RGB/RGBA and HSL/HSLA exports. the light/dark setting
+chooses the matching variant when available. changes to the generated file apply
+automatically, including when Matugen replaces it. enter a custom path to override
+discovery, or click **Auto-detect** to return to it.
+
 ## Building from source
 
 ### Build requirements

@@ -14,6 +14,10 @@
 #include <QLoggingCategory>
 #include <QQmlEngine>
 #include <QStyleHints>
+#include <QStandardPaths>
+#include <QUrl>
+
+#include <functional>
 
 namespace swiftify {
 
@@ -26,6 +30,99 @@ Theme *s_instance = nullptr;
 bool systemPrefersLight()
 {
     return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Light;
+}
+
+QString expandedPath(QString path)
+{
+    if (QUrl(path).isLocalFile()) path = QUrl(path).toLocalFile();
+    if (path == QLatin1StringView("~")) path = QDir::homePath();
+    if (path.startsWith(QLatin1StringView("~/"))) path.replace(0, 1, QDir::homePath());
+    return QDir::cleanPath(path);
+}
+
+QString xdgDirectory(const char *variable, const QString &fallback)
+{
+    const QString path = qEnvironmentVariable(variable);
+    return path.isEmpty() || QDir::isRelativePath(path) ? QDir::homePath() + fallback : QDir::cleanPath(path);
+}
+
+QStringList schemeSearchRoots()
+{
+    const QString config = xdgDirectory("XDG_CONFIG_HOME", QStringLiteral("/.config"));
+    const QString cache = xdgDirectory("XDG_CACHE_HOME", QStringLiteral("/.cache"));
+    const QString state = xdgDirectory("XDG_STATE_HOME", QStringLiteral("/.local/state"));
+    QStringList roots;
+#ifndef Q_OS_MACOS
+    // Keep end4's existing desktop scheme first on Linux.
+    roots.append(state + QStringLiteral("/quickshell/user/generated"));
+#endif
+    roots.append(config + QStringLiteral("/matugen"));
+    roots.append(cache + QStringLiteral("/matugen"));
+    roots.append(state + QStringLiteral("/matugen"));
+#ifdef Q_OS_MACOS
+    for (const QString &base : {QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation),
+                               QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)}) {
+        for (const QString &name : {QStringLiteral("com.InioX.matugen"), QStringLiteral("matugen"), QStringLiteral("Matugen")}) {
+            roots.append(base + u'/' + name);
+        }
+    }
+    roots.append(state + QStringLiteral("/quickshell/user/generated"));
+#endif
+    // Also find shell-generated output when a GUI launch has different XDG variables.
+    for (const QString &base : {QStringLiteral("/.config"), QStringLiteral("/.cache"), QStringLiteral("/.local/state")}) {
+        roots.append(QDir::homePath() + base + QStringLiteral("/matugen"));
+    }
+    roots.removeDuplicates();
+    return roots;
+}
+
+std::optional<MaterialScheme::Roles> readScheme(const QString &path, bool dark)
+{
+    const QFileInfo info(path);
+    // Schemes are small; don't parse an unrelated, huge JSON cache on the GUI thread.
+    if (!info.isFile() || info.size() > 4 * 1024 * 1024) return std::nullopt;
+    QFile file(path);
+    return file.open(QIODevice::ReadOnly) ? MaterialScheme::fromMatugenJson(file.readAll(), dark) : std::nullopt;
+}
+
+QString existingAncestor(QString path)
+{
+    while (!QDir(path).exists()) {
+        const QString parent = QFileInfo(path).absolutePath();
+        if (parent == path) break;
+        path = parent;
+    }
+    return path;
+}
+
+QStringList schemeFiles(const QStringList &roots, QStringList &watchedDirectories)
+{
+    QStringList candidates;
+    std::function<void(const QString &, int)> scan = [&](const QString &path, int depth) {
+        if (candidates.size() >= 512 || watchedDirectories.size() >= 64) return;
+        const QDir directory(path);
+        watchedDirectories.append(existingAncestor(path));
+        watchedDirectories.removeDuplicates();
+        if (!directory.exists()) return;
+        const auto files = directory.entryInfoList({QStringLiteral("*.json")}, QDir::Files | QDir::Readable, QDir::Name | QDir::IgnoreCase);
+        // Prefer the conventional name; validate every candidate before choosing it.
+        const QString colors = directory.filePath(QStringLiteral("colors.json"));
+        if (QFileInfo::exists(colors)) candidates.append(colors);
+        for (const QFileInfo &file : files) {
+            if (candidates.size() >= 512) break;
+            if (file.fileName() != QLatin1StringView("colors.json")) candidates.append(file.absoluteFilePath());
+        }
+        if (depth >= 2) return;
+        for (const QFileInfo &child : directory.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::NoSymLinks, QDir::Name)) {
+            const QString name = child.fileName().toLower();
+            if (name == QLatin1StringView("templates") || name == QLatin1StringView("template")
+                || name == QLatin1StringView("images") || name.startsWith(u'.')) continue;
+            scan(child.absoluteFilePath(), depth + 1);
+        }
+    };
+    for (const QString &root : roots) scan(root, 0);
+    candidates.removeDuplicates();
+    return candidates;
 }
 
 } // namespace
@@ -71,19 +168,31 @@ Theme *Theme::create(QQmlEngine *, QJSEngine *)
     return s_instance;
 }
 
-QString Theme::defaultSystemSchemePath()
+void Theme::resolveSystemScheme(bool dark)
 {
-    QString state = qEnvironmentVariable("XDG_STATE_HOME");
-    if (state.isEmpty() || QDir::isRelativePath(state)) {
-        state = QDir::homePath() + QStringLiteral("/.local/state");
+    m_schemeDirectories.clear();
+    m_systemRoles.reset();
+    const QString configured = m_settings->matugenColorsPath();
+    if (!configured.isEmpty()) {
+        m_systemSchemePath = QFileInfo(expandedPath(configured)).absoluteFilePath();
+        m_systemRoles = readScheme(m_systemSchemePath, dark);
+        m_schemeDirectories.append(existingAncestor(QFileInfo(m_systemSchemePath).absolutePath()));
+        return;
     }
-    return state + QStringLiteral("/quickshell/user/generated/colors.json");
+    m_systemSchemePath.clear();
+    const QStringList candidates = schemeFiles(schemeSearchRoots(), m_schemeDirectories);
+    for (const QString &path : candidates) {
+        if (const auto roles = readScheme(path, dark)) {
+            m_systemSchemePath = path;
+            m_systemRoles = roles;
+            return;
+        }
+    }
 }
 
-QString Theme::systemSchemePath() const
+void Theme::refreshSystemScheme()
 {
-    const QString configured = m_settings->matugenColorsPath();
-    return configured.isEmpty() ? defaultSystemSchemePath() : configured;
+    reload();
 }
 
 QString Theme::fontFamily() const
@@ -120,24 +229,20 @@ void Theme::reload()
 {
     const bool wasUsingSystem = m_usingSystemScheme;
     const bool hadDark = m_colors->dark();
+    const QString previousPath = m_systemSchemePath;
+    const auto previousRoles = m_colors->roles();
 
+    resolveSystemScheme(wantsDark());
     watchSchemeFile();
 
-    if (m_settings->themeSource() == QLatin1StringView("system")) {
-        QFile file(systemSchemePath());
-        if (file.open(QIODevice::ReadOnly)) {
-            if (const auto roles = MaterialScheme::fromMatugenJson(file.readAll())) {
-                const QColor background = (*roles)[static_cast<std::size_t>(MaterialScheme::Role::Background)];
-                m_usingSystemScheme = true;
-                m_colors->setRoles(*roles, color::luminance709(background) < 0.5);
-                if (!wasUsingSystem || hadDark != m_colors->dark()) {
-                    emit schemeChanged();
-                }
-                return;
-            }
-            // a half-written file reads as invalid; the next change event retries.
-            qCInfo(lcTheme) << "ignoring an incomplete colour scheme in" << file.fileName();
+    if (m_settings->themeSource() == QLatin1StringView("system") && m_systemRoles) {
+        const QColor background = (*m_systemRoles)[static_cast<std::size_t>(MaterialScheme::Role::Background)];
+        m_usingSystemScheme = true;
+        m_colors->setRoles(*m_systemRoles, color::luminance709(background) < 0.5);
+        if (!wasUsingSystem || hadDark != m_colors->dark() || previousPath != m_systemSchemePath || previousRoles != m_colors->roles()) {
+            emit schemeChanged();
         }
+        return;
     }
 
     const bool dark = wantsDark();
@@ -147,7 +252,7 @@ void Theme::reload()
     } else {
         m_colors->setRoles(rolesFromSeed(QColor::fromRgba(kAccent), dark, true), dark);
     }
-    if (wasUsingSystem || hadDark != dark) {
+    if (wasUsingSystem || hadDark != dark || previousPath != m_systemSchemePath || previousRoles != m_colors->roles()) {
         emit schemeChanged();
     }
 }
@@ -173,17 +278,16 @@ QList<ThemeOption> Theme::themeOptions(bool dark) const
                             role(Role::Primary), role(Role::Secondary), role(Role::Tertiary)};
     };
     QList<ThemeOption> options;
-#ifndef Q_OS_MACOS
     // the desktop's own scheme shows as it is, light or dark; before it
     // exists, as the colours it would fall back to
-    QFile file(systemSchemePath());
-    std::optional<MaterialScheme::Roles> desktop;
-    if (file.open(QIODevice::ReadOnly)) {
-        desktop = MaterialScheme::fromMatugenJson(file.readAll());
-    }
-    options.append(option(QStringLiteral("system"), QStringLiteral("Desktop"),
-                          desktop ? *desktop : rolesFromSeed(QColor::fromRgba(kAccent), dark, true)));
+    const auto desktop = readScheme(systemSchemePath(), dark);
+    options.append(option(QStringLiteral("system"),
+#ifdef Q_OS_MACOS
+                          QStringLiteral("Matugen"),
+#else
+                          QStringLiteral("Desktop"),
 #endif
+                          desktop ? *desktop : rolesFromSeed(QColor::fromRgba(kAccent), dark, true)));
     options.append(option(QStringLiteral("builtin"), QStringLiteral("Swiftify"), rolesFromSeed(QColor::fromRgba(kAccent), dark, true)));
     for (const themes::Family &family : themes::families()) {
         options.append(option(family.id, family.name, themes::roles(dark ? family.dark : family.light, dark)));
@@ -200,13 +304,15 @@ void Theme::watchSchemeFile()
     if (m_settings->themeSource() != QLatin1StringView("system")) {
         return;
     }
-    const QFileInfo info(systemSchemePath());
-    // the directory catches the file appearing, or being replaced by a rename.
-    if (info.dir().exists()) {
-        m_watcher.addPath(info.absolutePath());
-    }
-    if (info.exists()) {
-        m_watcher.addPath(info.absoluteFilePath());
+    // All discovery directories are watched, including ancestors of missing
+    // ones, so a newly generated file can supersede a lower-priority scheme.
+    m_watcher.addPaths(m_schemeDirectories);
+    if (!m_systemSchemePath.isEmpty()) {
+        const QFileInfo info(m_systemSchemePath);
+        if (info.exists()) {
+            m_watcher.addPath(info.absoluteFilePath());
+            if (info.canonicalFilePath() != info.absoluteFilePath()) m_watcher.addPath(info.canonicalFilePath());
+        }
     }
 }
 

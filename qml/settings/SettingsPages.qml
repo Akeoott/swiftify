@@ -327,8 +327,7 @@ Item {
 
                 ConfigSelection {
                     text: "Light or dark"
-                    // the desktop's scheme is light or dark as the wallpaper made it
-                    enabled: !(Settings.themeSource === "system" && Theme.usingSystemScheme)
+                    // Matugen exports can contain both light and dark variants.
                     currentIndex: Math.max(0, ["system", "light", "dark"].indexOf(Settings.themeMode))
                     segments: [
                         Segment { text: "System"; symbol: "brightness_auto" },
@@ -359,17 +358,30 @@ Item {
 
                 Item {
                     width: parent.width
-                    height: path.implicitHeight + 16
-                    visible: Settings.themeSource === "system" && !App.macOS
+                    height: path.implicitHeight + automatic.implicitHeight + 24
+                    visible: Settings.themeSource === "system"
 
                     OutlinedTextField {
                         id: path
                         x: 8
                         y: 8
                         width: parent.width - 16
-                        placeholder: "Scheme file (end4's matugen colors.json)"
+                        placeholder: "Automatic (optional JSON file path)"
                         text: Settings.matugenColorsPath
                         onAccepted: Settings.matugenColorsPath = text
+                    }
+                    TextButton {
+                        id: automatic
+                        x: 8
+                        y: path.y + path.height + 8
+                        variant: TextButton.Tonal
+                        symbol: "refresh"
+                        text: "Auto-detect"
+                        onClicked: {
+                            path.text = ""
+                            Settings.matugenColorsPath = ""
+                            Theme.refreshSystemScheme()
+                        }
                     }
                     Connections {
                         target: path.inputItem
@@ -384,8 +396,10 @@ Item {
                     text: Settings.themeSource !== "system"
                         ? "these are hardcoded themes"
                         : (Theme.usingSystemScheme
-                            ? "following " + Theme.systemSchemePath + ", and changing with the wallpaper."
-                            : "no scheme found at " + Theme.systemSchemePath)
+                            ? "following " + Theme.systemSchemePath + "; updates when the file changes."
+                            : Settings.matugenColorsPath.length > 0
+                              ? "no valid Matugen scheme found at " + Theme.systemSchemePath
+                              : "automatically looks for Matugen JSON in common config and cache folders. an optional path overrides discovery.")
                 }
             }
 

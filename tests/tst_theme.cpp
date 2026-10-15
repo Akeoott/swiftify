@@ -4,12 +4,15 @@
 #include "theme/Themes.h"
 
 #include <QFile>
+#include <QDir>
 #include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QSaveFile>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUrl>
 
 using namespace swiftify;
 
@@ -29,6 +32,49 @@ QByteArray matugenJson(const MaterialScheme::Roles &roles)
         object.insert(snake, roles[index].name());
     }
     return QJsonDocument(object).toJson();
+}
+
+// Discovery tests own their XDG folders and restore the process environment.
+struct MatugenPaths {
+    QTemporaryDir directory;
+    QList<std::pair<QByteArray, std::optional<QByteArray>>> previous;
+    MatugenPaths()
+    {
+        for (const auto &[name, subdir] : {std::pair{"XDG_CONFIG_HOME", "config"},
+                                         std::pair{"XDG_CACHE_HOME", "cache"},
+                                         std::pair{"XDG_STATE_HOME", "state"}}) {
+            previous.append({name, qEnvironmentVariableIsSet(name) ? std::optional(qgetenv(name)) : std::nullopt});
+            const QString path = directory.filePath(QLatin1StringView(subdir));
+            QDir().mkpath(path);
+            qputenv(name, path.toUtf8());
+        }
+    }
+    ~MatugenPaths()
+    {
+        for (const auto &[name, value] : previous) {
+            if (value) qputenv(name.constData(), *value);
+            else qunsetenv(name.constData());
+        }
+    }
+};
+
+bool writeJson(const QString &path, const QByteArray &json)
+{
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QSaveFile file(path);
+    return file.open(QIODevice::WriteOnly) && file.write(json) == json.size() && file.commit();
+}
+
+QString formattedColor(const QColor &color, const QString &format)
+{
+    if (format == QLatin1StringView("hex")) return color.name();
+    if (format == QLatin1StringView("strip")) return color.name().mid(1);
+    if (format == QLatin1StringView("rgb")) return QStringLiteral("rgb(%1, %2, %3)").arg(color.red()).arg(color.green()).arg(color.blue());
+    if (format == QLatin1StringView("rgba")) return QStringLiteral("rgba(%1, %2, %3, 1)").arg(color.red()).arg(color.green()).arg(color.blue());
+    return QStringLiteral("%1(%2, %3%, %4%%5)")
+        .arg(format).arg(std::max(0.0f, color.hslHueF()) * 360, 0, 'f', 8)
+        .arg(color.hslSaturationF() * 100, 0, 'f', 8).arg(color.lightnessF() * 100, 0, 'f', 8)
+        .arg(format == QLatin1StringView("hsla") ? QStringLiteral(", 1") : QString());
 }
 
 } // namespace
@@ -94,6 +140,131 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(changed.count() > 0, 3000);
         QVERIFY(theme.dark());
         QCOMPARE(theme.colors()->primary(), red[static_cast<std::size_t>(MaterialScheme::Role::Primary)]);
+    }
+
+    void matugenExports_data()
+    {
+        QTest::addColumn<QString>("format");
+        QTest::addColumn<QString>("layout");
+        QTest::addColumn<bool>("dark");
+        for (const char *format : {"hex", "strip", "rgb", "rgba", "hsl", "hsla"}) {
+            for (const char *layout : {"flat", "per-role", "schemes"}) {
+                for (const bool dark : {false, true}) {
+                    QTest::addRow("%s %s %s", format, layout, dark ? "dark" : "light")
+                        << QString::fromLatin1(format) << QString::fromLatin1(layout) << dark;
+                }
+            }
+        }
+    }
+
+    void matugenExports()
+    {
+        QFETCH(QString, format);
+        QFETCH(QString, layout);
+        QFETCH(bool, dark);
+        const auto light = Theme::rolesFromSeed(Qt::green, false, false);
+        const auto night = Theme::rolesFromSeed(Qt::blue, true, false);
+        const auto &expected = dark ? night : light;
+        const auto objectFor = [&](const MaterialScheme::Roles &roles) {
+            QJsonObject object = QJsonDocument::fromJson(matugenJson(roles)).object();
+            for (auto it = object.begin(); it != object.end(); ++it) it.value() = formattedColor(QColor::fromString(it.value().toString()), format);
+            return object;
+        };
+        QJsonObject object;
+        if (layout == QLatin1StringView("flat")) {
+            object = objectFor(expected);
+        } else if (layout == QLatin1StringView("schemes")) {
+            object.insert(QStringLiteral("schemes"), QJsonObject{{"dark", objectFor(night)}, {"light", objectFor(light)}});
+        } else {
+            const auto d = objectFor(night), l = objectFor(light);
+            QJsonObject colors;
+            for (auto it = d.begin(); it != d.end(); ++it) {
+                colors.insert(it.key(), QJsonObject{{"dark", QJsonObject{{"color", it.value()}}},
+                                                   {"default", QJsonObject{{"color", it.value()}}},
+                                                   {"light", QJsonObject{{"color", l.value(it.key())}}}});
+            }
+            object.insert(QStringLiteral("colors"), colors);
+        }
+        const auto parsed = MaterialScheme::fromMatugenJson(QJsonDocument(object).toJson(), dark);
+        QVERIFY(parsed);
+        for (std::size_t i = 0; i < expected.size(); ++i) {
+            const QColor actual = (*parsed)[i].toRgb();
+            QVERIFY(qAbs(actual.red() - expected[i].red()) <= 1);
+            QVERIFY(qAbs(actual.green() - expected[i].green()) <= 1);
+            QVERIFY(qAbs(actual.blue() - expected[i].blue()) <= 1);
+        }
+    }
+
+    void discoversOtherFilenamesAndFollowsAtomicReplacement()
+    {
+        MatugenPaths paths;
+        const auto green = Theme::rolesFromSeed(Qt::green, true, false);
+        const auto red = Theme::rolesFromSeed(Qt::red, true, false);
+        const QString config = paths.directory.filePath(QStringLiteral("config/matugen"));
+        const QString cached = paths.directory.filePath(QStringLiteral("cache/matugen/wallpaper-theme.json"));
+        QVERIFY(writeJson(cached, matugenJson(green)));
+        QVERIFY(writeJson(config + QStringLiteral("/colors.json"), "{\"primary\": \"#123456\"}"));
+        // Even valid-looking input templates must never override generated output.
+        QVERIFY(writeJson(config + QStringLiteral("/templates/colors.json"), matugenJson(red)));
+        Settings settings(paths.directory.filePath(QStringLiteral("swiftify.conf")));
+        settings.setThemeSource(QStringLiteral("system"));
+        Theme theme(&settings);
+        QVERIFY(theme.usingSystemScheme());
+        QCOMPARE(theme.systemSchemePath(), cached);
+        QCOMPARE(theme.colors()->primary(), green[std::size_t(MaterialScheme::Role::Primary)]);
+        // A new generated directory and any valid filename are discovered live.
+        const QString generated = config + QStringLiteral("/generated/my-palette.json");
+        QVERIFY(writeJson(generated, matugenJson(red)));
+        QTRY_COMPARE_WITH_TIMEOUT(theme.systemSchemePath(), generated, 3000);
+        QCOMPARE(theme.colors()->primary(), red[std::size_t(MaterialScheme::Role::Primary)]);
+        QVERIFY(writeJson(generated, matugenJson(green)));
+        QTRY_COMPARE_WITH_TIMEOUT(theme.colors()->primary(), green[std::size_t(MaterialScheme::Role::Primary)], 3000);
+        QVERIFY(QFile::remove(generated));
+        QTRY_COMPARE_WITH_TIMEOUT(theme.systemSchemePath(), cached, 3000);
+    }
+
+    void explicitFilesOverrideDiscoveryAndModesCanChange()
+    {
+        MatugenPaths paths;
+        const auto day = Theme::rolesFromSeed(Qt::green, false, false);
+        const auto night = Theme::rolesFromSeed(Qt::blue, true, false);
+        const QString detected = paths.directory.filePath(QStringLiteral("config/matugen/colors.json"));
+        const QString custom = paths.directory.filePath(QStringLiteral("elsewhere/custom.json"));
+        QVERIFY(writeJson(detected, matugenJson(day)));
+        const QJsonObject modes{{"colors", QJsonObject{{"dark", QJsonDocument::fromJson(matugenJson(night)).object()},
+                                                      {"light", QJsonDocument::fromJson(matugenJson(day)).object()}}}};
+        QVERIFY(writeJson(custom, QJsonDocument(modes).toJson()));
+        Settings settings(paths.directory.filePath(QStringLiteral("swiftify.conf")));
+        settings.setThemeSource(QStringLiteral("system"));
+        settings.setThemeMode(QStringLiteral("dark"));
+        settings.setMatugenColorsPath(QUrl::fromLocalFile(custom).toString());
+        Theme theme(&settings);
+        QCOMPARE(theme.systemSchemePath(), custom);
+        QVERIFY(theme.dark());
+        settings.setThemeMode(QStringLiteral("light"));
+        QTRY_VERIFY(!theme.dark());
+        QCOMPARE(theme.colors()->primary(), day[std::size_t(MaterialScheme::Role::Primary)]);
+        settings.setMatugenColorsPath(custom + QStringLiteral(".missing"));
+        QTRY_VERIFY(!theme.usingSystemScheme());
+        settings.setMatugenColorsPath(QString());
+        QTRY_COMPARE(theme.systemSchemePath(), detected);
+        QVERIFY(theme.usingSystemScheme());
+        QCOMPARE(theme.themeOptions(false).first().id, QStringLiteral("system"));
+    }
+
+    void olderExportsFillMissingModernRoles()
+    {
+        QJsonObject object = QJsonDocument::fromJson(matugenJson(Theme::rolesFromSeed(Qt::blue, true, false))).object();
+        for (const QString &key : object.keys()) {
+            if (key.contains(QLatin1StringView("fixed")) || key.contains(QLatin1StringView("surface_container"))
+                || key == QLatin1StringView("surface_tint") || key == QLatin1StringView("surface_dim")
+                || key == QLatin1StringView("surface_bright")) object.remove(key);
+        }
+        const auto roles = MaterialScheme::fromMatugenJson(QJsonDocument(object).toJson());
+        QVERIFY(roles);
+        for (const QColor &color : *roles) QVERIFY(color.isValid());
+        object.insert(QStringLiteral("primary"), QStringLiteral("{{colors.primary.default.hex}}"));
+        QVERIFY(!MaterialScheme::fromMatugenJson(QJsonDocument(object).toJson()));
     }
 
     void fallsBackWhenTheFileIsMissingOrIncomplete()

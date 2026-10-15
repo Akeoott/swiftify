@@ -1,10 +1,15 @@
 #include "theme/MaterialScheme.h"
 
 #include "cpp/dynamiccolor/dynamic_scheme.h"
+#include "cpp/cam/hct.h"
+#include "cpp/scheme/scheme_tonal_spot.h"
 #include "theme/ColorMath.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
+
+#include <cmath>
 
 namespace swiftify {
 
@@ -61,6 +66,63 @@ constexpr std::array<const char *, static_cast<std::size_t>(MaterialScheme::Role
     "onTertiaryFixed",
     "onTertiaryFixedVariant",
 };
+
+QColor matugenColor(QJsonValue value, bool dark)
+{
+    for (int depth = 0; value.isObject() && depth < 6; ++depth) {
+        const QJsonObject object = value.toObject();
+        bool found = false;
+        for (const QString &key : {dark ? QStringLiteral("dark") : QStringLiteral("light"),
+                                  QStringLiteral("default"), QStringLiteral("color"),
+                                  QStringLiteral("hex"), QStringLiteral("value"),
+                                  dark ? QStringLiteral("light") : QStringLiteral("dark")}) {
+            if (object.contains(key)) {
+                value = object.value(key);
+                found = true;
+                break;
+            }
+        }
+        if (!found) return {};
+    }
+    const QString text = value.toString().trimmed();
+    QColor color = QColor::fromString(text);
+    if (color.isValid()) return color;
+    static const QRegularExpression strippedHex(QStringLiteral("^[0-9a-fA-F]{6}$"));
+    if (strippedHex.match(text).hasMatch()) return QColor::fromString(u'#' + text);
+
+    // Matugen --json also exports CSS rgb(a) and hsl(a) strings.
+    static const QRegularExpression css(QStringLiteral("^(rgb|rgba|hsl|hsla)\\(([^()]+)\\)$"),
+                                        QRegularExpression::CaseInsensitiveOption);
+    const auto match = css.match(text);
+    if (!match.hasMatch()) return {};
+    const QString format = match.captured(1).toLower();
+    const QStringList parts = match.captured(2).split(QRegularExpression(QStringLiteral("[,\\s/]+")), Qt::SkipEmptyParts);
+    if (parts.size() != (format.endsWith(u'a') ? 4 : 3)) return {};
+    const auto unit = [](QString part, qreal maximum) -> std::optional<qreal> {
+        if (part.endsWith(u'%')) {
+            part.chop(1);
+            maximum = 100;
+        }
+        bool ok = false;
+        const qreal value = part.toDouble(&ok);
+        if (!ok || !std::isfinite(value) || value < 0 || value > maximum) return std::nullopt;
+        return value / maximum;
+    };
+    const auto alpha = parts.size() == 4 ? unit(parts[3], 1) : std::optional<qreal>(1);
+    if (!alpha) return {};
+    if (format.startsWith(QLatin1StringView("rgb"))) {
+        const auto r = unit(parts[0], 255), g = unit(parts[1], 255), b = unit(parts[2], 255);
+        return r && g && b ? QColor::fromRgbF(*r, *g, *b, *alpha) : QColor();
+    }
+    bool ok = false;
+    QString hue = parts[0];
+    if (hue.endsWith(QLatin1StringView("deg"))) hue.chop(3);
+    const qreal degrees = hue.toDouble(&ok);
+    const auto saturation = unit(parts[1], 1), lightness = unit(parts[2], 1);
+    if (!ok || !std::isfinite(degrees) || !saturation || !lightness) return {};
+    return QColor::fromHslF(std::fmod(std::fmod(degrees, 360) + 360, 360) / 360,
+                            *saturation, *lightness, *alpha);
+}
 
 } // namespace
 
@@ -198,7 +260,7 @@ MaterialScheme::Roles MaterialScheme::fromDynamicScheme(
     };
 }
 
-std::optional<MaterialScheme::Roles> MaterialScheme::fromMatugenJson(const QByteArray &json)
+std::optional<MaterialScheme::Roles> MaterialScheme::fromMatugenJson(const QByteArray &json, bool dark)
 {
     QJsonParseError error;
     const QJsonDocument document = QJsonDocument::fromJson(json, &error);
@@ -206,9 +268,20 @@ std::optional<MaterialScheme::Roles> MaterialScheme::fromMatugenJson(const QByte
         return std::nullopt;
     }
     QJsonObject object = document.object();
-    // matugen's own template nests the scheme under "colors".
-    if (object.value(QStringLiteral("colors")).isObject()) {
-        object = object.value(QStringLiteral("colors")).toObject();
+    // Both the CLI export and custom templates can wrap their schemes.
+    for (int depth = 0; depth < 4; ++depth) {
+        bool found = false;
+        for (const QString &key : {QStringLiteral("colors"), QStringLiteral("schemes"),
+                                  dark ? QStringLiteral("dark") : QStringLiteral("light"),
+                                  QStringLiteral("default"),
+                                  dark ? QStringLiteral("light") : QStringLiteral("dark")}) {
+            if (object.value(key).isObject()) {
+                object = object.value(key).toObject();
+                found = true;
+                break;
+            }
+        }
+        if (!found) break;
     }
 
     Roles roles;
@@ -232,13 +305,25 @@ std::optional<MaterialScheme::Roles> MaterialScheme::fromMatugenJson(const QByte
                 break;
             }
         }
-        // matugen can also write {"dark": "#..", "light": ".."} per role; the
-        // file end4 reads already holds the active mode's value as a string.
-        const QColor color = QColor::fromString(value.toString());
+        if (value.isUndefined()) continue;
+        const QColor color = matugenColor(value, dark);
         if (!color.isValid()) {
             return std::nullopt;
         }
         roles[index] = color;
+    }
+    // Validate a real Material scheme rather than treating an unrelated JSON
+    // file or a template containing unresolved placeholders as a theme.
+    for (const Role role : {Role::Background, Role::OnBackground, Role::Surface, Role::OnSurface,
+                           Role::Primary, Role::OnPrimary, Role::Secondary, Role::OnSecondary,
+                           Role::Tertiary, Role::OnTertiary, Role::Error, Role::OnError, Role::Outline}) {
+        if (!roles[static_cast<std::size_t>(role)].isValid()) return std::nullopt;
+    }
+    const bool isDark = color::luminance709(roles[static_cast<std::size_t>(Role::Background)]) < 0.5;
+    using namespace material_color_utilities;
+    const auto fallback = fromDynamicScheme(SchemeTonalSpot(Hct(roles[static_cast<std::size_t>(Role::Primary)].rgba() | 0xff000000u), isDark, 0));
+    for (std::size_t index = 0; index < roles.size(); ++index) {
+        if (!roles[index].isValid()) roles[index] = fallback[index];
     }
     return roles;
 }

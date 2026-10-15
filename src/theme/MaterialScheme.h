@@ -236,9 +236,9 @@ public:
     bool dark() const { return m_dark; }
 
     static Roles fromDynamicScheme(const material_color_utilities::DynamicScheme &scheme);
-    /// a matugen colour file: role names in snake_case, camelCase or with end4's
-    /// "m3" prefix, values as #rrggbb. nullopt unless every role is present.
-    static std::optional<Roles> fromMatugenJson(const QByteArray &json);
+    /// Matugen exports and templates: flat roles, nested schemes, or a mode
+    /// per role. Older schemes may omit newer Material roles.
+    static std::optional<Roles> fromMatugenJson(const QByteArray &json, bool dark = true);
     /// roles interpolated between two schemes, for animated palette changes.
     static Roles interpolate(const Roles &from, const Roles &to, qreal progress);
     static QString roleKey(Role role);

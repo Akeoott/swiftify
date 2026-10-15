@@ -10,6 +10,7 @@ RippleButton {
 
     required property themeOption option
     property bool selected: false
+    readonly property bool matugen: option.id === "system"
 
     implicitWidth: 124
     implicitHeight: 104
@@ -31,12 +32,43 @@ RippleButton {
             width: root.width
             height: 76
 
+            // Matugen's own accents glow around its preview, even before selection.
+            Loader {
+                anchors.fill: parent
+                active: root.matugen && !Appearance.performanceMode
+                sourceComponent: Item {
+                    opacity: root.selected ? 0.65 : (root.hovered ? 0.55 : 0.35)
+
+                    Behavior on opacity {
+                        enabled: !Appearance.reduceMotion
+                        ElementMoveFast {}
+                    }
+
+                    SoftShadow {
+                        anchors.fill: parent
+                        radius: 16
+                        blur: 14
+                        offset: Qt.vector2d(-3, 0)
+                        color: root.option.primary
+                    }
+                    SoftShadow {
+                        anchors.fill: parent
+                        radius: 16
+                        blur: 12
+                        offset: Qt.vector2d(3, 0)
+                        color: Qt.rgba(root.option.tertiary.r, root.option.tertiary.g,
+                                       root.option.tertiary.b, 0.6)
+                    }
+                }
+            }
+
             Rectangle {
                 anchors.fill: parent
                 radius: 16
                 color: root.option.window
                 border.width: root.selected ? 3 : 1
                 border.color: root.selected ? Appearance.colors.primary
+                                            : root.matugen ? Qt.rgba(root.option.primary.r, root.option.primary.g, root.option.primary.b, 0.65)
                                             : Qt.rgba(root.option.text.r, root.option.text.g, root.option.text.b, 0.14)
 
                 Behavior on border.width {

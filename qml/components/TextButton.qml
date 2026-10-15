@@ -3,9 +3,8 @@ import QtQuick
 import Swiftify
 
 // a material 3 common button: filled, tonal, outlined, text or elevated, with
-// an optional leading symbol. pressing squares the corners off a little, the
-// expressive shape change, unless the button is `wavy`: the buttons that
-// play things are scalloped pills that keep their shape and squish instead.
+// an optional leading symbol. Buttons keep their pill shape while pressing;
+// RippleButton handles the shrink and bounce animation.
 RippleButton {
     id: root
 
@@ -39,7 +38,6 @@ RippleButton {
     leftPadding: iconOnly ? 0 : (symbol.length > 0 ? 16 : 24)
     rightPadding: iconOnly ? 0 : 24
     buttonRadius: Appearance.rounding.full
-    buttonRadiusPressed: wavy ? buttonRadius : Appearance.rounding.small
     rippleEnabled: !wavy || iconOnly
     backgroundItem.visible: !wavy || iconOnly
     colBackground: {

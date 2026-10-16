@@ -16,8 +16,8 @@ ApplicationWindow {
 
     width: 1280
     height: 780
-    // The minimum requested from the user's current 526-point window.
     minimumWidth: 526
+    minimumHeight: 410
     readonly property bool rightPanelFits: width - effectiveSidebarWidth - Appearance.sizes.sideSheetWidth - 32 >= 404
 
     function closeCrowdedPanels() {

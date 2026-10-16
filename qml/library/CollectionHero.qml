@@ -17,9 +17,10 @@ Item {
     property real titleSize: 34
     property alias actions: actionSlot.data
     property alias artwork: artworkSlot.data
-    readonly property bool stacked: width < 640
+    readonly property real sideArtworkSpace: width - 2 * Appearance.sizes.pageMargin - 24 - 220
+    readonly property bool stacked: sideArtworkSpace < 160
     readonly property real artworkSize: stacked ? Math.min(176, (width - 2 * Appearance.sizes.pageMargin) * 0.5)
-                                              : Appearance.sizes.headerArtwork
+                                              : Math.min(Appearance.sizes.headerArtwork, sideArtworkSpace)
 
     implicitHeight: stacked ? artworkSize + details.implicitHeight + 100
                             : Math.max(artworkSize, details.implicitHeight) + 80
@@ -89,7 +90,8 @@ Item {
 
     Column {
         id: details
-        x: root.stacked ? Appearance.sizes.pageMargin : artworkBox.x + artworkBox.width + 30
+        objectName: "heroDetails"
+        x: root.stacked ? Appearance.sizes.pageMargin : artworkBox.x + artworkBox.width + 24
         y: root.stacked ? artworkBox.y + artworkBox.height + 20
                         : 40 + Math.max(0, artworkBox.height - implicitHeight)
         width: Math.max(0, root.width - x - Appearance.sizes.pageMargin)
@@ -181,8 +183,9 @@ Item {
 
         Flow {
             id: actionSlot
+            objectName: "heroActions"
             width: parent.width
-            readonly property bool compactActions: width < 420
+            readonly property bool compactActions: width < 130
             readonly property real actionSize: Math.max(28, Math.min(48, (width - 30) / 4))
             topPadding: 6
             spacing: 10

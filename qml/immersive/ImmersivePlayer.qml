@@ -36,15 +36,16 @@ FocusScope {
     readonly property real horizontalPadding: Math.max(28, Math.min(64, width * 0.05))
     readonly property real rowSpace: Math.min(1250, width - 2 * horizontalPadding)
     readonly property real gap: Math.max(32, Math.min(72, width * 0.055))
-    readonly property real panelWidth: Math.max(360, Math.min(540, (rowSpace - gap) / 2))
-    readonly property real nowPlayingWidth: usesPanelLayout ? Math.min(500, rowSpace - gap - panelWidth) : Math.min(620, rowSpace)
-    readonly property real rowWidth: usesPanelLayout ? nowPlayingWidth + gap + panelWidth : nowPlayingWidth
+    readonly property bool sideBySide: usesPanelLayout && rowSpace >= 900
+    readonly property bool panelOnly: usesPanelLayout && !sideBySide
+    readonly property real panelWidth: sideBySide ? Math.min(540, (rowSpace - gap) / 2) : rowSpace
+    readonly property real nowPlayingWidth: sideBySide ? Math.min(500, rowSpace - gap - panelWidth) : Math.min(620, rowSpace)
+    readonly property real rowWidth: sideBySide ? nowPlayingWidth + gap + panelWidth : nowPlayingWidth
     readonly property real panelHeight: Math.min(520, immersiveLayout.contentHeight)
     // where the panel stands when shown, worked out from the panel layout
     // whether or not it is in use, so a panel sliding away keeps its track
-    readonly property real panelLayoutNowPlayingWidth: Math.min(500, rowSpace - gap - panelWidth)
-    readonly property real panelX: (width - (panelLayoutNowPlayingWidth + gap + panelWidth)) / 2
-                                   + panelLayoutNowPlayingWidth + gap
+    readonly property real panelX: sideBySide ? (width - rowWidth) / 2 + nowPlayingWidth + gap
+                                              : (width - panelWidth) / 2
     readonly property real panelSlide: Math.min(140, panelWidth * 0.3)
     /// the mac's traffic lights stay over the top-left corner
     readonly property real titleBarInset: App.macOS ? Math.max(28, SafeArea.margins.top) : 0
@@ -200,7 +201,7 @@ FocusScope {
         windowWidth: root.width
         windowHeight: root.height
         showsSpectrum: root.showsSpectrum
-        showsPanel: root.usesPanelLayout
+        showsPanel: root.sideBySide
         circular: Settings.visualizersEnabled && Settings.circularVisualizer
     }
 
@@ -304,7 +305,8 @@ FocusScope {
 
         ImmersiveNowPlaying {
             id: nowPlaying
-            Reveal.shown: Player.hasSong
+            objectName: "immersiveNowPlaying"
+            Reveal.shown: Player.hasSong && !root.panelOnly
             layout: immersiveLayout
             metadataWidth: Math.min(root.metadataWidth, root.nowPlayingWidth)
             animateLayout: root.layoutMoving
@@ -321,6 +323,7 @@ FocusScope {
 
         Loader {
             id: panelHost
+            objectName: "immersivePanel"
             visible: Player.hasSong && root.shownPanel.length > 0 && opacity > 0
             x: root.panelX + root.panelShift * root.panelSlide
             width: root.panelWidth

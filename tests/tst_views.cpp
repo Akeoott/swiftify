@@ -187,6 +187,82 @@ private slots:
         QVERIFY(!rig.frame.isNull());
     }
 
+    void immersivePlayerFitsShortWindows()
+    {
+        Rig rig;
+        rig.playSomething();
+        rig.settings.setCircularVisualizer(true);
+        rig.settings.setImmersivePlayerPanel(QStringLiteral("artwork"));
+        const auto player = rig.show(QStringLiteral("ImmersivePlayer"));
+        QVERIFY(player);
+        auto *nowPlaying = player->findChild<QQuickItem *>(QStringLiteral("immersiveNowPlaying"));
+        auto *artwork = player->findChild<QQuickItem *>(QStringLiteral("immersiveArtwork"));
+        auto *details = player->findChild<QQuickItem *>(QStringLiteral("immersiveDetails"));
+        auto *seek = player->findChild<QQuickItem *>(QStringLiteral("immersiveSeek"));
+        auto *transport = player->findChild<QQuickItem *>(QStringLiteral("immersiveTransport"));
+        QVERIFY(nowPlaying && artwork && details && seek && transport);
+
+        for (const int width : {724, 526}) {
+            player->setSize(QSize(width, 410));
+            Rig::settle();
+            rig.render();
+            QVERIFY(artwork->width() >= 160);
+            QVERIFY(seek->width() >= 150);
+            QVERIFY(transport->width() <= details->width());
+            QVERIFY(artwork->mapToItem(player.get(), artwork->width(), 0).x()
+                    < details->mapToItem(player.get(), 0, 0).x());
+            QVERIFY(nowPlaying->mapToItem(player.get(), nowPlaying->width(), 0).x() <= width);
+        }
+
+        rig.settings.setCircularVisualizer(false);
+        Rig::settle();
+        rig.render();
+        QVERIFY(nowPlaying->implicitHeight() <= 234);
+        QVERIFY(artwork->width() >= 160);
+        QVERIFY(seek->width() >= 150);
+
+        rig.settings.setImmersivePlayerPanel(QStringLiteral("queue"));
+        QMetaObject::invokeMethod(player.get(), "swapPanel", QStringLiteral("queue"), true);
+        Rig::settle();
+        QVERIFY(player->property("panelOnly").toBool());
+        auto *panel = player->findChild<QQuickItem *>(QStringLiteral("immersivePanel"));
+        QVERIFY(panel);
+        QCOMPARE(panel->width(), player->property("rowSpace").toDouble());
+        QVERIFY(panel->x() >= 0);
+    }
+
+    void collectionHeroKeepsPillButtonsWhileTheyFit()
+    {
+        Rig rig;
+        QQmlComponent component(&rig.engine);
+        component.setData("import QtQuick\nimport Swiftify\n"
+                          "CollectionHero { width: 480; kind: 'PLAYLIST'; title: 'Ddd'; facts: '10 songs'\n"
+                          "  actions: [TextButton { objectName: 'heroPlay'; text: 'Play'; symbol: 'play_arrow'; wavy: true; iconOnly: parent ? parent.compactActions : false },\n"
+                          "            TextButton { objectName: 'heroShuffle'; text: 'Shuffle'; symbol: 'shuffle'; wavy: true; iconOnly: parent ? parent.compactActions : false }] }",
+                          QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto *hero = qobject_cast<QQuickItem *>(object.get());
+        hero->setParentItem(rig.window->contentItem());
+        auto *artwork = hero->findChild<QQuickItem *>(QStringLiteral("heroArtwork"));
+        auto *details = hero->findChild<QQuickItem *>(QStringLiteral("heroDetails"));
+        auto *play = hero->findChild<QQuickItem *>(QStringLiteral("heroPlay"));
+        auto *shuffle = hero->findChild<QQuickItem *>(QStringLiteral("heroShuffle"));
+        QVERIFY(artwork && details && play && shuffle);
+        Rig::settle();
+        rig.render();
+        QVERIFY(!hero->property("stacked").toBool());
+        QVERIFY(artwork->x() + artwork->width() < details->x());
+        QVERIFY(!play->property("iconOnly").toBool());
+        QVERIFY(!shuffle->property("iconOnly").toBool());
+
+        hero->setWidth(430);
+        Rig::settle();
+        rig.render();
+        QVERIFY(hero->property("stacked").toBool());
+        QVERIFY(!play->property("iconOnly").toBool());
+    }
+
     void theSeekBarMovesBetweenPlayerUpdates()
     {
         Rig rig;
@@ -2356,6 +2432,7 @@ private slots:
         auto *window = qobject_cast<QQuickWindow *>(object.get());
         QVERIFY(window);
         QCOMPARE(window->minimumWidth(), 526);
+        QCOMPARE(window->minimumHeight(), 410);
         window->setWidth(1000);
         Rig::settle();
         QVERIFY(window->property("rightPanelFits").toBool());
@@ -2457,7 +2534,7 @@ private slots:
         QVERIFY(search->z() > actions->z());
     }
 
-    void compactCollectionActionsStayWithinTheirHero()
+    void narrowCollectionActionsStayWithinTheirHero()
     {
         Rig rig;
         const Playlist playlist = rig.localFiles.createPlaylist(QStringLiteral("A playlist with a long title"), {}, {}, {});
@@ -2474,8 +2551,8 @@ private slots:
                 const QString label = item->property("text").toString();
                 if (label != QStringLiteral("Play") && label != QStringLiteral("Shuffle") && label != QStringLiteral("Add Tracks")) continue;
                 ++actions;
-                QVERIFY(item->property("iconOnly").toBool());
-                QCOMPARE(item->width(), item->height());
+                QVERIFY(!item->property("iconOnly").toBool());
+                QVERIFY(item->width() > item->height());
                 QVERIFY(item->x() >= 0);
                 QVERIFY(item->x() + item->width() <= item->parentItem()->width());
             }

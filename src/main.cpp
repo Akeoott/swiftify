@@ -28,7 +28,11 @@
 #include "system/macos/NowPlaying.h"
 #endif
 
+#ifdef Q_OS_LINUX
+#include <QApplication>
+#else
 #include <QGuiApplication>
+#endif
 #include <QEvent>
 #include <QIcon>
 #include <QPlatformSurfaceEvent>
@@ -200,7 +204,12 @@ int main(int argc, char *argv[])
     QGuiApplication::setApplicationVersion(QStringLiteral(SWIFTIFY_VERSION));
     // the wayland app id, which hyprland window rules and the .desktop file match.
     QGuiApplication::setDesktopFileName(QStringLiteral("swiftify"));
+    // the tray menu can fall back to widgets on linux
+#ifdef Q_OS_LINUX
+    QApplication application(argc, argv);
+#else
     QGuiApplication application(argc, argv);
+#endif
 #ifdef Q_OS_UNIX
     quitGracefullyOnSignals(application);
 #endif

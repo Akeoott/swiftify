@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(Swiftify
-    VERSION 0.3.2
+    VERSION 0.3.3
     DESCRIPTION "A native Spotify client"
     LANGUAGES C CXX)
 
@@ -46,7 +46,7 @@ if(BUILD_TESTING)
     find_package(Qt6 6.9 REQUIRED COMPONENTS Test QuickTest)
 endif()
 if(SWIFTIFY_IS_LINUX)
-    find_package(Qt6 6.9 REQUIRED COMPONENTS DBus)
+    find_package(Qt6 6.9 REQUIRED COMPONENTS DBus Widgets)
 else()
     find_package(Qt6 6.9 OPTIONAL_COMPONENTS DBus)
 endif()
@@ -281,6 +281,9 @@ target_link_libraries(swiftify_app PUBLIC
 
 qt_add_executable(swiftify src/main.cpp)
 target_link_libraries(swiftify PRIVATE swiftify_app swiftify_appplugin)
+if(SWIFTIFY_IS_LINUX)
+    target_link_libraries(swiftify PRIVATE Qt6::Widgets)
+endif()
 # a windowed app on windows, with no console window of its own
 set_target_properties(swiftify PROPERTIES WIN32_EXECUTABLE ON)
 if(MINGW)

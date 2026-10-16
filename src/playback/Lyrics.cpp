@@ -92,6 +92,15 @@ std::optional<Lyrics> Lyrics::fromJson(const QByteArray &json)
             line.value(QStringLiteral("words")).toString(),
         });
     }
+    // spotify gives synced lines no end, so each lasts until the next one
+    // starts and the last for a few seconds
+    for (qsizetype index = 0; index < lyrics.lines.size(); ++index) {
+        LyricLine &line = lyrics.lines[index];
+        if (line.endTimeMs <= line.startTimeMs) {
+            line.endTimeMs = index + 1 < lyrics.lines.size() ? lyrics.lines.at(index + 1).startTimeMs
+                                                             : line.startTimeMs + 5000;
+        }
+    }
     return lyrics;
 }
 

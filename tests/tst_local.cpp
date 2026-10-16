@@ -496,6 +496,14 @@ private slots:
         QCOMPARE(lyrics->lines.at(3).startTimeMs, 30'250u);
         QCOMPARE(lyrics->lineIndex(22'000), 1);
 
+        // spotify's lines carry no end, so each runs to the next one's start
+        const auto spotify = Lyrics::fromJson(R"({"syncType":"lineSynced","lines":[
+            {"startTimeMs":1000,"endTimeMs":0,"words":"one"},
+            {"startTimeMs":4000,"endTimeMs":0,"words":"two"}]})");
+        QVERIFY(spotify);
+        QCOMPARE(spotify->lines.at(0).endTimeMs, 4'000u);
+        QCOMPARE(spotify->lines.at(1).endTimeMs, 9'000u);
+
         // without times, the lines are there to read along
         const auto plain = Lyrics::fromLrc(QStringLiteral("first line\nsecond line\n"));
         QVERIFY(plain);

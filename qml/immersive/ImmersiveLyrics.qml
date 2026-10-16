@@ -115,19 +115,9 @@ Item {
             required property int index
             required property string words
             required property int startTimeMs
-            required property int endTimeMs
             readonly property bool active: !Player.lyricsSynchronized || Player.activeLyricIndex === index
-            readonly property real musicProgress: {
-                const duration = endTimeMs - startTimeMs
-                return duration > 0 ? Math.max(0, Math.min(1, (Player.livePositionMs - startTimeMs) / duration)) : 0
-            }
-            property real shownMusicProgress: musicProgress
             property bool highlighted: false
             property real glowStrength: active ? 1 : 0
-
-            Behavior on shownMusicProgress {
-                NumberAnimation { duration: Appearance.duration(240); easing.type: Easing.Linear }
-            }
 
             Behavior on glowStrength {
                 NumberAnimation { duration: Appearance.duration(320); easing.type: Easing.InOutQuad }
@@ -218,28 +208,6 @@ Item {
                     blurMax: 24
                     shadowHorizontalOffset: 0
                     shadowVerticalOffset: 0
-                }
-            }
-
-            Row {
-                x: (line.width - width) / 2
-                y: label.y + label.height + 3
-                spacing: 7
-                visible: line.active && Player.lyricsSynchronized && line.index + 1 < Player.lyrics.count
-                z: 1
-
-                Repeater {
-                    model: 3
-                    delegate: MaterialShape {
-                        required property int index
-                        readonly property real growth: line.shownMusicProgress
-                        width: 8 + index * 3
-                        height: width
-                        shape: ["sunny", "flower", "clover4"][index]
-                        color: Qt.alpha(root.scheme.primary, 0.55 + growth * 0.45)
-                        scale: 0.3 + growth * 0.75
-                        spinAngle: index * 45 + growth * 360
-                    }
                 }
             }
 

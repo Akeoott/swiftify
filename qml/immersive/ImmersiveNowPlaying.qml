@@ -22,6 +22,39 @@ Item {
     property real artworkSize: layout.artworkSize
     readonly property real innerSize: showsRing ? artworkSize * ring.innerRadiusRatio : artworkSize
     readonly property real artworkRadius: Math.max(18, innerSize * 0.055)
+    /// the song the title and artist show, which over a crossfade changes
+    /// once the old one has faded out
+    property song shownSong
+
+    Component.onCompleted: shownSong = Player.currentSong
+
+    Connections {
+        target: Player
+        function onCurrentSongChanged() {
+            if (Player.crossfadeMs > 0 && !Appearance.reduceMotion) {
+                metadataFade.stop()
+                metadataOut.duration = Player.crossfadeMs / 2
+                metadataIn.duration = Player.crossfadeMs / 2
+                metadataFade.restart()
+            } else {
+                metadataFade.stop()
+                root.shownSong = Player.currentSong
+            }
+        }
+    }
+
+    SequentialAnimation {
+        id: metadataFade
+        NumberAnimation { id: metadataOut; target: metadata; property: "opacity"; to: 0; easing.type: Easing.InSine }
+        ScriptAction { script: root.shownSong = Player.currentSong }
+        NumberAnimation { id: metadataIn; target: metadata; property: "opacity"; to: 1; easing.type: Easing.OutSine }
+        onStopped: {
+            if (metadata.opacity < 1) {
+                metadata.opacity = 1
+                root.shownSong = Player.currentSong
+            }
+        }
+    }
 
     component Time: StyledText {
         tabularNumbers: true
@@ -63,7 +96,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: root.artworkSize
             height: root.artworkSize
-            // a new song's cover pops in with a spring
+            // a new song's cover pops in with a spring, or sweeps in over a crossfade
             transform: Scale {
                 id: pop
                 origin.x: artwork.width / 2
@@ -73,7 +106,7 @@ Item {
             Connections {
                 target: Player
                 function onCurrentSongChanged() {
-                    if (!Appearance.performanceMode) {
+                    if (!Appearance.performanceMode && Player.crossfadeMs === 0) {
                         popIn.restart()
                     }
                 }
@@ -129,6 +162,7 @@ Item {
                 squiggleColor: PlayerStyle.primary
                 source: Player.currentSong.artworkUrl
                 crossfade: true
+                revealDuration: Player.crossfadeMs
             }
 
             Toast {
@@ -163,7 +197,7 @@ Item {
             TitleText {
                 width: parent.width
                 height: root.layout.titleHeight
-                text: Player.currentSong.name
+                text: root.shownSong.name
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
@@ -171,7 +205,7 @@ Item {
                 font.pixelSize: root.layout.titleFontSize
                 font.weight: Font.Bold
                 color: "white"
-                animateChange: true
+                animateChange: !metadataFade.running
             }
 
             Row {
@@ -181,7 +215,7 @@ Item {
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, root.metadataWidth - more.width - 5)
-                    text: Player.currentSong.artists
+                    text: root.shownSong.artists
                     elide: Text.ElideRight
                     font.pixelSize: Appearance.fontSize.larger
                     font.weight: Font.Medium
@@ -203,8 +237,8 @@ Item {
 
             StyledText {
                 width: parent.width
-                visible: Player.currentSong.albumName.length > 0
-                text: Player.currentSong.albumName
+                visible: root.shownSong.albumName.length > 0
+                text: root.shownSong.albumName
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
                 font.pixelSize: Appearance.fontSize.smallie
@@ -236,6 +270,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 18
                 scheme: root.scheme
+                followsCrossfade: true
                 activeColor: PlayerStyle.primary
                 trackColor: Qt.rgba(1, 1, 1, 0.2)
             }

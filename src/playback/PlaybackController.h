@@ -7,6 +7,7 @@
 #include "spotify/SpotifyTypes.h"
 
 #include <QDateTime>
+#include <QDeadlineTimer>
 #include <QObject>
 #include <QTimer>
 #include <QtQml/qqmlregistration.h>
@@ -36,6 +37,8 @@ class PlaybackController : public QObject {
 
     Q_PROPERTY(swiftify::Song currentSong READ currentSong NOTIFY currentSongChanged FINAL)
     Q_PROPERTY(bool hasSong READ hasSong NOTIFY currentSongChanged FINAL)
+    /// how long the crossfade into the current song lasts, 0 when it started without one
+    Q_PROPERTY(int crossfadeMs READ crossfadeMs NOTIFY currentSongChanged FINAL)
     Q_PROPERTY(bool playing READ isPlaying NOTIFY playingChanged FINAL)
     Q_PROPERTY(bool loading READ isLoading NOTIFY loadingChanged FINAL)
     /// whole seconds' worth of change only, or a jump back
@@ -87,6 +90,9 @@ public:
 
     Song currentSong() const { return m_currentSong.value_or(Song {}); }
     bool hasSong() const { return m_currentSong.has_value(); }
+    int crossfadeMs() const { return int(m_crossfadeMs); }
+    /// what is left of the crossfade into the current song
+    int crossfadeRemainingMs() const;
     bool isPlaying() const { return m_playing; }
     bool isLoading() const { return m_loading; }
     int positionMs() const { return int(m_publishedPositionMs); }
@@ -230,7 +236,7 @@ private:
     void syncMediaSession();
     void reset();
     bool isCurrent(const Song &song) const { return m_currentSong && m_currentSong->isSameInstance(song); }
-    void setCurrentSong(const std::optional<Song> &song);
+    void setCurrentSong(const std::optional<Song> &song, quint32 crossfadeMs = 0);
     void setPlaying(bool playing);
     void setLoading(bool loading);
     void setLivePosition(quint32 positionMs);
@@ -263,6 +269,8 @@ private:
     quint32 m_lastSyncedMediaPosition = std::numeric_limits<quint32>::max();
     quint64 m_crossfadeSerial = 0;
     bool m_crossfadeStarted = false;
+    quint32 m_crossfadeMs = 0;
+    QDeadlineTimer m_crossfadeDeadline;
     QTimer m_pollTimer;
 
     double m_volume = 0.75;

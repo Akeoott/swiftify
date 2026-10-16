@@ -21,6 +21,11 @@ Item {
     readonly property real fraction: durationMs > 0 ? Math.min(1, Math.max(0, displayPositionMs / durationMs)) : 0
     property real scrubPosition: -1
     readonly property bool scrubbing: scrub.editing
+    /// over a crossfade the line eases back from where the last song was
+    property bool followsCrossfade: false
+    property real handoverFrom: 0
+    property real handover: 0
+    readonly property real shownFraction: fraction + (handoverFrom - fraction) * handover
 
     implicitHeight: 24
     enabled: Player.hasSong && durationMs > 0
@@ -34,14 +39,31 @@ Item {
         function onCurrentSongChanged() {
             scrub.cancel()
             root.scrubPosition = -1
+            if (root.followsCrossfade && Player.crossfadeMs > 0 && !Appearance.reduceMotion) {
+                root.handoverFrom = line.progress
+                handoverAnimation.duration = Player.crossfadeMs
+                handoverAnimation.restart()
+            } else {
+                handoverAnimation.stop()
+                root.handover = 0
+            }
         }
+    }
+
+    NumberAnimation {
+        id: handoverAnimation
+        target: root
+        property: "handover"
+        from: 1
+        to: 0
+        easing.type: Easing.InOutCubic
     }
 
     ShaderEffect {
         id: line
         anchors.fill: parent
         property size itemSize: Qt.size(width, height)
-        property real progress: root.fraction
+        property real progress: root.shownFraction
         // flat with no shapes, and with reduced motion, as the wave would run
         property real amplitude: root.playing && !Appearance.reduceMotion && !Settings.noShapes
                                  ? (root.expanded ? 2.4 : 1.6) : 0

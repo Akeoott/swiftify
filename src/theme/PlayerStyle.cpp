@@ -9,6 +9,7 @@
 #include <QQmlEngine>
 #include <QtConcurrent>
 
+#include <algorithm>
 #include <utility>
 
 namespace swiftify {
@@ -176,6 +177,8 @@ void PlayerStyle::retarget(Target target)
     m_from = {m_palette, m_weights, m_scheme->roles(), m_darkScheme->roles()};
     m_to = std::move(target);
     m_transition.stop();
+    // during a crossfade the colours change with the sound
+    m_transition.setDuration(std::max(600, m_player->crossfadeRemainingMs()));
     m_transition.start();
 }
 

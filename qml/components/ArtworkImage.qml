@@ -19,6 +19,10 @@ Item {
     /// a cover that arrives fades in over the placeholder; without, it is
     /// simply there, as a cover already decoded should be
     property bool fades: true
+    /// with `crossfade`, a new cover sweeps in from the side over this long,
+    /// counted from when its source changed
+    property int revealDuration: 0
+    property double sourceChangedAt: 0
     property string placeholderSymbol: "music_note"
     /// a cover is shared with everything else showing it at the same size,
     /// and its decoded pixels are let go of once it is on the gpu
@@ -82,6 +86,8 @@ Item {
     readonly property real squiggleMiddle: Math.min(width, height) / 2 - squiggleAmplitude - squiggleThickness / 2 - 0.75
     readonly property real effectiveRadius: circular ? Math.min(face.width, face.height) / 2 : radius
 
+    onSourceChanged: sourceChangedAt = Date.now()
+
     function artworkUrl(url: url): string {
         const text = url.toString()
         return text.length > 0 ? "image://art/" + encodeURIComponent(text) : ""
@@ -106,6 +112,7 @@ Item {
         property real ringThickness: root.squiggleThickness
         property real ringPhase: root.squigglePhase
         property color ringColor: root.squiggleColor
+        property real reveal: 1
 
         anchors.fill: parent
         fragmentShader: "qrc:/shaders/rounded_image.frag.qsb"
@@ -190,10 +197,21 @@ Item {
                 if (status !== Image.Ready) {
                     return
                 }
+                sweep.stop()
+                frontLayer.reveal = 1
                 // the same cover at a new size is simply there
                 if (root.fades && !root.sameCover) {
-                    frontLayer.opacity = 0
-                    fadeIn.restart()
+                    const sweepLeft = root.revealDuration - (Date.now() - root.sourceChangedAt)
+                    if (root.crossfade && back.status === Image.Ready && sweepLeft > 400 && !Appearance.reduceMotion) {
+                        fadeIn.stop()
+                        frontLayer.opacity = 1
+                        frontLayer.reveal = 0
+                        sweep.duration = sweepLeft
+                        sweep.restart()
+                    } else {
+                        frontLayer.opacity = 0
+                        fadeIn.restart()
+                    }
                 } else {
                     fadeIn.stop()
                     frontLayer.opacity = 1
@@ -212,7 +230,7 @@ Item {
             // a new cover crossfades over it; the same one, at another size,
             // stands in for it while it decodes
             visible: back.status === Image.Ready && (root.sameCover || root.crossfade)
-                     && (!root.ready || frontLayer.opacity < 1)
+                     && (!root.ready || frontLayer.opacity < 1 || frontLayer.reveal < 1)
         }
 
         Layer {
@@ -234,6 +252,16 @@ Item {
         to: 1
         duration: Appearance.duration(280)
         easing.type: Easing.OutCubic
+        onFinished: root.keepShown()
+    }
+
+    NumberAnimation {
+        id: sweep
+        target: frontLayer
+        property: "reveal"
+        from: 0
+        to: 1
+        easing.type: Easing.InOutSine
         onFinished: root.keepShown()
     }
 

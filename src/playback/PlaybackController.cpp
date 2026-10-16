@@ -111,14 +111,21 @@ void PlaybackController::setStatus(const QString &status)
 
 // --- state ---------------------------------------------------------------------------
 
-void PlaybackController::setCurrentSong(const std::optional<Song> &song)
+void PlaybackController::setCurrentSong(const std::optional<Song> &song, quint32 crossfadeMs)
 {
     const bool changed = song.has_value() != m_currentSong.has_value()
         || (song && m_currentSong && !song->isSameInstance(*m_currentSong));
     m_currentSong = song;
+    m_crossfadeMs = crossfadeMs;
+    m_crossfadeDeadline.setRemainingTime(qint64(crossfadeMs));
     if (changed) {
         emit currentSongChanged();
     }
+}
+
+int PlaybackController::crossfadeRemainingMs() const
+{
+    return m_crossfadeMs > 0 ? int(m_crossfadeDeadline.remainingTime()) : 0;
 }
 
 void PlaybackController::setPlaying(bool playing)
@@ -489,7 +496,7 @@ void PlaybackController::startPlayback(const Song &song, bool recordHistory, boo
     m_crossfadeStarted = crossfadeDurationMs > 0;
     const quint64 crossfadeSerial = ++m_crossfadeSerial;
     m_playbackNeedsLoad = true;
-    setCurrentSong(song);
+    setCurrentSong(song, crossfadeDurationMs);
     setPlaying(false);
     setLoading(true);
     setLivePosition(0);

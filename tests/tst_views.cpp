@@ -2129,6 +2129,7 @@ private slots:
                                              "    property real ringThickness: 0\n"
                                              "    property real ringPhase: 0\n"
                                              "    property color ringColor: \"transparent\"\n"
+                                             "    property real reveal: 1\n"
                                              "    fragmentShader: \"qrc:/shaders/rounded_image.frag.qsb\" } }")
                                   .arg(waviness).toUtf8(), QUrl());
             std::unique_ptr<QObject> object(component.create());

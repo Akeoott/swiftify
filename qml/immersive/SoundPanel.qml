@@ -157,6 +157,7 @@ Item {
             StyledSlider {
                 id: durationSlider
                 width: parent.width
+                scheme: root.scheme
                 from: 1
                 to: 12
                 stepSize: 1

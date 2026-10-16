@@ -238,6 +238,7 @@ iconShape: "bun"
                         property real ringThickness: 0
                         property real ringPhase: 0
                         property color ringColor: "transparent"
+                        property real reveal: 1
 
                         fragmentShader: "qrc:/shaders/rounded_image.frag.qsb"
                     }

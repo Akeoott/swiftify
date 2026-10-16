@@ -9,6 +9,9 @@
 // along a sine round its circle, r = middle + amplitude * sin(waves * angle),
 // and the cover cut along the same sine moved straight in, crest under crest,
 // so what is behind shows through between the two. `ringPhase` turns both.
+//
+// below 1, `reveal` shows the cover from the right edge with a soft front,
+// all of it at 1.
 
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
@@ -36,11 +39,22 @@ layout(std140, binding = 0) uniform buf {
     // radians; turns the waves round the edge
     float ringPhase;
     vec4 ringColor;
+    float reveal;
 };
 
 layout(binding = 1) uniform sampler2D source;
 
 const float PI = 3.14159265;
+const float REVEAL_SOFTNESS = 0.4;
+
+float revealed()
+{
+    if (reveal >= 1.0) {
+        return 1.0;
+    }
+    float front = 1.0 - reveal * (1.0 + REVEAL_SOFTNESS);
+    return smoothstep(front, front + REVEAL_SOFTNESS, qt_TexCoord0.x);
+}
 
 // how many scallops run round the outline. counted on the item's own edge
 // rather than the cut-in one: the cut moves as the waviness springs, and a
@@ -118,7 +132,7 @@ void main()
         float edgeSlope = rise / max(edge, 1.0);
         float inside = (r - edge) / sqrt(1.0 + edgeSlope * edgeSlope);
         vec4 art = texture(source, qt_TexCoord0 * uvScale + uvOffset) * clamp(0.5 - inside, 0.0, 1.0);
-        fragColor = (art * (1.0 - line) + vec4(ringColor.rgb, 1.0) * line) * qt_Opacity;
+        fragColor = (art * (1.0 - line) + vec4(ringColor.rgb, 1.0) * line) * (qt_Opacity * revealed());
         return;
     }
 
@@ -134,5 +148,5 @@ void main()
         float band = coverage - inner;
         color = color * (1.0 - band * borderColor.a) + borderColor * band;
     }
-    fragColor = color * (coverage * qt_Opacity);
+    fragColor = color * (coverage * qt_Opacity * revealed());
 }

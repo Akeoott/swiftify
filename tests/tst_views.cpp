@@ -187,6 +187,28 @@ private slots:
         QVERIFY(!rig.frame.isNull());
     }
 
+    void theSeekBarMovesBetweenPlayerUpdates()
+    {
+        Rig rig;
+        rig.playSomething();
+        rig.core.duration = 200'000;
+        QTRY_COMPARE(rig.player.durationMs(), 200'000u);
+        const auto bar = rig.show(QStringLiteral("SeekBar"));
+        QVERIFY(bar);
+
+        const double initial = bar->property("displayPositionMs").toDouble();
+        QTest::qWait(110);
+        const double moving = bar->property("displayPositionMs").toDouble();
+        QVERIFY2(moving > initial + 50, qPrintable(QStringLiteral("the bar moved only %1 ms").arg(moving - initial)));
+
+        rig.player.seek(50'000);
+        QCOMPARE(bar->property("displayPositionMs").toDouble(), 50'000.0);
+        rig.player.togglePlayback();
+        const double paused = bar->property("displayPositionMs").toDouble();
+        QTest::qWait(110);
+        QCOMPARE(bar->property("displayPositionMs").toDouble(), paused);
+    }
+
     void theSingletonsAreTheAppsOwn()
     {
         Rig rig;

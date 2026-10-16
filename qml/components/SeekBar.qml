@@ -11,13 +11,18 @@ Item {
     property MaterialScheme scheme: Appearance.colors
     property color activeColor: scheme.primary
     property color trackColor: scheme.secondaryContainer
-    property real positionMs: Player.positionMs
+    property real positionMs: Player.livePositionMs
     property real durationMs: Player.durationMs
     property bool playing: Player.playing
     property bool expanded: hover.hovered || scrub.editing
     property real restThickness: 4
     property real expandedThickness: 6
-    readonly property real displayPositionMs: scrub.editing && root.scrubPosition >= 0 ? root.scrubPosition : root.positionMs
+    property real positionAnchorMs: positionMs
+    property real clockAnchor: progressClock.value
+    readonly property real runningPositionMs: root.playing && !Appearance.reduceMotion
+                                              ? Math.min(root.durationMs, root.positionAnchorMs + (progressClock.value - root.clockAnchor) * 1000)
+                                              : root.positionMs
+    readonly property real displayPositionMs: scrub.editing && root.scrubPosition >= 0 ? root.scrubPosition : root.runningPositionMs
     readonly property real fraction: durationMs > 0 ? Math.min(1, Math.max(0, displayPositionMs / durationMs)) : 0
     property real scrubPosition: -1
     readonly property bool scrubbing: scrub.editing
@@ -29,6 +34,20 @@ Item {
 
     implicitHeight: 24
     enabled: Player.hasSong && durationMs > 0
+
+    onPositionMsChanged: {
+        positionAnchorMs = positionMs
+        clockAnchor = progressClock.value
+    }
+    onPlayingChanged: {
+        positionAnchorMs = positionMs
+        clockAnchor = progressClock.value
+    }
+
+    AmbientClock {
+        id: progressClock
+        speed: root.playing && root.visible && root.durationMs > 0 && !Appearance.reduceMotion ? 1 : 0
+    }
 
     ScrubSession {
         id: scrub

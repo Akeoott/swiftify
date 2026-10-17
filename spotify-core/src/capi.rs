@@ -443,6 +443,12 @@ async_call!(
         core.lyrics_json(spotify_uri).await
     }
 );
+async_call!(
+    /// completes with a playlist's songs as json, read through the session.
+    swiftify_core_playlist_json(playlist_uri) => |core| {
+        core.playlist_json(playlist_uri).await
+    }
+);
 
 /// what a music file's tags say, as json (crate::local::LocalTags), or null
 /// with `*error` set. an embedded cover is written into `artwork_dir`. it

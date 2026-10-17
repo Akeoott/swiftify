@@ -2,8 +2,10 @@
 
 #include "app/ErrorCenter.h"
 #include "app/Settings.h"
+#include "core/PlaybackCore.h"
 #include "library/LocalLibrary.h"
 #include "playback/PlaybackController.h"
+#include "spotify/SpotifyJson.h"
 #include "spotify/SpotifySession.h"
 
 #include <QCollator>
@@ -61,6 +63,19 @@ bool sameSongs(const QList<Song> &left, const QList<Song> &right)
         return a.uri == b.uri && a.name == b.name && a.artists == b.artists && a.albumName == b.albumName
             && a.artworkUrl == b.artworkUrl && a.durationMs == b.durationMs;
     });
+}
+
+/// the items page PlaybackCore::playlistJson completes with
+QList<Song> songsFromItems(const QString &payload)
+{
+    QList<Song> songs;
+    const QJsonObject page = QJsonDocument::fromJson(payload.toUtf8()).object();
+    for (const QJsonValue &value : page.value(QStringLiteral("items")).toArray()) {
+        if (const auto song = json::wrappedTrack(value.toObject())) {
+            songs.append(*song);
+        }
+    }
+    return songs;
 }
 
 } // namespace
@@ -560,8 +575,17 @@ QCoro::Task<> LibraryStore::runPlaylistLoad(Playlist playlist, CancelToken token
 {
     const Destination target {Page::Playlist, playlist.id};
     try {
-        const QList<Song> loaded = co_await m_session->withLibraryAccessToken<QList<Song>>(
-            [this, id = playlist.id](QString accessToken) { return m_session->webApi().playlistSongs(id, accessToken); });
+        QList<Song> loaded;
+        if (playlist.canModify(m_profile.id)) {
+            loaded = co_await m_session->withLibraryAccessToken<QList<Song>>(
+                [this, id = playlist.id](QString accessToken) { return m_session->webApi().playlistSongs(id, accessToken); });
+        } else {
+            // the web api only gives the name and cover of a playlist someone
+            // else made, the session still reads its songs
+            co_await m_session->ensureFreshPlaybackConnection();
+            throwIfCancelled(token);
+            loaded = songsFromItems(co_await m_session->core()->playlistJson(playlist.uri));
+        }
         throwIfCancelled(token);
         m_songListCache.save(playlist.id, loaded);
         if (!(m_destination == target)) {

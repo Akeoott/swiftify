@@ -119,6 +119,7 @@ public:
         stalled = false;
     }
     QCoro::Task<QString> lyricsJson(QString uri) override { co_return co_await await(QStringLiteral("lyrics"), uri); }
+    QCoro::Task<QString> playlistJson(QString uri) override { co_return co_await await(QStringLiteral("playlist"), uri); }
 
     void play() override
     {

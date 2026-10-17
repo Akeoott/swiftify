@@ -36,9 +36,9 @@ void swiftify_core_set_completion_callback(const SwiftifyCore *core, void (*call
 bool swiftify_core_take_completion(const SwiftifyCore *core, uint64_t *request_id, bool *ok,
                                    char **payload);
 
-/* async: each completes with `request_id`. lyrics complete with json, as do
- * both connects (the login to reconnect with), the rest with an empty payload
- * on success.
+/* async: each completes with `request_id`. lyrics and playlists complete
+ * with json, as do both connects (the login to reconnect with), the rest
+ * with an empty payload on success.
  *
  * a play call made while an earlier one is still running replaces it, as do
  * an output restart and a new connection: the earlier one then fails with
@@ -62,6 +62,11 @@ void swiftify_core_crossfade_track(const SwiftifyCore *core, uint64_t request_id
 void swiftify_core_restart_audio_output(const SwiftifyCore *core, uint64_t request_id);
 void swiftify_core_lyrics_json(const SwiftifyCore *core, uint64_t request_id,
                                const char *spotify_uri);
+/* a playlist's songs read through the session, which still has them for a
+ * playlist someone else made. completes with json shaped like the web api's
+ * /v1/playlists/{id}/items page. */
+void swiftify_core_playlist_json(const SwiftifyCore *core, uint64_t request_id,
+                                 const char *playlist_uri);
 /* plays a music file of the person's own from anywhere on disk: mp3, flac,
  * ogg vorbis, wav, aiff, or aac or apple lossless in an m4a. */
 void swiftify_core_play_file(const SwiftifyCore *core, uint64_t request_id, const char *path);

@@ -2773,8 +2773,10 @@ version = "0.1.8"
 dependencies = [
  "env_logger",
  "hound",
+ "http",
  "librespot",
  "lofty",
+ "protobuf",
  "rodio",
  "rustfft",
  "serde",

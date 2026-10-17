@@ -28,6 +28,7 @@ mod dsp;
 mod file_playback;
 pub mod local;
 mod output;
+mod playlist;
 mod spectrum;
 
 use dsp::{EQ_BAND_COUNT, SharedDsp};
@@ -1004,6 +1005,13 @@ impl SpotifyCore {
             .map_err(|error| format!("failed to encode Spotify lyrics: {error}"))
     }
 
+    /// a playlist's songs read through the session, as json shaped like the
+    /// web api's items page. works for a playlist someone else made, which the
+    /// web api no longer gives the songs of
+    pub async fn playlist_json(&self, playlist_uri: String) -> Result<String, String> {
+        playlist::playlist_json(&self.session()?, &playlist_uri).await
+    }
+
     pub fn spectrum_levels(&self) -> Vec<f32> {
         self.spectrum.levels()
     }
@@ -1434,6 +1442,18 @@ mod tests {
 
         assert_eq!(
             core.play_track("spotify:track:2WUy2Uywcj5cP0IXQagO3z".to_owned())
+                .await
+                .unwrap_err(),
+            "not connected to spotify"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_playlist_is_read_through_the_session() {
+        let core = SpotifyCore::new();
+
+        assert_eq!(
+            core.playlist_json("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M".to_owned())
                 .await
                 .unwrap_err(),
             "not connected to spotify"

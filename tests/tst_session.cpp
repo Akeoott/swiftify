@@ -1,11 +1,15 @@
 #include "FakeCore.h"
 
 #include "app/ErrorCenter.h"
+#include "app/Settings.h"
 #include "core/Async.h"
+#include "library/LibraryStore.h"
+#include "spotify/SpotifyJson.h"
 #include "spotify/CredentialStore.h"
 #include "spotify/OAuthFlow.h"
 #include "spotify/SpotifySession.h"
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
@@ -13,6 +17,7 @@
 #include <QPointer>
 #include <QSignalSpy>
 #include <QTcpSocket>
+#include <QTemporaryDir>
 #include <QTest>
 #include <QTimeZone>
 #include <QTimer>
@@ -86,6 +91,8 @@ public:
     int requests = 0;
     QStringList spent;
     QSet<QString> revokedLogins;
+    /// the web api's answers by path. any other path is not found
+    QHash<QString, QByteArray> api;
 
     /// a new login, and its first refresh token
     QString login()
@@ -108,6 +115,11 @@ public:
 protected:
     QNetworkReply *createRequest(Operation operation, const QNetworkRequest &request, QIODevice *data) override
     {
+        if (request.url().host() == QLatin1StringView("api.spotify.com")) {
+            const auto found = api.constFind(request.url().path());
+            return found == api.cend() ? reply(request, 404, R"({"error":{"status":404,"message":"Not found"}})")
+                                       : reply(request, 200, *found);
+        }
         if (request.url().host() != QLatin1StringView(kHost)) {
             return QNetworkAccessManager::createRequest(operation, request, data);
         }
@@ -454,6 +466,76 @@ private slots:
         QTRY_VERIFY(rig.session.isConnected());
         QCOMPARE(rig.accounts.requests, 0);
         QVERIFY(rig.opened.isEmpty());
+    }
+
+    void aPlaylistSomeoneElseMadeIsReadThroughThePlaybackSession()
+    {
+        Rig rig;
+        QTemporaryDir directory;
+        Settings settings(directory.filePath(QStringLiteral("swiftify.conf")));
+        LibraryStore library(&rig.session, &settings, &rig.errors);
+        const auto page = [](const char *uri, const char *name) {
+            const QJsonObject track {{QStringLiteral("type"), QStringLiteral("track")},
+                                     {QStringLiteral("uri"), QLatin1StringView(uri)},
+                                     {QStringLiteral("name"), QLatin1StringView(name)}};
+            const QJsonArray items {QJsonObject {{QStringLiteral("item"), track}}};
+            return QJsonDocument(QJsonObject {{QStringLiteral("items"), items}}).toJson(QJsonDocument::Compact);
+        };
+        const auto names = [&library] {
+            QStringList result;
+            for (const Song &song : library.playlistSongs()->songs()) {
+                result << song.name;
+            }
+            return result;
+        };
+        rig.accounts.api.insert(QStringLiteral("/v1/me"), R"({"id":"me","display_name":"Me"})");
+        rig.accounts.api.insert(QStringLiteral("/v1/playlists/mine/items"), page("spotify:track:a", "From The Web Api"));
+        rig.storeLibrary(rig.accounts.login(), QStringLiteral("access"), 60);
+        rig.storePlayback(rig.accounts.login(), QStringLiteral("librespot-login"));
+        rig.session.restoreSavedSessions();
+        QTRY_COMPARE(library.profileId(), QStringLiteral("me"));
+        settle();
+        const auto connect = rig.core.take(QStringLiteral("connectStored"));
+        QVERIFY(connect);
+        connect->succeed(QStringLiteral("librespot-login"));
+        QTRY_VERIFY(rig.session.isConnected());
+
+        // the web api only gives its name and cover
+        Playlist theirs;
+        theirs.id = QStringLiteral("theirs");
+        theirs.uri = QStringLiteral("spotify:playlist:theirs");
+        theirs.ownerId = QStringLiteral("someone");
+        library.selectPlaylist(theirs);
+        settle();
+        const auto read = rig.core.take(QStringLiteral("playlist"));
+        QVERIFY(read);
+        QCOMPARE(read->argument, theirs.uri);
+        read->succeed(QString::fromUtf8(page("spotify:track:b", "Through The Session")));
+        QTRY_COMPARE(names(), QStringList {QStringLiteral("Through The Session")});
+        QVERIFY(!library.isLoadingSongs());
+
+        Playlist mine = theirs;
+        mine.id = QStringLiteral("mine");
+        mine.uri = QStringLiteral("spotify:playlist:mine");
+        mine.ownerId = QStringLiteral("me");
+        library.selectPlaylist(mine);
+        QTRY_COMPARE(names(), QStringList {QStringLiteral("From The Web Api")});
+        QVERIFY(!rig.core.take(QStringLiteral("playlist")));
+    }
+
+    void aPlaylistDescriptionReadsAsPlainText()
+    {
+        const auto description = [](const char *html) {
+            return json::playlist(QJsonObject {{QStringLiteral("id"), QStringLiteral("x")},
+                                               {QStringLiteral("description"), QLatin1StringView(html)}})
+                .description;
+        };
+        QCOMPARE(description("JoJo&#x27;s ops &amp; some other bangers."),
+                 QStringLiteral("JoJo's ops & some other bangers."));
+        QCOMPARE(description(R"(more at <a href="spotify:playlist:y">Part 2</a> &#39;n &quot;more&quot;)"),
+                 QStringLiteral("more at Part 2 'n \"more\""));
+        // not an entity, left as it is
+        QCOMPARE(description("rock &roll; &bogus; a&b"), QStringLiteral("rock &roll; &bogus; a&b"));
     }
 
     void aLogoutForgetsALoginStillBeingWritten()

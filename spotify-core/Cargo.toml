@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 env_logger = "0.11"
 hound = "3.5.1"
+# a playlist read through the session (playlist.rs), as librespot reads it
+http = "=1.5.0"
 librespot = "=0.8.0"
 rustfft = "=6.4.1"
 # local music: mp3, flac, ogg vorbis, wav and aiff, and aac or apple lossless
@@ -15,6 +17,7 @@ rustfft = "=6.4.1"
 rodio = { version = "=0.21.1", default-features = false, features = ["playback", "flac", "wav", "mp3", "vorbis", "mp4", "symphonia-alac", "symphonia-aiff"] }
 # writes a local file's tags and cover art, which symphonia only reads
 lofty = "=0.25.4"
+protobuf = "=3.7.2"
 serde = { version = "1", features = ["derive"] }
 # reads a local file's tags and cover art (local.rs)
 symphonia = { version = "=0.5.5", default-features = false, features = ["mp3", "flac", "ogg", "vorbis", "wav", "pcm", "aiff", "isomp4", "aac", "alac"] }

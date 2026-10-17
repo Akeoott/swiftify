@@ -1,5 +1,7 @@
 #include "spotify/SpotifyJson.h"
 
+#include <QHash>
+#include <QRegularExpression>
 #include <QStringList>
 
 #include <cstdlib>
@@ -21,6 +23,46 @@ QString joinedNames(const QJsonArray &artists)
         names.append(value.toObject().value(QStringLiteral("name")).toString());
     }
     return names.join(QStringLiteral(", "));
+}
+
+/// spotify sends a playlist's description as html, its apostrophes as &#x27;
+/// and its links as tags
+QString plainText(const QString &html)
+{
+    static const QRegularExpression tag(QStringLiteral("<[^>]*>"));
+    static const QRegularExpression entity(QStringLiteral("&(#[0-9]+|#[xX][0-9a-fA-F]+|[a-zA-Z]+);"));
+    static const QHash<QString, QString> named {
+        {QStringLiteral("amp"), QStringLiteral("&")},   {QStringLiteral("lt"), QStringLiteral("<")},
+        {QStringLiteral("gt"), QStringLiteral(">")},    {QStringLiteral("quot"), QStringLiteral("\"")},
+        {QStringLiteral("apos"), QStringLiteral("'")},  {QStringLiteral("nbsp"), QStringLiteral(" ")},
+    };
+    const QString text = QString(html).remove(tag);
+    QString result;
+    qsizetype from = 0;
+    for (auto matches = entity.globalMatch(text); matches.hasNext();) {
+        const QRegularExpressionMatch match = matches.next();
+        const QString name = match.captured(1);
+        QString decoded;
+        if (name.startsWith(QLatin1Char('#'))) {
+            const bool hex = name.size() > 1 && (name.at(1) == QLatin1Char('x') || name.at(1) == QLatin1Char('X'));
+            bool ok = false;
+            const uint code = name.mid(hex ? 2 : 1).toUInt(&ok, hex ? 16 : 10);
+            if (ok && code > 0 && code <= 0x10FFFF) {
+                const char32_t character = code;
+                decoded = QString::fromUcs4(&character, 1);
+            }
+        } else {
+            decoded = named.value(name);
+        }
+        if (decoded.isEmpty()) {
+            continue;
+        }
+        result += QStringView(text).sliced(from, match.capturedStart() - from);
+        result += decoded;
+        from = match.capturedEnd();
+    }
+    result += QStringView(text).sliced(from);
+    return result;
 }
 
 } // namespace
@@ -60,7 +102,7 @@ Playlist playlist(const QJsonObject &object)
     Playlist result;
     result.id = string(object, "id");
     result.name = string(object, "name");
-    result.description = string(object, "description");
+    result.description = plainText(string(object, "description"));
     const QJsonObject items = object.value(QStringLiteral("items")).toObject();
     const QJsonObject tracks = object.value(QStringLiteral("tracks")).toObject();
     result.songCount = items.contains(QStringLiteral("total"))

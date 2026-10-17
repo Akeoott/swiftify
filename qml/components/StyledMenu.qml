@@ -47,7 +47,7 @@ T.Menu {
         }
         implicitHeight: contentHeight
         model: root.contentModel
-        interactive: Window.window ? contentHeight + root.topPadding + root.bottomPadding > Window.window.height : false
+        interactive: Window.window ? contentHeight + root.topPadding + root.bottomPadding > Window.window.height / Settings.zoom : false
         clip: true
         currentIndex: root.currentIndex
         spacing: 2

@@ -18,6 +18,7 @@
 #include <dwmapi.h>
 #include <shobjidl.h>
 
+#ifdef SWIFTIFY_HAVE_SMTC
 // mingw-w64's windows.foundation.h specialises IReference for BYTE and for
 // boolean, which it also makes an unsigned char; nothing here uses either
 #ifdef __MINGW32__
@@ -29,6 +30,7 @@
 #include <wrl/wrappers/corewrappers.h>
 #include <windows.media.h>
 #include <systemmediatransportcontrolsinterop.h>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -54,6 +56,7 @@ COLORREF nativeColor(const QColor &color)
     return RGB(color.red(), color.green(), color.blue());
 }
 
+#ifdef SWIFTIFY_HAVE_SMTC
 // the media buttons' handler, written out by hand: wrl's Callback lives in
 // <wrl/event.h>, which only msvc's sdk ships, and mingw has to build this too
 using ButtonPressedHandler = ABI::Windows::Foundation::ITypedEventHandler<
@@ -106,6 +109,7 @@ private:
     std::atomic<ULONG> m_references {1};
     Function m_function;
 };
+#endif
 
 } // namespace
 
@@ -118,8 +122,10 @@ struct WindowsIntegration::Native {
     HWND handle = nullptr;
     std::array<HICON, 4> icons {};
 
+#ifdef SWIFTIFY_HAVE_SMTC
     Microsoft::WRL::ComPtr<ABI::Windows::Media::ISystemMediaTransportControls> controls;
     EventRegistrationToken buttonToken {};
+#endif
 
     Native()
     {
@@ -135,6 +141,7 @@ struct WindowsIntegration::Native {
 
     void cleanupMediaControls()
     {
+#ifdef SWIFTIFY_HAVE_SMTC
         if (controls) {
             if (buttonToken.value != 0) {
                 controls->remove_ButtonPressed(buttonToken);
@@ -143,6 +150,7 @@ struct WindowsIntegration::Native {
             controls->put_IsEnabled(false);
             controls.Reset();
         }
+#endif
     }
 
     ~Native()
@@ -480,6 +488,7 @@ bool WindowsIntegration::nativeEventFilter(const QByteArray &eventType, void *me
     return false;
 }
 
+#ifdef SWIFTIFY_HAVE_SMTC
 void WindowsIntegration::initializeMediaControls()
 {
     if (!m_window || !m_native || !m_window->handle()) return;
@@ -632,5 +641,12 @@ void WindowsIntegration::updateMediaMetadata()
 
     updater->Update();
 }
+#else
+// built without the media controls: the headers had no declarations for them
+void WindowsIntegration::initializeMediaControls() {}
+void WindowsIntegration::handleMediaButton(int) {}
+void WindowsIntegration::updateMediaControls() {}
+void WindowsIntegration::updateMediaMetadata() {}
+#endif
 
 } // namespace swiftify

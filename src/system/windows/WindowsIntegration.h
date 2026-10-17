@@ -26,6 +26,8 @@ public:
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
+    void handleMediaButton(int button);
+
 private:
     struct Native;
 
@@ -34,6 +36,9 @@ private:
     void initializeTaskbar();
     void updateButtons();
     void updateProgress();
+    void initializeMediaControls();
+    void updateMediaControls();
+    void updateMediaMetadata();
 
     PlaybackController *m_player;
     Theme *m_theme;

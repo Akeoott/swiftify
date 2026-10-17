@@ -282,7 +282,7 @@ target_link_libraries(swiftify_app PUBLIC
     spotify_core)
 
 if(WIN32)
-    target_link_libraries(swiftify_app PUBLIC Qt6::Widgets comctl32 dwmapi ole32 shell32 uuid)
+    target_link_libraries(swiftify_app PUBLIC Qt6::Widgets comctl32 dwmapi ole32 shell32 uuid runtimeobject)
 endif()
 
 qt_add_executable(swiftify src/main.cpp)

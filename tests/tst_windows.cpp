@@ -533,6 +533,27 @@ private slots:
         QTRY_COMPARE(rig.player.currentSong().uri, first.uri);
     }
 
+    void mediaTransportControlsControlPlayback()
+    {
+        if (QGuiApplication::platformName() != QLatin1StringView("windows")) QSKIP("Requires the Windows platform plugin");
+        ViewRig rig;
+        WindowsIntegration integration(&rig.player, &rig.theme);
+        QWindow window;
+        integration.setWindow(&window);
+        window.show();
+        rig.playSomething();
+        const Song first = rig.player.currentSong();
+        QVERIFY(rig.player.isPlaying());
+        integration.handleMediaButton(1); // Pause
+        QTRY_VERIFY(!rig.player.isPlaying());
+        integration.handleMediaButton(0); // Play
+        QTRY_VERIFY(rig.player.isPlaying());
+        integration.handleMediaButton(6); // Next
+        QTRY_VERIFY(rig.player.currentSong().uri != first.uri);
+        integration.handleMediaButton(7); // Previous
+        QTRY_COMPARE(rig.player.currentSong().uri, first.uri);
+    }
+
     void explicitQuitAllowsTheWindowToClose()
     {
         ViewRig rig;

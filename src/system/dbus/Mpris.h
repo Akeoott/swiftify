@@ -43,6 +43,7 @@ signals:
 
 private:
     void update();
+    void checkForJump();
     void emitPropertiesChanged(const QString &interface, const QVariantMap &changed);
 
     PlaybackController *m_player;

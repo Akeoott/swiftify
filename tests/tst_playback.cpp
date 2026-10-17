@@ -6,6 +6,9 @@
 #include "playback/PlaybackController.h"
 #include "spotify/CredentialStore.h"
 #include "spotify/SpotifySession.h"
+#if defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
+#include "system/dbus/Mpris.h"
+#endif
 
 #include <QFile>
 #include <QNetworkAccessManager>
@@ -458,6 +461,34 @@ private slots:
         QVERIFY(!rig.player.isPlaying());
         QVERIFY(rig.player.activeQueue().isEmpty());
     }
+
+#if defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
+    void mprisReflectsPlaybackStateAndControls()
+    {
+        Rig rig;
+        Mpris mpris(&rig.player);
+        QCOMPARE(mpris.playbackStatus(), QStringLiteral("Stopped"));
+        QVERIFY(!mpris.hasSong());
+
+        const QList<Song> queue = makeQueue(3);
+        rig.player.play(queue[0], queue);
+        rig.finishLoading();
+
+        QCOMPARE(mpris.playbackStatus(), QStringLiteral("Playing"));
+        QVERIFY(mpris.hasSong());
+        QVERIFY(mpris.canGoNext());
+        QVERIFY(mpris.canSeek());
+        const QVariantMap metadata = mpris.metadata();
+        QCOMPARE(metadata.value(QStringLiteral("xesam:title")).toString(), queue[0].name);
+        QCOMPARE(metadata.value(QStringLiteral("xesam:artist")).toStringList(), QStringList {queue[0].artists});
+
+        rig.player.pause();
+        QCOMPARE(mpris.playbackStatus(), QStringLiteral("Paused"));
+
+        rig.player.resume();
+        QCOMPARE(mpris.playbackStatus(), QStringLiteral("Playing"));
+    }
+#endif
 };
 
 QTEST_GUILESS_MAIN(PlaybackTest)

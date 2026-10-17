@@ -83,6 +83,27 @@ class ThemeTest : public QObject {
     Q_OBJECT
 
 private slots:
+    void freshSettingsUseSpotifyColors_data()
+    {
+        QTest::addColumn<bool>("dark");
+        QTest::newRow("light") << false;
+        QTest::newRow("dark") << true;
+    }
+
+    void freshSettingsUseSpotifyColors()
+    {
+        QFETCH(bool, dark);
+        QTemporaryDir directory;
+        Settings settings(directory.filePath(QStringLiteral("swiftify.conf")));
+        settings.setThemeMode(dark ? QStringLiteral("dark") : QStringLiteral("light"));
+        Theme theme(&settings);
+        const themes::Family *spotify = themes::find(QStringLiteral("spotify"));
+        QVERIFY(spotify);
+        QVERIFY(!theme.usingSystemScheme());
+        QCOMPARE(theme.dark(), dark);
+        QCOMPARE(theme.colors()->roles(), themes::roles(dark ? spotify->dark : spotify->light, dark));
+    }
+
     void seedSchemesFollowMaterialTones()
     {
         const auto dark = Theme::rolesFromSeed(QColor::fromRgba(Theme::kAccent), true, true);

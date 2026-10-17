@@ -191,12 +191,7 @@ private:
     bool m_reduceMotion = false;
     bool m_performanceMode = false;
     bool m_noShapes = false;
-    // Keep the existing macOS default; Matugen can be selected in Appearance.
-#ifdef Q_OS_MACOS
-    QString m_themeSource = QStringLiteral("builtin");
-#else
-    QString m_themeSource = QStringLiteral("system");
-#endif
+    QString m_themeSource = QStringLiteral("spotify");
     QString m_themeMode = QStringLiteral("system");
     QString m_matugenColorsPath = QString();
     bool m_showWindowControls = true;

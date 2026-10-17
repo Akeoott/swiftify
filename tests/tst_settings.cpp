@@ -25,11 +25,34 @@ private slots:
         QCOMPARE(settings.backdropReactivity(), 0.3);
         QCOMPARE(settings.immersivePlayerPanel(), QStringLiteral("lyrics"));
         QCOMPARE(settings.sleepTimerFade(), QStringLiteral("finalSeconds"));
+        QCOMPARE(settings.themeSource(), QStringLiteral("spotify"));
+        QCOMPARE(settings.themeMode(), QStringLiteral("system"));
 #ifdef Q_OS_WIN
         QVERIFY(!settings.nativeTitleBar());
 #else
         QVERIFY(settings.nativeTitleBar());
 #endif
+    }
+
+    void savedThemeOverridesTheDefault_data()
+    {
+        QTest::addColumn<QString>("source");
+        for (const char *source : {"system", "builtin", "spotify", "catppuccin-mocha"}) {
+            QTest::newRow(source) << QString::fromLatin1(source);
+        }
+    }
+
+    void savedThemeOverridesTheDefault()
+    {
+        QFETCH(QString, source);
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("swiftify.conf"));
+        {
+            QSettings store(path, QSettings::IniFormat);
+            store.setValue(QStringLiteral("themeSource"), source);
+        }
+        Settings settings(path);
+        QCOMPARE(settings.themeSource(), source);
     }
 
     void titleBarPreferencePersists_data()

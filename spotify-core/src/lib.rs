@@ -590,10 +590,8 @@ impl SpotifyCore {
             match event {
                 PlayerEvent::Playing { track_id, .. } if track_id == uri => return Ok(()),
                 PlayerEvent::Unavailable { track_id, .. } if track_id == uri => {
-                    return Err(
-                        "This song is unavailable on Spotify. It may have been removed or unavailable in your region."
-                            .to_owned(),
-                    );
+                    // previous error was incredibly misleading, so i changed it to a generic error
+                    return Err("Spotify could not load this track.".to_owned());
                 }
                 PlayerEvent::Stopped { track_id, .. } if track_id == uri => {
                     return Err("the Spotify track stopped before playback began".to_owned());
@@ -693,7 +691,8 @@ impl SpotifyCore {
                 PlayerEvent::Unavailable { track_id, .. } if track_id == uri => {
                     incoming.set_gain(0.0);
                     incoming.player.stop();
-                    return Err("This song is unavailable on Spotify.".to_owned());
+                    // previous error was incredibly misleading, so i changed it to a generic error
+                    return Err("Spotify could not load this track.".to_owned());
                 }
                 PlayerEvent::Stopped { track_id, .. } if track_id == uri => {
                     incoming.set_gain(0.0);

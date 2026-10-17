@@ -27,7 +27,6 @@ T.Menu {
 
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Appearance.duration(150); easing.type: Easing.OutCubic }
-        NumberAnimation { property: "scale"; from: 0.6; to: 1; duration: Appearance.motion(420); easing.type: Easing.BezierSpline; easing.bezierCurve: Appearance.curves.expressiveFastSpatial }
     }
     exit: Transition {
         NumberAnimation { property: "opacity"; to: 0; duration: Appearance.duration(100) }

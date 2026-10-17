@@ -157,6 +157,7 @@ void Settings::load()
         m_matugenColorsPath = raw.trimmed();
     }
     m_showWindowControls = stored<bool>(m_store, "showWindowControls", m_showWindowControls);
+    m_nativeTitleBar = stored<bool>(m_store, "nativeTitleBar", m_nativeTitleBar);
     m_trayIcon = stored<bool>(m_store, "trayIcon", m_trayIcon);
 }
 
@@ -410,6 +411,16 @@ void Settings::setShowWindowControls(bool value)
     m_showWindowControls = value;
     m_store.setValue(QStringLiteral("showWindowControls"), value);
     emit showWindowControlsChanged();
+}
+
+void Settings::setNativeTitleBar(bool value)
+{
+    if (m_nativeTitleBar == value) {
+        return;
+    }
+    m_nativeTitleBar = value;
+    m_store.setValue(QStringLiteral("nativeTitleBar"), value);
+    emit nativeTitleBarChanged();
 }
 
 void Settings::setTrayIcon(bool value)

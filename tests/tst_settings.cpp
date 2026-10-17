@@ -25,6 +25,35 @@ private slots:
         QCOMPARE(settings.backdropReactivity(), 0.3);
         QCOMPARE(settings.immersivePlayerPanel(), QStringLiteral("lyrics"));
         QCOMPARE(settings.sleepTimerFade(), QStringLiteral("finalSeconds"));
+#ifdef Q_OS_WIN
+        QVERIFY(!settings.nativeTitleBar());
+#else
+        QVERIFY(settings.nativeTitleBar());
+#endif
+    }
+
+    void titleBarPreferencePersists_data()
+    {
+        QTest::addColumn<bool>("nativeTitleBar");
+        QTest::newRow("native") << true;
+        QTest::newRow("in-app") << false;
+    }
+
+    void titleBarPreferencePersists()
+    {
+        QFETCH(bool, nativeTitleBar);
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("swiftify.conf"));
+        {
+            Settings settings(path);
+            settings.setNativeTitleBar(!nativeTitleBar);
+            QSignalSpy changed(&settings, &Settings::nativeTitleBarChanged);
+            settings.setNativeTitleBar(nativeTitleBar);
+            settings.setNativeTitleBar(nativeTitleBar);
+            QCOMPARE(changed.count(), 1);
+        }
+        Settings reopened(path);
+        QCOMPARE(reopened.nativeTitleBar(), nativeTitleBar);
     }
 
     void valuesAreSanitized()

@@ -9,31 +9,41 @@ Row {
 
     required property Window window
     property bool compact: false
+    property MaterialScheme scheme: Appearance.colors
 
     spacing: 4
 
     ToolbarButton {
+        objectName: "closeWindowButton"
+        scheme: root.scheme
+        size: root.compact ? 28 : 36
+        iconSize: root.compact ? 15 : 18
+        shape: "cookie9"
+        shapeHoverColor: root.scheme.errorContainer
+        shapePressedColor: root.scheme.errorContainerActive
+        symbol: "close"
+        tooltip: "Close window"
+        onClicked: root.window.close()
+    }
+    ToolbarButton {
+        objectName: "maximizeWindowButton"
+        scheme: root.scheme
+        size: root.compact ? 28 : 36
+        iconSize: root.compact ? 14 : 16
+        shape: "cookie6"
+        symbol: root.window.visibility === Window.Maximized ? "close_fullscreen" : "open_in_full"
+        tooltip: root.window.visibility === Window.Maximized ? "Restore" : "Maximize"
+        onClicked: root.window.visibility === Window.Maximized ? root.window.showNormal() : root.window.showMaximized()
+    }
+    ToolbarButton {
+        objectName: "minimizeWindowButton"
+        scheme: root.scheme
         size: root.compact ? 28 : 36
         iconSize: root.compact ? 15 : 18
         shape: "pill"
         turnsOnHover: false
         symbol: "remove"
+        tooltip: "Minimize"
         onClicked: root.window.showMinimized()
-    }
-    ToolbarButton {
-        size: root.compact ? 28 : 36
-        iconSize: root.compact ? 14 : 16
-        shape: "cookie6"
-        symbol: root.window.visibility === Window.Maximized ? "close_fullscreen" : "open_in_full"
-        onClicked: root.window.visibility === Window.Maximized ? root.window.showNormal() : root.window.showMaximized()
-    }
-    ToolbarButton {
-        size: root.compact ? 28 : 36
-        iconSize: root.compact ? 15 : 18
-        shape: "cookie9"
-        shapeHoverColor: Appearance.colors.errorContainer
-        shapePressedColor: Appearance.colors.errorContainerActive
-        symbol: "close"
-        onClicked: root.window.close()
     }
 }

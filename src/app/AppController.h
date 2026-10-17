@@ -26,6 +26,7 @@ class AppController : public QObject {
     /// the window keeps the mac's traffic lights, so the app draws no
     /// buttons of its own and leaves the title bar's height clear for them
     Q_PROPERTY(bool macOS READ isMacOS CONSTANT FINAL)
+    Q_PROPERTY(bool windows READ isWindows CONSTANT FINAL)
     /// the platform draws native menus: the mac's own, not the offscreen
     /// one a test or a headless run gets, which has none to give
     Q_PROPERTY(bool nativeMenuBar READ hasNativeMenuBar CONSTANT FINAL)
@@ -68,6 +69,14 @@ public:
 #endif
     }
     bool isTrayAvailable() const { return m_trayAvailable; }
+    bool isWindows() const
+    {
+#ifdef Q_OS_WIN
+        return true;
+#else
+        return false;
+#endif
+    }
     bool isPointerResting() const { return m_pointerResting; }
     bool isQuitting() const { return m_quitting; }
     AmbientClock *spinClock() const { return AmbientClock::spin(); }
@@ -90,6 +99,7 @@ public:
     Q_INVOKABLE void trimMemory();
     Q_INVOKABLE void copyToClipboard(const QString &text) const;
     Q_INVOKABLE void openUrl(const QString &url) const;
+    Q_INVOKABLE void setNativeTitleBar(QObject *target, bool enabled) const;
 
 signals:
     void raiseRequested();

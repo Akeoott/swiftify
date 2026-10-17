@@ -82,13 +82,6 @@ Item {
                 tooltip: "Playback"
             }
 
-            WindowControls {
-                id: controls
-                anchors.verticalCenter: parent.verticalCenter
-                visible: Settings.showWindowControls && !App.macOS
-                compact: root.compact
-                window: root.window
-            }
         }
 
         Row {
@@ -101,7 +94,6 @@ Item {
 
             ToolbarButton {
                 effect: ToolbarButton.Spin
-                visible: !controls.visible || root.width >= 420
                 size: root.buttonSize
                 iconSize: root.compact ? 19 : 26
                 shape: "clover4"
@@ -111,7 +103,7 @@ Item {
             }
             ToolbarButton {
                 effect: ToolbarButton.Pop
-                Reveal.shown: Library.selectedPlaylistEditable && (!controls.visible || root.width >= 480)
+                Reveal.shown: Library.selectedPlaylistEditable
                 size: root.buttonSize
                 iconSize: root.compact ? 19 : 26
                 shape: "puffy"

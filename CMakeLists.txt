@@ -55,6 +55,9 @@ if(SWIFTIFY_DESKTOP_INTEGRATION)
     pkg_check_modules(PULSE REQUIRED IMPORTED_TARGET libpulse)
 endif()
 find_package(Qt6Keychain REQUIRED)
+if(WIN32)
+    find_package(Qt6 6.9 REQUIRED COMPONENTS Widgets)
+endif()
 find_package(QCoro6 0.10 REQUIRED COMPONENTS Core Network)
 qcoro_enable_coroutines()
 
@@ -121,28 +124,25 @@ set_target_properties(material_color_utilities PROPERTIES POSITION_INDEPENDENT_C
 
 option(SWIFTIFY_DOWNLOAD_ICON_FONT
     "Download Material Symbols Rounded to install beside the app" ON)
+include(cmake/DownloadAsset.cmake)
 set(SWIFTIFY_FONT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fonts)
 if(SWIFTIFY_DOWNLOAD_ICON_FONT)
     set(SWIFTIFY_ICON_FONT ${SWIFTIFY_FONT_DIRECTORY}/MaterialSymbolsRounded.ttf)
-    if(NOT EXISTS ${SWIFTIFY_ICON_FONT})
-        message(STATUS "Downloading Material Symbols Rounded")
-        file(DOWNLOAD
-            "https://raw.githubusercontent.com/google/material-design-icons/737e3324305806514d7909874fa1818ae1808232/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.ttf"
-            ${SWIFTIFY_ICON_FONT}
-            EXPECTED_HASH SHA256=95b24392bb49efd1bc3e92cff4e2452ad094461bab7c97e7d8723fab97e330ca
-            SHOW_PROGRESS)
-    endif()
+    swiftify_download_asset(
+        "https://raw.githubusercontent.com/google/material-design-icons/737e3324305806514d7909874fa1818ae1808232/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.ttf"
+        "${SWIFTIFY_ICON_FONT}"
+        95b24392bb49efd1bc3e92cff4e2452ad094461bab7c97e7d8723fab97e330ca)
     if(NOT APPLE)
         install(FILES ${SWIFTIFY_ICON_FONT} DESTINATION ${CMAKE_INSTALL_DATADIR}/swiftify/fonts)
     endif()
     # the font's list of names, from the same commit: the tests check every
     # symbol the qml asks for is in it, since a misspelt one shows as text
     set(SWIFTIFY_ICON_CODEPOINTS ${SWIFTIFY_FONT_DIRECTORY}/MaterialSymbolsRounded.codepoints)
-    if(BUILD_TESTING AND NOT EXISTS ${SWIFTIFY_ICON_CODEPOINTS})
-        file(DOWNLOAD
+    if(BUILD_TESTING)
+        swiftify_download_asset(
             "https://raw.githubusercontent.com/google/material-design-icons/737e3324305806514d7909874fa1818ae1808232/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.codepoints"
-            ${SWIFTIFY_ICON_CODEPOINTS}
-            EXPECTED_HASH SHA256=225bd09137103cb7746bc93dc08d08764c9f0c3bd04f4b958d4a3c3c19432dd6)
+            "${SWIFTIFY_ICON_CODEPOINTS}"
+            225bd09137103cb7746bc93dc08d08764c9f0c3bd04f4b958d4a3c3c19432dd6)
     endif()
 endif()
 
@@ -155,17 +155,13 @@ if(SWIFTIFY_DOWNLOAD_INTERFACE_FONT)
     set(SWIFTIFY_INTERFACE_FONT ${SWIFTIFY_FONT_DIRECTORY}/GoogleSansFlex.ttf)
     set(SWIFTIFY_INTERFACE_FONT_LICENSE ${SWIFTIFY_FONT_DIRECTORY}/GoogleSansFlex-OFL.txt)
     set(SWIFTIFY_GOOGLE_FONTS https://raw.githubusercontent.com/google/fonts/a0e3dbcdc3a3ecfafff3f071159ae0221628922d/ofl/googlesansflex)
-    if(NOT EXISTS ${SWIFTIFY_INTERFACE_FONT})
-        message(STATUS "Downloading Google Sans Flex")
-        file(DOWNLOAD
-            "${SWIFTIFY_GOOGLE_FONTS}/GoogleSansFlex%5BGRAD,ROND,opsz,slnt,wdth,wght%5D.ttf"
-            ${SWIFTIFY_INTERFACE_FONT}
-            EXPECTED_HASH SHA256=c31a482fbecbf2e07e6890134d20078723aadf732c9b9c6c9a44f86f8265b6fe
-            SHOW_PROGRESS)
-    endif()
-    if(NOT EXISTS ${SWIFTIFY_INTERFACE_FONT_LICENSE})
-        file(DOWNLOAD "${SWIFTIFY_GOOGLE_FONTS}/OFL.txt" ${SWIFTIFY_INTERFACE_FONT_LICENSE})
-    endif()
+    swiftify_download_asset(
+        "${SWIFTIFY_GOOGLE_FONTS}/GoogleSansFlex%5BGRAD,ROND,opsz,slnt,wdth,wght%5D.ttf"
+        "${SWIFTIFY_INTERFACE_FONT}"
+        c31a482fbecbf2e07e6890134d20078723aadf732c9b9c6c9a44f86f8265b6fe)
+    swiftify_download_asset("${SWIFTIFY_GOOGLE_FONTS}/OFL.txt"
+        "${SWIFTIFY_INTERFACE_FONT_LICENSE}"
+        fc13d69f63e36d284b6e383d4d1463d8ad404f0aa065e57cf961252d51063137)
     if(NOT APPLE)
         install(FILES ${SWIFTIFY_INTERFACE_FONT} ${SWIFTIFY_INTERFACE_FONT_LICENSE}
             DESTINATION ${CMAKE_INSTALL_DATADIR}/swiftify/fonts)
@@ -179,6 +175,9 @@ file(GLOB_RECURSE SWIFTIFY_SOURCES CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SO
 list(REMOVE_ITEM SWIFTIFY_SOURCES src/main.cpp)
 if(NOT APPLE)
     list(FILTER SWIFTIFY_SOURCES EXCLUDE REGEX "^src/system/macos/")
+endif()
+if(NOT WIN32)
+    list(FILTER SWIFTIFY_SOURCES EXCLUDE REGEX "^src/system/windows/")
 endif()
 if(NOT SWIFTIFY_DESKTOP_INTEGRATION)
     list(FILTER SWIFTIFY_SOURCES EXCLUDE REGEX "^src/system/linux/")
@@ -278,6 +277,10 @@ target_link_libraries(swiftify_app PUBLIC
     qt6keychain
     material_color_utilities
     spotify_core)
+
+if(WIN32)
+    target_link_libraries(swiftify_app PUBLIC Qt6::Widgets comctl32 dwmapi ole32 shell32 uuid)
+endif()
 
 qt_add_executable(swiftify src/main.cpp)
 target_link_libraries(swiftify PRIVATE swiftify_app swiftify_appplugin)

@@ -11,8 +11,10 @@ ApplicationWindow {
 
     property real sidebarWidth: 232
     readonly property real effectiveSidebarWidth: Math.max(132, Math.min(sidebarWidth, width * 0.28))
+    readonly property bool inAppWindowControls: !App.macOS && (App.windows ? !Settings.nativeTitleBar : Settings.showWindowControls)
     /// the strip the traffic lights sit in, kept clear above the sidebar
-    readonly property real titleBarInset: App.macOS ? Math.max(28, shell.SafeArea.margins.top) : 0
+    readonly property real titleBarInset: App.macOS ? Math.max(28, shell.SafeArea.margins.top)
+                                                 : inAppWindowControls ? 36 : 0
 
     width: 1280
     height: 780
@@ -35,6 +37,8 @@ ApplicationWindow {
     // on linux the app draws its whole frame. on macos the content runs under
     // a transparent title bar that keeps the traffic lights and nothing else.
     flags: App.macOS ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
+                     : App.windows ? Qt.Window | Qt.WindowTitleHint | Qt.WindowSystemMenuHint
+                                             | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
                      : Qt.Window | Qt.FramelessWindowHint
     // since qt 6.9 an ApplicationWindow keeps its content inside the safe
     // area, which on macos starts below the title bar; the app runs right up
@@ -43,9 +47,20 @@ ApplicationWindow {
     leftPadding: 0
     rightPadding: 0
     bottomPadding: 0
-    color: Appearance.colors.layer0
+    color: App.windows && immersiveReveal > 0 ? PlayerStyle.darkScheme.layer0 : Appearance.colors.layer0
     // shown and hidden by hand: closing hides it to the tray
     visible: true
+
+    Component.onCompleted: {
+        if (App.windows) App.setNativeTitleBar(window, Settings.nativeTitleBar)
+    }
+
+    Connections {
+        target: Settings
+        function onNativeTitleBarChanged() {
+            if (App.windows) App.setNativeTitleBar(window, Settings.nativeTitleBar)
+        }
+    }
 
     /// the window is on screen: not hidden to the tray, nor minimised. what it
     /// holds stops while it is not, as an item does not know its window is
@@ -68,7 +83,7 @@ ApplicationWindow {
         if (App.quitting) {
             return
         }
-        if (App.macOS || Player.playing || (Settings.trayIcon && App.trayAvailable)) {
+        if (App.macOS || App.windows || Player.playing || (Settings.trayIcon && App.trayAvailable)) {
             close.accepted = false
             window.hide()
             App.trimMemory()
@@ -181,6 +196,7 @@ ApplicationWindow {
 
         Sidebar {
             id: sidebar
+            objectName: "mainSidebar"
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -209,6 +225,7 @@ ApplicationWindow {
 
         Rectangle {
             id: sheet
+            objectName: "mainSheet"
             anchors.left: sidebar.right
             anchors.leftMargin: 8
             anchors.right: inspector.left
@@ -249,6 +266,7 @@ ApplicationWindow {
 
             TopBar {
                 id: topBar
+                objectName: "mainTopBar"
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
@@ -279,6 +297,7 @@ ApplicationWindow {
         // navigation, hidden while the immersive player is open.
         Item {
             id: inspector
+            objectName: "mainInspector"
             readonly property bool shown: (Player.showingLyrics || Player.showingQueue) && !UiState.immersiveOpen
                                           && !UiState.needsSetup && window.rightPanelFits
             anchors.right: parent.right
@@ -306,6 +325,7 @@ ApplicationWindow {
                 color: Appearance.colors.layer1
 
                 LyricsPanel {
+                    objectName: "mainLyricsPanel"
                     anchors.fill: parent
                     Reveal.shown: Player.showingLyrics
                     suspended: UiState.immersiveOpen
@@ -590,9 +610,21 @@ ApplicationWindow {
         }
 
         sourceComponent: ImmersivePlayer {
+            windowControlsTopInset: window.inAppWindowControls ? appWindowControls.y + appWindowControls.height : 0
             focus: true
             onCloseRequested: UiState.immersiveOpen = false
         }
+    }
+
+    WindowControls {
+        id: appWindowControls
+        objectName: "appWindowControls"
+        x: 12
+        y: 8
+        visible: window.inAppWindowControls
+        compact: true
+        scheme: window.immersiveReveal > 0 ? PlayerStyle.darkScheme : Appearance.colors
+        window: window
     }
 
     Toast {
@@ -678,13 +710,14 @@ ApplicationWindow {
     // built only where something shows tray icons, since qt complains loudly
     // about a tray with nowhere to go
     Loader {
-        active: Settings.trayIcon && App.trayAvailable
+        active: App.trayAvailable && (Settings.trayIcon || (App.windows && !window.visible))
         sourceComponent: Platform.SystemTrayIcon {
+            objectName: "swiftifyTrayIcon"
             visible: true
             icon.source: "qrc:/qt/qml/Swiftify/resources/swiftify-icon.png"
             tooltip: Player.hasSong ? Player.currentSong.name + " — " + Player.currentSong.artists : "Swiftify"
             onActivated: (reason) => {
-                if (reason === Platform.SystemTrayIcon.Trigger) {
+                if (reason === Platform.SystemTrayIcon.Trigger || reason === Platform.SystemTrayIcon.DoubleClick) {
                     window.reveal()
                 }
             }

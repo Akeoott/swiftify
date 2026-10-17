@@ -24,6 +24,11 @@
 #include <algorithm>
 #include <utility>
 
+#ifdef Q_OS_WIN
+#include "system/windows/WindowsIntegration.h"
+#include <QSystemTrayIcon>
+#endif
+
 #ifdef Q_OS_MACOS
 #include <malloc/malloc.h>
 #elif defined(__GLIBC__)
@@ -58,6 +63,9 @@ AppController::AppController(QObject *parent)
     if (qApp) {
         qApp->installEventFilter(this);
     }
+#ifdef Q_OS_WIN
+    m_trayAvailable = QSystemTrayIcon::isSystemTrayAvailable();
+#endif
 #if defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
     // qt's tray icon on linux is a StatusNotifierItem, which needs a watcher
     // to register with; without one it has nowhere to appear
@@ -148,6 +156,16 @@ AppController *AppController::create(QQmlEngine *, QJSEngine *engine)
         s_instance->m_engine = engine;
     }
     return s_instance;
+}
+
+void AppController::setNativeTitleBar(QObject *target, bool enabled) const
+{
+#ifdef Q_OS_WIN
+    WindowsIntegration::setNativeTitleBar(qobject_cast<QWindow *>(target), enabled);
+#else
+    Q_UNUSED(target)
+    Q_UNUSED(enabled)
+#endif
 }
 
 void AppController::trimMemory()
@@ -375,6 +393,10 @@ void AppController::writeCensus(const QString &path) const
 
 void AppController::quit()
 {
+    if (!m_quitting) {
+        m_quitting = true;
+        emit quittingChanged();
+    }
     QCoreApplication::quit();
 }
 

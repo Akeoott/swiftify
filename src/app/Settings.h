@@ -51,6 +51,7 @@ class Settings : public QObject {
     Q_PROPERTY(QString themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged FINAL)
     Q_PROPERTY(QString matugenColorsPath READ matugenColorsPath WRITE setMatugenColorsPath NOTIFY matugenColorsPathChanged FINAL)
     Q_PROPERTY(bool showWindowControls READ showWindowControls WRITE setShowWindowControls NOTIFY showWindowControlsChanged FINAL)
+    Q_PROPERTY(bool nativeTitleBar READ nativeTitleBar WRITE setNativeTitleBar NOTIFY nativeTitleBarChanged FINAL)
     Q_PROPERTY(bool trayIcon READ trayIcon WRITE setTrayIcon NOTIFY trayIconChanged FINAL)
 
 public:
@@ -131,6 +132,8 @@ public:
     /// linux only. minimise, maximise and close in the top bar
     bool showWindowControls() const { return m_showWindowControls; }
     void setShowWindowControls(bool value);
+    bool nativeTitleBar() const { return m_nativeTitleBar; }
+    void setNativeTitleBar(bool value);
     /// linux only
     bool trayIcon() const { return m_trayIcon; }
     void setTrayIcon(bool value);
@@ -160,6 +163,7 @@ signals:
     void themeModeChanged();
     void matugenColorsPathChanged();
     void showWindowControlsChanged();
+    void nativeTitleBarChanged();
     void trayIconChanged();
 
 private:
@@ -196,6 +200,11 @@ private:
     QString m_themeMode = QStringLiteral("system");
     QString m_matugenColorsPath = QString();
     bool m_showWindowControls = true;
+#ifdef Q_OS_WIN
+    bool m_nativeTitleBar = false;
+#else
+    bool m_nativeTitleBar = true;
+#endif
     bool m_trayIcon = true;
 };
 

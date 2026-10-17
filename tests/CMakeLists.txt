@@ -1,3 +1,7 @@
+add_test(NAME download_asset
+    COMMAND ${CMAKE_COMMAND} "-DTEST_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/download_asset"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_download_asset.cmake)
+
 function(swiftify_test name)
     qt_add_executable(${name} ${name}.cpp ${ARGN})
     target_link_libraries(${name} PRIVATE swiftify_app Qt6::Test)
@@ -19,6 +23,16 @@ swiftify_test(tst_session FakeCore.h)
 set(QT_NO_PRIVATE_MODULE_WARNING ON)
 find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
 target_link_libraries(tst_views PRIVATE swiftify_appplugin Qt6::GuiPrivate)
+if(WIN32)
+    find_program(SWIFTIFY_POWERSHELL NAMES powershell pwsh)
+    if(SWIFTIFY_POWERSHELL)
+        add_test(NAME windows_build_script
+            COMMAND ${SWIFTIFY_POWERSHELL} -NoProfile -ExecutionPolicy Bypass
+                -File ${CMAKE_CURRENT_SOURCE_DIR}/check_windows_build.ps1)
+    endif()
+    swiftify_test(tst_windows FakeCore.h)
+    target_link_libraries(tst_windows PRIVATE swiftify_appplugin Qt6::GuiPrivate)
+endif()
 
 # what a frame of the main window costs: run by hand, not by ctest
 find_package(Qt6 REQUIRED COMPONENTS QuickPrivate)

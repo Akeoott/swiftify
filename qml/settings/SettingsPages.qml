@@ -409,18 +409,32 @@ Item {
                 title: "Window"
                 symbol: "web_asset"
 
+                ConfigSelection {
+                    objectName: "windowControlsMode"
+                    visible: App.windows
+                    text: "Window controls"
+                    currentIndex: Settings.nativeTitleBar ? 0 : 1
+                    segments: [
+                        Segment { text: "Native title bar" },
+                        Segment { text: "In-app" }
+                    ]
+                    onActivated: (index) => Settings.nativeTitleBar = index === 0
+                }
                 ConfigSwitch {
                     text: "Window buttons"
+                    visible: !App.windows
                     checked: Settings.showWindowControls
                     onToggledTo: (checked) => Settings.showWindowControls = checked
                 }
                 ConfigSwitch {
-                    text: "Tray icon"
+                    text: App.windows ? "Always show tray icon" : "Tray icon"
                     checked: Settings.trayIcon
                     onToggledTo: (checked) => Settings.trayIcon = checked
                 }
                 NoteText {
-                    text: "window buttons are for desktops that draw none of their own, Hyprland closes and moves windows itself"
+                    text: App.windows
+                        ? "closing the window keeps Swiftify running in the tray. choose Quit Swiftify from the tray menu to exit."
+                        : "window buttons are for desktops that draw none of their own, Hyprland closes and moves windows itself"
                 }
             }
         }

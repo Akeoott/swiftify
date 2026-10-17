@@ -21,6 +21,7 @@
 
 #include <QDesktopServices>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QUrlQuery>
@@ -32,6 +33,7 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQmlListReference>
+#include <QQmlProperty>
 #include <QPointer>
 #include <QQuickImageProvider>
 #include <QQuickItem>
@@ -187,25 +189,38 @@ private slots:
         QVERIFY(!rig.frame.isNull());
     }
 
+    void immersivePlayerFitsShortWindows_data()
+    {
+        QTest::addColumn<int>("windowControlsTopInset");
+        QTest::newRow("native-controls") << 0;
+        QTest::newRow("in-app-controls") << 36;
+    }
+
     void immersivePlayerFitsShortWindows()
     {
+        QFETCH(int, windowControlsTopInset);
         Rig rig;
         rig.playSomething();
         rig.settings.setCircularVisualizer(true);
         rig.settings.setImmersivePlayerPanel(QStringLiteral("artwork"));
         const auto player = rig.show(QStringLiteral("ImmersivePlayer"));
         QVERIFY(player);
+        player->setProperty("windowControlsTopInset", windowControlsTopInset);
+        auto *close = player->findChild<QQuickItem *>(QStringLiteral("immersiveCloseButton"));
         auto *nowPlaying = player->findChild<QQuickItem *>(QStringLiteral("immersiveNowPlaying"));
         auto *artwork = player->findChild<QQuickItem *>(QStringLiteral("immersiveArtwork"));
         auto *details = player->findChild<QQuickItem *>(QStringLiteral("immersiveDetails"));
         auto *seek = player->findChild<QQuickItem *>(QStringLiteral("immersiveSeek"));
         auto *transport = player->findChild<QQuickItem *>(QStringLiteral("immersiveTransport"));
-        QVERIFY(nowPlaying && artwork && details && seek && transport);
+        QVERIFY(close && nowPlaying && artwork && details && seek && transport);
 
         for (const int width : {724, 526}) {
             player->setSize(QSize(width, 410));
             Rig::settle();
             rig.render();
+            QCOMPARE(close->x(), 24.0);
+            QCOMPARE(close->y(), qMax(18.0, player->property("titleBarInset").toReal() + 6));
+            QVERIFY(close->y() + close->height() <= close->parentItem()->height());
             QVERIFY(artwork->width() >= 160);
             QVERIFY(seek->width() >= 150);
             QVERIFY(transport->width() <= details->width());
@@ -229,6 +244,112 @@ private slots:
         QVERIFY(panel);
         QCOMPARE(panel->width(), player->property("rowSpace").toDouble());
         QVERIFY(panel->x() >= 0);
+    }
+
+    void multilineLyricsStayInsideTheirHighlight_data()
+    {
+        QTest::addColumn<QString>("words");
+        QTest::addColumn<int>("width");
+        QTest::addColumn<int>("minimumLines");
+        QTest::addColumn<bool>("noShapes");
+        for (bool noShapes : {false, true}) {
+            const QByteArray suffix = noShapes ? "-plain" : "-wavy";
+            QTest::newRow("single" + suffix) << QStringLiteral("jumping past") << 512 << 1 << noShapes;
+            QTest::newRow("two" + suffix)
+                << QStringLiteral("I'm so stuck in the past and I just can't get it back") << 512 << 2 << noShapes;
+            QTest::newRow("three" + suffix)
+                << QStringLiteral("'Cause I ain't been healthy (healthy), I'm so stuck on the past") << 512 << 3 << noShapes;
+            QTest::newRow("narrow" + suffix)
+                << QStringLiteral("'Cause I ain't been healthy (healthy), I'm so stuck on the past") << 280 << 4 << noShapes;
+            QTest::newRow("explicit-breaks" + suffix)
+                << QStringLiteral("jumping\npast\nyesterday") << 512 << 3 << noShapes;
+        }
+    }
+
+    void multilineLyricsStayInsideTheirHighlight()
+    {
+        QFETCH(QString, words);
+        QFETCH(int, width);
+        QFETCH(int, minimumLines);
+        QFETCH(bool, noShapes);
+        Rig rig;
+        rig.settings.setPerformanceMode(true);
+        rig.settings.setNoShapes(noShapes);
+        QFile lyrics(rig.directory.filePath(QStringLiteral("sung.lrc")));
+        QVERIFY(lyrics.open(QIODevice::WriteOnly));
+        lyrics.write("[00:00.00]placeholder\n");
+        lyrics.close();
+        Song song;
+        song.uri = QUrl::fromLocalFile(rig.directory.filePath(QStringLiteral("sung.flac"))).toString();
+        song.durationMs = 200'000;
+        rig.player.play(song, {song});
+        Rig::settle();
+        QVERIFY(rig.player.hasLyrics());
+        QVERIFY(rig.player.lyricsSynchronized());
+        QCOMPARE(rig.player.activeLyricIndex(), 0);
+        rig.player.lyrics()->setLines({{0, 200'000, words}});
+        const auto panel = rig.show(QStringLiteral("ImmersiveLyrics"));
+        QVERIFY(panel);
+        panel->setWidth(width);
+        auto *list = panel->findChild<QQuickItem *>(QStringLiteral("immersiveLyricsList"));
+        QVERIFY(list);
+        list->setProperty("contentY", -120.0);
+        Rig::settle();
+        rig.render();
+        QQuickItem *line = nullptr;
+        QVERIFY(QMetaObject::invokeMethod(list, "itemAtIndex", Q_RETURN_ARG(QQuickItem *, line), Q_ARG(int, 0)));
+        QVERIFY(line);
+        auto *label = line->findChild<QQuickItem *>(QStringLiteral("lyricText"));
+        auto *highlight = line->findChild<QQuickItem *>(QStringLiteral("lyricHighlight"));
+        QVERIFY(label && highlight);
+        QVERIFY(label->property("lineCount").toInt() >= minimumLines);
+        QVERIFY(line->property("active").toBool());
+        if (!rig.gpu) return;
+
+        const qreal ratio = rig.window->devicePixelRatio();
+        const QPointF origin = line->mapToScene(QPointF());
+        const QRect pixels(qRound(origin.x() * ratio), qRound(origin.y() * ratio),
+                           qRound(line->width() * ratio), qRound(line->height() * ratio));
+        const QString preview = qEnvironmentVariable("SWIFTIFY_LYRICS_PREVIEW");
+        if (!preview.isEmpty()) {
+            rig.window->setColor(QColor(QStringLiteral("#381c23")));
+            rig.render();
+            QVERIFY(rig.render().copy(pixels).save(preview + QLatin1Char('.')
+                + QString::fromLatin1(QTest::currentDataTag()) + QStringLiteral(".png")));
+        }
+
+        rig.window->setColor(Qt::black);
+        QVERIFY(QQmlProperty(list, QStringLiteral("layer.enabled")).write(false));
+        label->setVisible(false);
+        highlight->setProperty("color", QColor(Qt::white));
+        Rig::settle();
+        rig.render();
+        const QImage background = rig.render().copy(pixels);
+        highlight->setVisible(false);
+        line->setProperty("glowStrength", 0.0);
+        label->setVisible(true);
+        Rig::settle();
+        rig.render();
+        const QImage text = rig.render().copy(pixels);
+        const int clearance = qRound(8 * ratio);
+        int glyphPixels = 0;
+        for (int row = 0; row < text.height(); ++row) {
+            for (int column = 0; column < text.width(); ++column) {
+                if (text.pixelColor(column, row).lightness() < 128) continue;
+                ++glyphPixels;
+                for (int offsetY : {-clearance, 0, clearance}) {
+                    for (int offsetX : {-clearance, 0, clearance}) {
+                        const QPoint sample(column + offsetX, row + offsetY);
+                        QVERIFY2(background.rect().contains(sample)
+                                     && background.pixelColor(sample).lightness() > 240,
+                                 qPrintable(QStringLiteral("Glyph at %1,%2 lacks 8px of highlight padding (sample %3,%4: %5)")
+                                                .arg(column).arg(row).arg(sample.x()).arg(sample.y())
+                                                .arg(background.rect().contains(sample) ? background.pixelColor(sample).lightness() : -1)));
+                    }
+                }
+            }
+        }
+        QVERIFY(glyphPixels > 100);
     }
 
     void collectionHeroKeepsPillButtonsWhileTheyFit()

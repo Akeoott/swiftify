@@ -42,6 +42,7 @@ Item {
 
     ListView {
         id: list
+        objectName: "immersiveLyricsList"
         anchors.fill: parent
         Reveal.shown: !Player.loadingLyrics && Player.hasLyrics
         model: Player.lyrics
@@ -162,7 +163,9 @@ Item {
 
             // the sung line sits on a scalloped pill
             WavyPill {
+                objectName: "lyricHighlight"
                 anchors.fill: parent
+                cornerRadius: 32
                 color: Qt.rgba(1, 1, 1, line.active && Player.lyricsSynchronized ? 0.07 : 0)
 
                 Behavior on color {
@@ -182,10 +185,11 @@ Item {
 
             StyledText {
                 id: label
+                objectName: "lyricText"
                 width: parent.width
                 y: 8
-                leftPadding: 18
-                rightPadding: 18
+                leftPadding: 24
+                rightPadding: 24
                 topPadding: 14
                 bottomPadding: 14
                 text: line.words.length > 0 ? line.words : "♪"

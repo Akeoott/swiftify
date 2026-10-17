@@ -13,6 +13,7 @@ FocusScope {
     signal closeRequested()
 
     property MaterialScheme scheme: PlayerStyle.darkScheme
+    property real windowControlsTopInset: 0
 
     readonly property bool lyricsAvailable: Player.loadingLyrics || (Player.hasLyrics && Player.lyrics.count > 0)
     /// the switch's segments, in order; "" is the artwork alone
@@ -48,7 +49,7 @@ FocusScope {
                                               : (width - panelWidth) / 2
     readonly property real panelSlide: Math.min(140, panelWidth * 0.3)
     /// the mac's traffic lights stay over the top-left corner
-    readonly property real titleBarInset: App.macOS ? Math.max(28, SafeArea.margins.top) : 0
+    readonly property real titleBarInset: App.macOS ? Math.max(28, SafeArea.margins.top) : windowControlsTopInset
 
     component LayoutMotion: NumberAnimation {
         duration: Appearance.motion(500)
@@ -199,7 +200,7 @@ FocusScope {
     ImmersiveLayout {
         id: immersiveLayout
         windowWidth: root.width
-        windowHeight: root.height
+        windowHeight: root.height - (topBar.height - immersiveLayout.topBarHeight)
         showsSpectrum: root.showsSpectrum
         showsPanel: root.sideBySide
         circular: Settings.visualizersEnabled && Settings.circularVisualizer
@@ -221,7 +222,7 @@ FocusScope {
     Item {
         id: topBar
         width: parent.width
-        height: immersiveLayout.topBarHeight
+        height: Math.max(immersiveLayout.topBarHeight, immersiveClose.y + immersiveClose.height + 2)
 
         DragHandler {
             target: null
@@ -237,7 +238,10 @@ FocusScope {
         }
 
         IconButton {
-            x: 24
+            id: immersiveClose
+            objectName: "immersiveCloseButton"
+            anchors.left: parent.left
+            anchors.leftMargin: 24
             y: Math.max(18, root.titleBarInset + 6)
             scheme: root.scheme
             symbol: "close"
@@ -255,6 +259,7 @@ FocusScope {
 
         SegmentedControl {
             id: switcher
+            objectName: "immersiveSwitcher"
             anchors.right: parent.right
             anchors.rightMargin: 24
             y: 18

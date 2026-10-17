@@ -13,6 +13,7 @@ ShaderEffect {
     property bool pressed: false
 
     property size itemSize: Qt.size(width, height)
+    property real cornerRadius: Math.min(width, height) / 2
     property real amplitude: Settings.noShapes ? 0 : (pressed ? 4 : (hovered ? 3.2 : 2.2))
     property real wavelength: 15
     readonly property real phase: drift.value

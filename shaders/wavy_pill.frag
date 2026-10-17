@@ -18,6 +18,7 @@ layout(std140, binding = 0) uniform buf {
     float wavelength;
     // radians; runs the scallops round the outline
     float phase;
+    float cornerRadius;
 };
 
 const float PI = 3.14159265;
@@ -26,7 +27,7 @@ void main()
 {
     vec2 halfSize = 0.5 * itemSize - vec2(amplitude + 0.75);
     vec2 p = qt_TexCoord0 * itemSize - 0.5 * itemSize;
-    float radius = min(halfSize.x, halfSize.y);
+    float radius = min(min(halfSize.x, halfSize.y), max(0.0, cornerRadius - amplitude - 0.75));
     // the straight parts' half lengths
     vec2 straight = halfSize - vec2(radius);
 
@@ -64,7 +65,7 @@ void main()
     // amplitude springs about. counted on the moving outline, a scallop came
     // or went whenever it crossed a half, and a press made the edge jump
     vec2 outer = 0.5 * itemSize - vec2(0.75);
-    float outerRadius = min(outer.x, outer.y);
+    float outerRadius = min(min(outer.x, outer.y), max(0.0, cornerRadius - 0.75));
     vec2 outerStraight = outer - vec2(outerRadius);
     float outerPerimeter = 4.0 * (outerStraight.x + outerStraight.y) + 2.0 * PI * outerRadius;
     float scallops = max(1.0, floor(outerPerimeter / max(wavelength, 1.0) + 0.5));

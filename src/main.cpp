@@ -27,8 +27,11 @@
 #include "system/macos/MacWindow.h"
 #include "system/macos/NowPlaying.h"
 #endif
+#ifdef Q_OS_WIN
+#include "system/windows/WindowsIntegration.h"
+#endif
 
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
 #include <QApplication>
 #else
 #include <QGuiApplication>
@@ -196,6 +199,9 @@ private:
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_WIN
+    WindowsIntegration::initializeProcess();
+#endif
 #ifdef Q_OS_MACOS
     startCompact(argv);
 #endif
@@ -205,10 +211,13 @@ int main(int argc, char *argv[])
     // the wayland app id, which hyprland window rules and the .desktop file match.
     QGuiApplication::setDesktopFileName(QStringLiteral("swiftify"));
     // the tray menu can fall back to widgets on linux
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
     QApplication application(argc, argv);
 #else
     QGuiApplication application(argc, argv);
+#endif
+#ifdef Q_OS_WIN
+    application.setQuitOnLastWindowClosed(false);
 #endif
 #ifdef Q_OS_UNIX
     quitGracefullyOnSignals(application);
@@ -283,6 +292,17 @@ int main(int argc, char *argv[])
 #endif
 
     QQmlApplicationEngine engine;
+#ifdef Q_OS_WIN
+    WindowsIntegration windowsIntegration(&player, &theme);
+    engine.setInitialProperties({{QStringLiteral("visible"), false}});
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &windowsIntegration,
+                     [&windowsIntegration](QObject *object, const QUrl &) {
+        if (auto *window = qobject_cast<QWindow *>(object)) {
+            windowsIntegration.setWindow(window);
+            window->show();
+        }
+    });
+#endif
     engine.addImageProvider(QStringLiteral("art"), new ArtworkImageProvider);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &application,
                      [] { QCoreApplication::exit(EXIT_FAILURE); }, Qt::QueuedConnection);

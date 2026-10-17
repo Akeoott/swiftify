@@ -32,7 +32,7 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   - [Build requirements](#build-requirements)
   - [macOS](#macos)
   - [Linux](#linux)
-  - [Windows](#windows-untested)
+  - [Windows](#windows)
 - [Command line](#command-line)
 
 ## Before you start
@@ -74,8 +74,8 @@ the first cmake run needs internet: it pulls [Corrosion](https://github.com/corr
 (which builds the rust core as part of the cmake build) and two fonts, Material Symbols
 Rounded and Google Sans Flex, each checked against a pinned hash.
 
-the commands below skip the tests with `-DBUILD_TESTING=OFF`. drop that and run
-`ctest --test-dir build` if u want them.
+the builds below skip the tests with `-DBUILD_TESTING=OFF`. for a manual CMake
+build, drop that and run `ctest --test-dir build` if u want them.
 
 ### macOS
 
@@ -133,37 +133,57 @@ on linux it also hooks into MPRIS (media keys, `playerctl`, shell media widgets)
 logind (pauses before the machine sleeps), pipewire/pulseaudio device changes, and
 the tray. `-DSWIFTIFY_DESKTOP_INTEGRATION=OFF` turns those off.
 
-### Windows (untested)
+### Windows
 
-install visual studio 2022 (or just its build tools) with *Desktop development with C++*,
-Qt 6.9+ for *MSVC 2022 64-bit* with *Qt Shader Tools* from the qt online installer,
-rust from [rustup](https://rustup.rs), and git. then open an
-*x64 Native Tools Command Prompt for VS 2022*, set `QT` to wherever ur qt is, and paste:
+**because most Windows users cant even use their own OS, i made a script that handles building so it's as simple as possible :)**
 
-```bat
-set QT=C:\Qt\6.11.2\msvc2022_64
-cd /d %USERPROFILE%
+first install Qt 6.9+ with *Qt Shader Tools*, CMake and Ninja from the Qt online installer,
+Rust from [rustup](https://rustup.rs), and Git. choose either Qt for *MSVC 2022 64-bit*
+with Visual Studio 2022 17.1+ (or Build Tools) and its *Desktop development with C++*
+workload, or Qt for *MinGW 64-bit* with its matching MinGW toolchain.
 
-git clone https://github.com/frankosterfeld/qtkeychain
-cmake -S qtkeychain -B qtkeychain\build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_QT6=ON -DBUILD_TEST_APPLICATION=OFF -DBUILD_TRANSLATIONS=OFF -DCMAKE_PREFIX_PATH=%QT% -DCMAKE_INSTALL_PREFIX=C:\deps
-cmake --build qtkeychain\build --target install
+then run this in Windows PowerShell:
 
-git clone https://github.com/qcoro/qcoro
-cmake -S qcoro -B qcoro\build -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_QT_VERSION=6 -DQCORO_WITH_QTDBUS=OFF -DQCORO_WITH_QTWEBSOCKETS=OFF -DQCORO_BUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH=%QT% -DCMAKE_INSTALL_PREFIX=C:\deps
-cmake --build qcoro\build --target install
-
+```powershell
 git clone https://github.com/shredos67/swiftify.git
-cd swiftify
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH="%QT%;C:\deps"
-cmake --build build
-cmake --install build --prefix "%LOCALAPPDATA%\Programs\Swiftify"
-%QT%\bin\windeployqt --release --qmldir qml "%LOCALAPPDATA%\Programs\Swiftify\bin\swiftify.exe"
-copy C:\deps\bin\*.dll "%LOCALAPPDATA%\Programs\Swiftify\bin\"
+Set-Location swiftify
+.\tools\build-windows.ps1
 ```
 
-that builds qtkeychain and qcoro into `C:\deps`, then swiftify, installs it to
-`%LOCALAPPDATA%\Programs\Swiftify` and copies in all the dlls it needs. run
-`swiftify.exe` from there or make a shortcut to it.
+for a different Qt kit, toolchain location or install directory, pass overrides:
+
+```powershell
+.\tools\build-windows.ps1 -QtPath 'C:\Qt\6.11.2\msvc2022_64'
+.\tools\build-windows.ps1 -QtPath 'C:\Qt\6.9.3\mingw_64' -MingwPath 'C:\Qt\Tools\mingw1310_64\bin' -InstallPrefix "$env:LOCALAPPDATA\Programs\Swiftify"
+```
+
+adjust the example paths to your installed versions, MinGW must match your Qt
+kit, not just the example folder name. `-Jobs 4` limits parallel compilation and
+`-BuildRoot 'D:\swiftify-build'` changes the build/cache location. by default,
+sources and builds stay under `build-windows` in the checkout, with separate
+build directories for each Qt/compiler combination. rerunning reuses those
+sources and builds; any failed command stops the script immediately. quit a
+running installed copy through its tray menu before updating it.
+
+if PowerShell blocks the script, review it first, then run
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build-windows.ps1`.
+this applies only to that process, not your machine's execution policy.
+
+start the installed app with:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Swiftify\bin\swiftify.exe"
+```
+
+font downloads are hash-checked on every configure; on Windows, a failed CMake
+download is retried with `curl.exe` using the system certificate store.
+
+**Settings → Appearance → Window → Window controls** switches between the native
+title bar and in-app buttons (the Windows default) in the top-left above the sidebar,
+ordered close, maximize, minimize. existing saved preferences are kept.
+the choice applies immediately and is saved. in-app buttons stay available in
+the immersive player too; both modes keep resizing, taskbar integration and
+Windows 11 rounded corners. closing the window still keeps Swiftify in the tray.
 
 ## Command line
 

@@ -49,9 +49,13 @@ Mpris::Mpris(PlaybackController *player, QObject *parent)
         || bus.registerService(QStringLiteral("org.mpris.MediaPlayer2.swiftify.instance%1").arg(QCoreApplication::applicationPid()));
 
     connect(m_player, &PlaybackController::mediaStateChanged, this, &Mpris::update);
+    connect(m_player, &PlaybackController::durationChanged, this, &Mpris::update);
+    connect(m_player, &PlaybackController::currentSongChanged, this, &Mpris::update);
+    connect(m_player, &PlaybackController::queueChanged, this, &Mpris::update);
     connect(m_player, &PlaybackController::volumeChanged, this, &Mpris::update);
     connect(m_player, &PlaybackController::shuffleChanged, this, &Mpris::update);
     connect(m_player, &PlaybackController::repeatModeChanged, this, &Mpris::update);
+    connect(m_player, &PlaybackController::positionChanged, this, &Mpris::checkForJump);
     update();
 }
 
@@ -79,7 +83,7 @@ bool Mpris::hasSong() const
 
 bool Mpris::canSeek() const
 {
-    return m_player->hasSong() && m_player->durationMs() > 0;
+    return m_player->hasSong() && (m_player->durationMs() > 0 || m_player->currentSong().durationMs > 0);
 }
 
 bool Mpris::canGoNext() const
@@ -112,10 +116,18 @@ QVariantMap Mpris::metadata() const
     }
     const Song song = m_player->currentSong();
     const qlonglong durationMs = std::max<qlonglong>(m_player->durationMs(), song.durationMs);
+    QStringList artists;
+    if (!song.artistItems.isEmpty()) {
+        for (const auto &artist : song.artistItems) {
+            artists.append(artist.name);
+        }
+    } else if (!song.artists.isEmpty()) {
+        artists.append(song.artists);
+    }
     QVariantMap map {
         {QStringLiteral("mpris:trackid"), QVariant::fromValue(trackPath(song))},
         {QStringLiteral("xesam:title"), song.name},
-        {QStringLiteral("xesam:artist"), QStringList {song.artists}},
+        {QStringLiteral("xesam:artist"), artists},
         {QStringLiteral("xesam:url"), QStringLiteral("https://open.spotify.com/track/") + song.spotifyId()},
     };
     if (!song.albumName.isEmpty()) {
@@ -176,6 +188,23 @@ void Mpris::update()
     }
     m_lastPositionUs = position;
     m_lastPositionAt = now;
+}
+
+void Mpris::checkForJump()
+{
+    if (!m_registered || !m_player->hasSong() || !m_lastPositionAt.isValid()) {
+        return;
+    }
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    const qlonglong position = positionMicroseconds();
+    const qlonglong elapsed = m_player->isPlaying() ? m_lastPositionAt.msecsTo(now) * 1000 : 0;
+    if (std::llabs(m_lastPositionUs + elapsed - position) >= 1'000'000) {
+        if (auto *adaptor = findChild<MprisPlayerAdaptor *>()) {
+            emit adaptor->Seeked(position);
+        }
+        m_lastPositionUs = position;
+        m_lastPositionAt = now;
+    }
 }
 
 void Mpris::emitPropertiesChanged(const QString &interface, const QVariantMap &changed)
@@ -261,8 +290,9 @@ void MprisPlayerAdaptor::Previous()
 
 void MprisPlayerAdaptor::Pause()
 {
-    // pause is always honoured
-    m_mpris->player()->pause();
+    if (m_mpris->player()->isPlaying() || m_mpris->player()->isLoading()) {
+        m_mpris->player()->pause();
+    }
 }
 
 void MprisPlayerAdaptor::PlayPause()
@@ -276,7 +306,9 @@ void MprisPlayerAdaptor::PlayPause()
 
 void MprisPlayerAdaptor::Stop()
 {
-    m_mpris->player()->pause();
+    if (m_mpris->player()->isPlaying() || m_mpris->player()->isLoading()) {
+        m_mpris->player()->pause();
+    }
 }
 
 void MprisPlayerAdaptor::Play()

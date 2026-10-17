@@ -13,7 +13,7 @@ it runs significantly lighter than the spotify client.
 
 id recommend turning the visualizers and background off if the app runs in the background tho lol
 
-anyways runs on linux (made for wayland and hyprland) and macos. haven't tested winslop though...
+***anyways runs on linux (made for wayland and hyprland) macos, and windows.***
 
 ## previews
 first image shows equalizer, tempo and pitch settings. second picture shows how the immersive player and the visualizer/lyrics look
@@ -42,24 +42,7 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   web api through your own developer app. the first launch walks u through it:
   make an app in the [spotify developer dashboard](https://developer.spotify.com/dashboard),
   add `http://127.0.0.1:8898/login` as a redirect uri, and paste the apps client id
-  into swiftify. u dont need the client secret.
-
-## Matugen colours
-
-in Settings → Appearance, choose **Matugen** on macOS (**Desktop** on Linux).
-leave the JSON path empty to find a scheme automatically. Swiftify checks Matugen
-folders under `~/.config`, `~/.cache`, `~/.local/state`, and the corresponding XDG
-locations. on macOS it also checks `~/Library/Application Support` and
-`~/Library/Caches` for `com.InioX.matugen`, `matugen`, and `Matugen` folders.
-end4's `~/.local/state/quickshell/user/generated/colors.json` is supported too.
-
-`colors.json` is preferred, but other JSON filenames and generated subfolders work.
-Swiftify validates each file and skips templates and unrelated JSON. it reads flat
-Material roles, nested light/dark schemes, and Matugen's per-colour mode objects,
-including hex, stripped hex, RGB/RGBA and HSL/HSLA exports. the light/dark setting
-chooses the matching variant when available. changes to the generated file apply
-automatically, including when Matugen replaces it. enter a custom path to override
-discovery, or click **Auto-detect** to return to it.
+  into swiftify. you dont need the client secret.
 
 ## Building from source
 
@@ -126,7 +109,7 @@ run the last five lines above.
 `cmake --install` drops `swiftify` in `~/.local/bin` (make sure that's on your `PATH`)
 and the desktop entry, icons and fonts in `~/.local/share`. 
 
-ur login gets saved in the secret service through QtKeychain, so u need something
+your login gets saved in the secret service through QtKeychain, so u need something
 providing one: gnome-keyring, kwallet or keepassxc.
 
 on linux it also hooks into MPRIS (media keys, `playerctl`, shell media widgets),
@@ -158,12 +141,9 @@ for a different Qt kit, toolchain location or install directory, pass overrides:
 ```
 
 adjust the example paths to your installed versions, MinGW must match your Qt
-kit, not just the example folder name. `-Jobs 4` limits parallel compilation and
-`-BuildRoot 'D:\swiftify-build'` changes the build/cache location. by default,
-sources and builds stay under `build-windows` in the checkout, with separate
-build directories for each Qt/compiler combination. rerunning reuses those
-sources and builds; any failed command stops the script immediately. quit a
-running installed copy through its tray menu before updating it.
+kit, not just the example folder name. 
+
+quit a running installed copy through its tray menu before updating it.
 
 if PowerShell blocks the script, review it first, then run
 `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build-windows.ps1`.
@@ -177,13 +157,6 @@ start the installed app with:
 
 font downloads are hash-checked on every configure; on Windows, a failed CMake
 download is retried with `curl.exe` using the system certificate store.
-
-**Settings → Appearance → Window → Window controls** switches between the native
-title bar and in-app buttons (the Windows default) in the top-left above the sidebar,
-ordered close, maximize, minimize. existing saved preferences are kept.
-the choice applies immediately and is saved. in-app buttons stay available in
-the immersive player too; both modes keep resizing, taskbar integration and
-Windows 11 rounded corners. closing the window still keeps Swiftify in the tray.
 
 ## Command line
 

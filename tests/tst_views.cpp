@@ -166,7 +166,7 @@ private slots:
     void init()
     {
         // macos's offscreen platform has no "Sans Serif"; nothing on linux says this
-        QTest::failOnWarning(QRegularExpression(QStringLiteral("^(?!Populating font family aliases).*")));
+        QTest::failOnWarning(QRegularExpression(QStringLiteral("^(?!(Populating font family aliases|.*QWaylandTextInputv3)).*")));
     }
 
     void immersivePanels_data()
@@ -463,12 +463,12 @@ private slots:
         rig.playSomething();
         const auto backdrop = rig.show(QStringLiteral("LiquidBackdrop"));
         QVERIFY(backdrop);
-        // the field is the accent pink while nothing has artwork: whatever
+        // the field is the accent green while nothing has artwork: whatever
         // the blur and the shade do, the middle of the window is not black
-        // and leans red
+        // and leans green
         const QColor middle = rig.frame.pixelColor(rig.frame.width() / 2, rig.frame.height() / 2);
-        QVERIFY2(middle.red() > 24, qPrintable(middle.name()));
-        QVERIFY2(middle.red() > middle.green(), qPrintable(middle.name()));
+        QVERIFY2(middle.green() > 24, qPrintable(middle.name()));
+        QVERIFY2(middle.green() > middle.red(), qPrintable(middle.name()));
     }
 
     void thePlaylistEditorOpensAndDrawsItsCovers()

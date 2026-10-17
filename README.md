@@ -102,9 +102,32 @@ cmake --build build
 cmake --install build
 ```
 
+on debian/ubuntu (or derivatives with Qt 6.8), use the build script that handles
+compatibility patches automatically:
+
+```sh
+sudo apt-get install git qt6-base-dev qt6-declarative-dev qt6-shader-baker \
+    qt6-shadertools-dev qt6-wayland qtkeychain-qt6-dev qcoro-qt6-dev \
+    libpulse-dev libasound2-dev libssl-dev cmake ninja-build pkg-config
+# install rust from https://rustup.rs if you dont have it
+
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify
+./tools/build-debian.sh
+```
+
+or with `--install-deps` to install the dependencies automatically:
+
+```sh
+git clone https://github.com/shredos67/swiftify.git
+cd swiftify
+./tools/build-debian.sh --install-deps
+```
+
 anywhere else, install the same reqs (Qt 6.9+ with D-Bus, OpenGL and Wayland, QtKeychain
 and QCoro for Qt 6, libpulse, plus the ALSA, OpenSSL and pkg-config dev packages), then
-run the last five lines above.
+run the cmake commands above. if you have Qt 6.8, use `tools/build-debian.sh` which
+applies the necessary compatibility patches.
 
 `cmake --install` drops `swiftify` in `~/.local/bin` (make sure that's on your `PATH`)
 and the desktop entry, icons and fonts in `~/.local/share`. 

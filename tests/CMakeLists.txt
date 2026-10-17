@@ -6,7 +6,10 @@ function(swiftify_test name)
     qt_add_executable(${name} ${name}.cpp ${ARGN})
     target_link_libraries(${name} PRIVATE swiftify_app Qt6::Test)
     add_test(NAME ${name} COMMAND ${name})
-    set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    # on linux, offscreen lacks hardware opengl/vulkan, breaking qrhi in tst_views
+    if(NOT SWIFTIFY_IS_LINUX OR NOT name STREQUAL "tst_views")
+        set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    endif()
 endfunction()
 
 swiftify_test(tst_settings)
@@ -55,3 +58,6 @@ endif()
 
 swiftify_test(tst_menus FakeCore.h ViewRig.h)
 target_link_libraries(tst_menus PRIVATE swiftify_appplugin Qt6::GuiPrivate)
+
+swiftify_test(tst_segmented FakeCore.h ViewRig.h)
+target_link_libraries(tst_segmented PRIVATE swiftify_appplugin Qt6::GuiPrivate)

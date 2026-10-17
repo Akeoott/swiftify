@@ -27,6 +27,7 @@ private slots:
         QCOMPARE(settings.sleepTimerFade(), QStringLiteral("finalSeconds"));
         QCOMPARE(settings.themeSource(), QStringLiteral("spotify"));
         QCOMPARE(settings.themeMode(), QStringLiteral("system"));
+        QCOMPARE(settings.windowControlsOnRight(), false);
 #ifdef Q_OS_WIN
         QVERIFY(!settings.nativeTitleBar());
 #else
@@ -121,6 +122,22 @@ private slots:
         QVERIFY(reopened.performanceMode());
         QVERIFY(reopened.noShapes());
         QVERIFY(!reopened.reduceMotion());
+    }
+
+    void windowControlsOnRightPersists()
+    {
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("swiftify.conf"));
+        {
+            Settings settings(path);
+            QSignalSpy spy(&settings, &Settings::windowControlsOnRightChanged);
+            settings.setWindowControlsOnRight(true);
+            settings.setWindowControlsOnRight(true);
+            QCOMPARE(spy.count(), 1);
+            QVERIFY(settings.windowControlsOnRight());
+        }
+        Settings reopened(path);
+        QVERIFY(reopened.windowControlsOnRight());
     }
 };
 

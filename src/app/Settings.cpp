@@ -157,6 +157,7 @@ void Settings::load()
         m_matugenColorsPath = raw.trimmed();
     }
     m_showWindowControls = stored<bool>(m_store, "showWindowControls", m_showWindowControls);
+    m_windowControlsOnRight = stored<bool>(m_store, "windowControlsOnRight", m_windowControlsOnRight);
     m_nativeTitleBar = stored<bool>(m_store, "nativeTitleBar", m_nativeTitleBar);
     m_trayIcon = stored<bool>(m_store, "trayIcon", m_trayIcon);
     m_zoom = std::clamp(stored<double>(m_store, "zoom", m_zoom), 0.5, 2.0);
@@ -412,6 +413,16 @@ void Settings::setShowWindowControls(bool value)
     m_showWindowControls = value;
     m_store.setValue(QStringLiteral("showWindowControls"), value);
     emit showWindowControlsChanged();
+}
+
+void Settings::setWindowControlsOnRight(bool value)
+{
+    if (m_windowControlsOnRight == value) {
+        return;
+    }
+    m_windowControlsOnRight = value;
+    m_store.setValue(QStringLiteral("windowControlsOnRight"), value);
+    emit windowControlsOnRightChanged();
 }
 
 void Settings::setNativeTitleBar(bool value)

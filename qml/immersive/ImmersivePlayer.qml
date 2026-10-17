@@ -242,7 +242,7 @@ FocusScope {
             objectName: "immersiveCloseButton"
             anchors.left: parent.left
             anchors.leftMargin: 24
-            y: Math.max(18, root.titleBarInset + 6)
+            y: Math.max(18, (Settings.windowControlsOnRight ? 0 : root.titleBarInset) + 6)
             scheme: root.scheme
             symbol: "close"
             size: 34
@@ -262,7 +262,7 @@ FocusScope {
             objectName: "immersiveSwitcher"
             anchors.right: parent.right
             anchors.rightMargin: 24
-            y: 18
+            y: Math.max(18, (Settings.windowControlsOnRight ? root.titleBarInset : 0) + 6)
             scheme: root.scheme
             segmentHeight: 30
             horizontalPadding: 12

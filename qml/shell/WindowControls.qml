@@ -10,6 +10,7 @@ Row {
     required property Window window
     property bool compact: false
     property MaterialScheme scheme: Appearance.colors
+    layoutDirection: Settings.windowControlsOnRight ? Qt.RightToLeft : Qt.LeftToRight
 
     spacing: 4
 

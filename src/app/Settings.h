@@ -51,6 +51,7 @@ class Settings : public QObject {
     Q_PROPERTY(QString themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged FINAL)
     Q_PROPERTY(QString matugenColorsPath READ matugenColorsPath WRITE setMatugenColorsPath NOTIFY matugenColorsPathChanged FINAL)
     Q_PROPERTY(bool showWindowControls READ showWindowControls WRITE setShowWindowControls NOTIFY showWindowControlsChanged FINAL)
+    Q_PROPERTY(bool windowControlsOnRight READ windowControlsOnRight WRITE setWindowControlsOnRight NOTIFY windowControlsOnRightChanged FINAL)
     Q_PROPERTY(bool nativeTitleBar READ nativeTitleBar WRITE setNativeTitleBar NOTIFY nativeTitleBarChanged FINAL)
     Q_PROPERTY(bool trayIcon READ trayIcon WRITE setTrayIcon NOTIFY trayIconChanged FINAL)
     /// the whole window's zoom, as ctrl + and ctrl - set it
@@ -134,6 +135,8 @@ public:
     /// linux only. minimise, maximise and close in the top bar
     bool showWindowControls() const { return m_showWindowControls; }
     void setShowWindowControls(bool value);
+    bool windowControlsOnRight() const { return m_windowControlsOnRight; }
+    void setWindowControlsOnRight(bool value);
     bool nativeTitleBar() const { return m_nativeTitleBar; }
     void setNativeTitleBar(bool value);
     /// linux only
@@ -167,6 +170,7 @@ signals:
     void themeModeChanged();
     void matugenColorsPathChanged();
     void showWindowControlsChanged();
+    void windowControlsOnRightChanged();
     void nativeTitleBarChanged();
     void trayIconChanged();
     void zoomChanged();
@@ -200,6 +204,7 @@ private:
     QString m_themeMode = QStringLiteral("system");
     QString m_matugenColorsPath = QString();
     bool m_showWindowControls = true;
+    bool m_windowControlsOnRight = false;
 #ifdef Q_OS_WIN
     bool m_nativeTitleBar = false;
 #else

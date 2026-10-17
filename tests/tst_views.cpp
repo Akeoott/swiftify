@@ -2681,6 +2681,68 @@ private slots:
         }
     }
 
+    void windowControlsOnRightMovesControlsAndInspector()
+    {
+        Rig rig;
+        rig.settings.setPerformanceMode(true);
+        rig.settings.setShowWindowControls(true);
+        rig.settings.setWindowControlsOnRight(false);
+        QQmlComponent component(&rig.engine, QUrl(QStringLiteral("qrc:/qt/qml/Swiftify/qml/Main.qml")));
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto *window = qobject_cast<QQuickWindow *>(object.get());
+        QVERIFY(window);
+        window->setWidth(1280);
+        auto *controls = window->findChild<QQuickItem *>(QStringLiteral("appWindowControls"));
+        auto *inspector = window->findChild<QQuickItem *>(QStringLiteral("mainInspector"));
+        auto *close = window->findChild<QQuickItem *>(QStringLiteral("closeWindowButton"));
+        auto *minimize = window->findChild<QQuickItem *>(QStringLiteral("minimizeWindowButton"));
+        QVERIFY(controls && inspector && close && minimize);
+        Rig::settle();
+
+        // Default: controls on left
+        QCOMPARE(controls->x(), 12.0);
+        QCOMPARE(inspector->property("y").toReal(), 8.0);
+        QVERIFY(close->x() < minimize->x());
+
+        // Toggle window controls to right
+        rig.settings.setWindowControlsOnRight(true);
+        Rig::settle();
+
+        // Controls on right: x is window width - controls width - 12
+        QCOMPARE(controls->x(), window->width() - controls->width() - 12.0);
+        // Inspector moved down by 36: top margin 44 (8 + 36)
+        QCOMPARE(inspector->property("y").toReal(), 44.0);
+        // RightToLeft layout: minimize is on the left, close is on the right
+        QVERIFY(minimize->x() < close->x());
+
+        // Hide window controls
+        rig.settings.setShowWindowControls(false);
+        Rig::settle();
+        QVERIFY(!controls->isVisible());
+        // Inspector returns to top margin 8
+        QCOMPARE(inspector->property("y").toReal(), 8.0);
+
+        // Verify SettingsPages Appearance toggle grays out when window deco is off
+        QQmlComponent settingsComponent(&rig.engine, QUrl(QStringLiteral("qrc:/qt/qml/Swiftify/qml/settings/SettingsPages.qml")));
+        std::unique_ptr<QObject> settingsObject(settingsComponent.create());
+        QVERIFY2(settingsObject, qPrintable(settingsComponent.errorString()));
+        settingsObject->setProperty("page", 4);
+        Rig::settle();
+        auto *switchItem = settingsObject->findChild<QQuickItem *>(QStringLiteral("windowControlsOnRightSwitch"));
+        QVERIFY(switchItem);
+
+        // showWindowControls is currently false -> switch is disabled and grayed out
+        QCOMPARE(switchItem->isEnabled(), false);
+        QVERIFY(switchItem->opacity() < 0.5);
+
+        // When showWindowControls is true -> switch is enabled
+        rig.settings.setShowWindowControls(true);
+        Rig::settle();
+        QCOMPARE(switchItem->isEnabled(), true);
+        QCOMPARE(switchItem->opacity(), 1.0);
+    }
+
     void views_data()
     {
         QTest::addColumn<QString>("type");

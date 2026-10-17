@@ -427,6 +427,13 @@ Item {
                     onToggledTo: (checked) => Settings.showWindowControls = checked
                 }
                 ConfigSwitch {
+                    objectName: "windowControlsOnRightSwitch"
+                    text: App.windows ? "Window controls on right" : "Window buttons on right"
+                    checked: Settings.windowControlsOnRight
+                    enabled: App.windows ? !Settings.nativeTitleBar : Settings.showWindowControls
+                    onToggledTo: (checked) => Settings.windowControlsOnRight = checked
+                }
+                ConfigSwitch {
                     text: App.windows ? "Always show tray icon" : "Tray icon"
                     checked: Settings.trayIcon
                     onToggledTo: (checked) => Settings.trayIcon = checked

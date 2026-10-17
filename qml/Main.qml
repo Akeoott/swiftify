@@ -19,7 +19,7 @@ ApplicationWindow {
     readonly property bool inAppWindowControls: !App.macOS && (App.windows ? !Settings.nativeTitleBar : Settings.showWindowControls)
     /// the strip the traffic lights sit in, kept clear above the sidebar
     readonly property real titleBarInset: App.macOS ? Math.max(28, shell.SafeArea.margins.top)
-                                                 : inAppWindowControls ? 36 : 0
+                                                 : inAppWindowControls && !Settings.windowControlsOnRight ? 36 : 0
 
     width: 1280
     height: 780
@@ -236,7 +236,7 @@ ApplicationWindow {
         // under everything else, so it only gets what nothing above takes.
         Item {
             width: parent.width
-            height: window.titleBarInset + 8
+            height: Math.max(window.titleBarInset, window.inAppWindowControls ? 36 : 0) + 8
 
             DragHandler {
                 target: null
@@ -325,6 +325,8 @@ ApplicationWindow {
                 anchors.top: parent.top
                 window: window
                 backdropSource: pageContent
+                windowControlsOnRight: window.inAppWindowControls && Settings.windowControlsOnRight
+                inspectorShown: inspector.shown
             }
 
             Snackbar {
@@ -356,7 +358,7 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.rightMargin: shown ? 8 : 0
             anchors.top: parent.top
-            anchors.topMargin: 8
+            anchors.topMargin: 8 + (window.inAppWindowControls && Settings.windowControlsOnRight ? 36 : 0)
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 8
             width: shown ? Appearance.sizes.sideSheetWidth : 0
@@ -672,7 +674,7 @@ ApplicationWindow {
     WindowControls {
         id: appWindowControls
         objectName: "appWindowControls"
-        x: 12
+        x: Settings.windowControlsOnRight ? parent.width - width - 12 : 12
         y: 8
         visible: window.inAppWindowControls
         compact: true

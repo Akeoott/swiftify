@@ -12,6 +12,8 @@ Item {
 
     required property Window window
     property Item backdropSource
+    property bool windowControlsOnRight: false
+    property bool inspectorShown: false
     readonly property bool onPlaylist: Library.page === Library.Page.Playlist && Library.selectedPlaylist.valid
     readonly property bool searching: Session.libraryConnected && Library.page === Library.Page.Search
     readonly property bool compact: width < 600
@@ -66,7 +68,7 @@ Item {
         Row {
             id: rightControls
             anchors.right: parent.right
-            anchors.rightMargin: 12
+            anchors.rightMargin: 12 + (root.windowControlsOnRight && !root.inspectorShown ? 96 : 0)
             anchors.verticalCenter: parent.verticalCenter
             spacing: 4
 

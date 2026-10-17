@@ -135,7 +135,8 @@ QCoro::Task<Profile> WebApi::profile(QString accessToken)
 QCoro::Task<QList<Playlist>> WebApi::playlists(QString accessToken)
 {
     QList<Playlist> result;
-    co_await collectPages(apiUrl(QStringLiteral("/v1/me/playlists"), QUrlQuery {{QStringLiteral("limit"), QStringLiteral("50")}}),
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("limit"), QStringLiteral("50")}};
+    co_await collectPages(apiUrl(QStringLiteral("/v1/me/playlists"), requestQuery),
                           accessToken, [&result](const QJsonObject &page) {
         for (const QJsonValue &value : page.value(QStringLiteral("items")).toArray()) {
             if (value.isObject()) {
@@ -175,23 +176,26 @@ QCoro::Task<QList<Song>> WebApi::playlistSongs(QString playlistId, QString acces
 QCoro::Task<QList<Song>> WebApi::savedSongs(QString accessToken)
 {
     QList<Song> result;
-    co_await collectPages(apiUrl(QStringLiteral("/v1/me/tracks"), QUrlQuery {{QStringLiteral("limit"), QStringLiteral("50")}}),
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("limit"), QStringLiteral("50")}};
+    co_await collectPages(apiUrl(QStringLiteral("/v1/me/tracks"), requestQuery),
                           accessToken, [&result](const QJsonObject &page) { appendWrappedTracks(result, page); });
     co_return result;
 }
 
 QCoro::Task<int> WebApi::savedSongTotal(QString accessToken)
 {
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("limit"), QStringLiteral("1")}};
     const QJsonDocument document = co_await requestJson(
-        apiUrl(QStringLiteral("/v1/me/tracks"), QUrlQuery {{QStringLiteral("limit"), QStringLiteral("1")}}),
+        apiUrl(QStringLiteral("/v1/me/tracks"), requestQuery),
         "GET", accessToken);
     co_return document.object().value(QStringLiteral("total")).toInt();
 }
 
 QCoro::Task<QList<Song>> WebApi::recentlyPlayed(QString accessToken)
 {
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("limit"), QStringLiteral("20")}};
     const QJsonDocument document = co_await requestJson(
-        apiUrl(QStringLiteral("/v1/me/player/recently-played"), QUrlQuery {{QStringLiteral("limit"), QStringLiteral("20")}}),
+        apiUrl(QStringLiteral("/v1/me/player/recently-played"), requestQuery),
         "GET", accessToken);
     QList<Song> result;
     appendWrappedTracks(result, document.object());
@@ -200,10 +204,11 @@ QCoro::Task<QList<Song>> WebApi::recentlyPlayed(QString accessToken)
 
 QCoro::Task<SearchResults> WebApi::search(QString query, QString accessToken)
 {
-    const QJsonObject response = (co_await requestJson(
-        apiUrl(QStringLiteral("/v1/search"), QUrlQuery {{QStringLiteral("q"), query},
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("q"), query},
                                                        {QStringLiteral("type"), QStringLiteral("track,album,artist,playlist")},
-                                                       {QStringLiteral("limit"), QStringLiteral("10")}}),
+                                                       {QStringLiteral("limit"), QStringLiteral("10")}};
+    const QJsonObject response = (co_await requestJson(
+        apiUrl(QStringLiteral("/v1/search"), requestQuery),
         "GET", accessToken)).object();
 
     const auto items = [&response](const char *key) {
@@ -252,7 +257,8 @@ QCoro::Task<QList<Song>> WebApi::artistTopTracks(Artist artist, QString accessTo
 QCoro::Task<QList<Song>> WebApi::albumSongs(Album album, QString accessToken)
 {
     QList<Song> result;
-    co_await collectPages(apiUrl(QStringLiteral("/v1/albums/%1/tracks").arg(album.id), QUrlQuery {{QStringLiteral("limit"), QStringLiteral("50")}}),
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("limit"), QStringLiteral("50")}};
+    co_await collectPages(apiUrl(QStringLiteral("/v1/albums/%1/tracks").arg(album.id), requestQuery),
                           accessToken, [&result, &album](const QJsonObject &page) {
         for (const QJsonValue &value : page.value(QStringLiteral("items")).toArray()) {
             if (const auto song = json::track(value.toObject(), album)) result.append(*song);
@@ -282,9 +288,10 @@ QCoro::Task<QList<Album>> WebApi::artistAlbums(Artist artist, QString accessToke
 
 QCoro::Task<Playlist> WebApi::createPlaylist(QString name, QString description, bool isPublic, QString accessToken)
 {
+    const QByteArray requestBody = jsonBody({{QStringLiteral("name"), name}, {QStringLiteral("description"), description}, {QStringLiteral("public"), isPublic}});
     const QJsonDocument document = co_await requestJson(
         apiUrl(QStringLiteral("/v1/me/playlists")), "POST", accessToken,
-        jsonBody({{QStringLiteral("name"), name}, {QStringLiteral("description"), description}, {QStringLiteral("public"), isPublic}}));
+        requestBody);
     const Playlist playlist = json::playlist(document.object());
     if (!playlist.isValid()) {
         throw SpotifyError::invalidData(QStringLiteral("the new playlist had no id."));
@@ -294,28 +301,32 @@ QCoro::Task<Playlist> WebApi::createPlaylist(QString name, QString description, 
 
 QCoro::Task<> WebApi::updatePlaylist(QString id, QString name, QString description, bool isPublic, QString accessToken)
 {
+    const QByteArray requestBody = jsonBody({{QStringLiteral("name"), name}, {QStringLiteral("description"), description}, {QStringLiteral("public"), isPublic}});
     co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1").arg(id)), "PUT", accessToken,
-                         jsonBody({{QStringLiteral("name"), name}, {QStringLiteral("description"), description}, {QStringLiteral("public"), isPublic}}));
+                         requestBody);
 }
 
 QCoro::Task<> WebApi::addToPlaylist(QString songUri, QString playlistId, QString accessToken)
 {
+    const QByteArray requestBody = jsonBody({{QStringLiteral("uris"), QJsonArray {songUri}}});
     co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1/items").arg(playlistId)), "POST", accessToken,
-                         jsonBody({{QStringLiteral("uris"), QJsonArray {songUri}}}));
+                         requestBody);
 }
 
 QCoro::Task<> WebApi::removeFromPlaylist(QString songUri, QString playlistId, QString accessToken)
 {
+    const QByteArray requestBody = jsonBody({{QStringLiteral("items"), QJsonArray {QJsonObject {{QStringLiteral("uri"), songUri}}}}});
     co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1/items").arg(playlistId)), "DELETE", accessToken,
-                         jsonBody({{QStringLiteral("items"), QJsonArray {QJsonObject {{QStringLiteral("uri"), songUri}}}}}));
+                         requestBody);
 }
 
 QCoro::Task<> WebApi::reorderPlaylist(QString playlistId, int rangeStart, int insertBefore, int length, QString accessToken)
 {
-    co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1/tracks").arg(playlistId)), "PUT", accessToken,
-                         jsonBody({{QStringLiteral("range_start"), rangeStart},
+    const QByteArray requestBody = jsonBody({{QStringLiteral("range_start"), rangeStart},
                                    {QStringLiteral("insert_before"), insertBefore},
-                                   {QStringLiteral("range_length"), length}}));
+                                   {QStringLiteral("range_length"), length}});
+    co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1/tracks").arg(playlistId)), "PUT", accessToken,
+                         requestBody);
 }
 
 QCoro::Task<> WebApi::setPlaylistImage(QString playlistId, QByteArray jpeg, QString accessToken)
@@ -334,7 +345,8 @@ QCoro::Task<> WebApi::deletePlaylist(QString id, QString accessToken)
 
 QCoro::Task<> WebApi::setSaved(bool saved, QString songUri, QString accessToken)
 {
-    co_await requestData(apiUrl(QStringLiteral("/v1/me/library"), QUrlQuery {{QStringLiteral("uris"), songUri}}),
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("uris"), songUri}};
+    co_await requestData(apiUrl(QStringLiteral("/v1/me/library"), requestQuery),
                          saved ? QByteArray("PUT") : QByteArray("DELETE"), accessToken);
 }
 
@@ -346,8 +358,9 @@ QCoro::Task<QHash<QString, bool>> WebApi::savedStatuses(QStringList uris, QStrin
     if (uris.isEmpty()) {
         co_return result;
     }
+    const QUrlQuery requestQuery = QUrlQuery {{QStringLiteral("uris"), uris.join(u',')}};
     const QJsonArray statuses = (co_await requestJson(
-        apiUrl(QStringLiteral("/v1/me/library/contains"), QUrlQuery {{QStringLiteral("uris"), uris.join(u',')}}),
+        apiUrl(QStringLiteral("/v1/me/library/contains"), requestQuery),
         "GET", accessToken)).array();
     for (qsizetype index = 0; index < uris.size() && index < statuses.size(); ++index) {
         result.insert(uris[index], statuses[index].toBool());

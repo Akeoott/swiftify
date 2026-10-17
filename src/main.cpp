@@ -195,12 +195,34 @@ private:
 };
 #endif
 
+#ifdef Q_OS_LINUX
+/// alsa audio streams routing through pipewire or pulseaudio default to generic
+/// labels like "PipeWire ALSA [swiftify]" or "PulseAudio ALSA [swiftify]".
+/// these variables tell their alsa plugins to present the stream as Swiftify
+/// with its application icon and music media role in pavucontrol and mixers
+void setupAudioEnvironment()
+{
+    if (!qEnvironmentVariableIsSet("PIPEWIRE_ALSA")) {
+        qputenv("PIPEWIRE_ALSA",
+                "{ application.name=\"Swiftify\" application.icon-name=\"swiftify\" node.name=\"Swiftify\" "
+                "node.description=\"Swiftify\" media.name=\"Playback\" media.role=\"music\" }");
+    }
+    if (!qEnvironmentVariableIsSet("PULSE_PROP")) {
+        qputenv("PULSE_PROP", "application.name=Swiftify application.icon_name=swiftify media.role=music");
+    }
+}
+#endif
+
+
 } // namespace
 
 int main(int argc, char *argv[])
 {
 #ifdef Q_OS_WIN
     WindowsIntegration::initializeProcess();
+#endif
+#ifdef Q_OS_LINUX
+    setupAudioEnvironment();
 #endif
 #ifdef Q_OS_MACOS
     startCompact(argv);

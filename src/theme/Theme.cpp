@@ -76,6 +76,16 @@ QStringList schemeSearchRoots()
     return roots;
 }
 
+/// schemes desktop shells write somewhere of their own, among files that are
+/// not schemes, so they are named rather than searched for
+QStringList shellSchemeFiles()
+{
+    const QString cache = xdgDirectory("XDG_CACHE_HOME", QStringLiteral("/.cache"));
+    // dankmaterialshell runs matugen into its own cache, beside its clipboard,
+    // notifications and image caches
+    return {cache + QStringLiteral("/DankMaterialShell/dms-colors.json")};
+}
+
 std::optional<MaterialScheme::Roles> readScheme(const QString &path, bool dark)
 {
     const QFileInfo info(path);
@@ -171,6 +181,7 @@ Theme *Theme::create(QQmlEngine *, QJSEngine *)
 void Theme::resolveSystemScheme(bool dark)
 {
     m_schemeDirectories.clear();
+    m_schemeFiles.clear();
     m_systemRoles.reset();
     const QString configured = m_settings->matugenColorsPath();
     if (!configured.isEmpty()) {
@@ -180,7 +191,24 @@ void Theme::resolveSystemScheme(bool dark)
         return;
     }
     m_systemSchemePath.clear();
-    const QStringList candidates = schemeFiles(schemeSearchRoots(), m_schemeDirectories);
+    QStringList candidates = schemeFiles(schemeSearchRoots(), m_schemeDirectories);
+    // after end4's generated scheme, which is searched first, and before
+    // matugen's own folders
+    qsizetype shellIndex = 0;
+    while (shellIndex < candidates.size() && candidates.at(shellIndex).contains(QLatin1StringView("/quickshell/user/generated/"))) {
+        ++shellIndex;
+    }
+    for (const QString &path : shellSchemeFiles()) {
+        if (QFileInfo::exists(path)) {
+            candidates.insert(shellIndex++, path);
+            m_schemeFiles.append(path);
+        } else {
+            // until it appears; dms keeps clipboard and notification files
+            // beside it, so its folder is watched only while it is missing
+            m_schemeDirectories.append(existingAncestor(QFileInfo(path).absolutePath()));
+        }
+    }
+    m_schemeDirectories.removeDuplicates();
     for (const QString &path : candidates) {
         if (const auto roles = readScheme(path, dark)) {
             m_systemSchemePath = path;
@@ -307,6 +335,9 @@ void Theme::watchSchemeFile()
     // All discovery directories are watched, including ancestors of missing
     // ones, so a newly generated file can supersede a lower-priority scheme.
     m_watcher.addPaths(m_schemeDirectories);
+    if (!m_schemeFiles.isEmpty()) {
+        m_watcher.addPaths(m_schemeFiles);
+    }
     if (!m_systemSchemePath.isEmpty()) {
         const QFileInfo info(m_systemSchemePath);
         if (info.exists()) {

@@ -56,5 +56,8 @@ if(Python3_FOUND)
 endif()
 
 
+swiftify_test(tst_menus FakeCore.h ViewRig.h)
+target_link_libraries(tst_menus PRIVATE swiftify_appplugin Qt6::GuiPrivate)
+
 swiftify_test(tst_segmented FakeCore.h ViewRig.h)
 target_link_libraries(tst_segmented PRIVATE swiftify_appplugin Qt6::GuiPrivate)

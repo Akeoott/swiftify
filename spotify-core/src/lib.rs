@@ -221,6 +221,8 @@ impl Default for SpotifyCore {
 
 impl SpotifyCore {
     pub fn new() -> Self {
+        let _ = env_logger::try_init();
+
         Self {
             state: Mutex::new(SpotifyState::default()),
             playback_generation: watch::Sender::new(0),

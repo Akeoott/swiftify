@@ -33,16 +33,19 @@ Item {
     // straight there, and so does a choice its owner settles as it is built
     // (the immersive player picks its panel in its own onCompleted): until
     // everything built with it has completed, nothing has been seen to move
+    property Item selectedSegment: null
     property bool built: false
     property bool sliding: false
     property int placedIndex: -1
     Component.onCompleted: {
         placedIndex = currentIndex
+        selectedSegment = currentIndex >= 0 ? repeater.itemAt(currentIndex) : null
         Qt.callLater(() => root.built = true)
     }
     onCurrentIndexChanged: {
         sliding = built && placedIndex >= 0 && currentIndex >= 0
         placedIndex = currentIndex
+        selectedSegment = currentIndex >= 0 ? repeater.itemAt(currentIndex) : null
     }
 
     Rectangle {
@@ -98,8 +101,9 @@ Item {
 
     Rectangle {
         id: indicator
+        objectName: "selectionIndicator"
 
-        readonly property Item target: repeater.count > 0 ? repeater.itemAt(root.currentIndex) : null
+        readonly property Item target: root.selectedSegment
 
         visible: target !== null
         x: target ? row.x + target.x : 0
@@ -127,6 +131,12 @@ Item {
         Repeater {
             id: repeater
             model: root.segments
+            onItemAdded: (index, item) => {
+                if (index === root.currentIndex) root.selectedSegment = item
+            }
+            onItemRemoved: (index, item) => {
+                if (root.selectedSegment === item) root.selectedSegment = null
+            }
 
             delegate: RippleButton {
                 id: segment

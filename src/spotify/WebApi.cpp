@@ -325,7 +325,7 @@ QCoro::Task<> WebApi::reorderPlaylist(QString playlistId, int rangeStart, int in
     const QByteArray requestBody = jsonBody({{QStringLiteral("range_start"), rangeStart},
                                    {QStringLiteral("insert_before"), insertBefore},
                                    {QStringLiteral("range_length"), length}});
-    co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1/tracks").arg(playlistId)), "PUT", accessToken,
+    co_await requestData(apiUrl(QStringLiteral("/v1/playlists/%1/items").arg(playlistId)), "PUT", accessToken,
                          requestBody);
 }
 

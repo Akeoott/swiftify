@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(Swiftify
-    VERSION 0.4.4
+    VERSION 0.4.5
     DESCRIPTION "A native Spotify client"
     LANGUAGES C CXX)
 
@@ -254,11 +254,14 @@ list(REMOVE_DUPLICATES SWIFTIFY_SOURCE_DIRECTORIES)
 target_include_directories(swiftify_app PRIVATE ${SWIFTIFY_SOURCE_DIRECTORIES})
 # MaterialShapeItem finds a shape's cell the way the atlas tool lays them out
 target_include_directories(swiftify_app PRIVATE tools/shape_atlas)
-target_compile_definitions(swiftify_app PUBLIC SWIFTIFY_VERSION="${PROJECT_VERSION}")
-target_compile_definitions(swiftify_app PRIVATE
-    SWIFTIFY_BUILD_FONT_DIRECTORY="${SWIFTIFY_FONT_DIRECTORY}"
+# public so main.cpp, built in the swiftify target, starts mpris and the
+# sleep and device monitors
+target_compile_definitions(swiftify_app PUBLIC
+    SWIFTIFY_VERSION="${PROJECT_VERSION}"
     $<$<BOOL:${SWIFTIFY_DESKTOP_INTEGRATION}>:SWIFTIFY_DESKTOP_INTEGRATION>
     $<$<TARGET_EXISTS:Qt6::DBus>:SWIFTIFY_HAS_DBUS>)
+target_compile_definitions(swiftify_app PRIVATE
+    SWIFTIFY_BUILD_FONT_DIRECTORY="${SWIFTIFY_FONT_DIRECTORY}")
 if(TARGET Qt6::DBus)
     target_link_libraries(swiftify_app PUBLIC Qt6::DBus)
 endif()

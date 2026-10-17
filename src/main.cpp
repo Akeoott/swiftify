@@ -16,11 +16,11 @@
 #include "theme/PlayerStyle.h"
 #include "theme/Theme.h"
 
-#ifdef SWIFTIFY_HAS_DBUS
+#if defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
 #include "system/dbus/Mpris.h"
 #include "system/dbus/SleepMonitor.h"
 #endif
-#ifdef SWIFTIFY_DESKTOP_INTEGRATION
+#if defined(SWIFTIFY_DESKTOP_INTEGRATION) && defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
 #include "system/linux/AudioDeviceMonitor.h"
 #endif
 #ifdef Q_OS_MACOS
@@ -297,7 +297,8 @@ int main(int argc, char *argv[])
     QObject::connect(&instance, &SingleInstance::commandReceived, &app, &AppController::handleCommand);
     instance.listen();
 
-#ifdef SWIFTIFY_HAS_DBUS
+// qt finds d-bus on macos too, but mpris and logind only exist on linux
+#if defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
     Mpris mpris(&player);
     QObject::connect(&mpris, &Mpris::raiseRequested, &app, &AppController::raiseRequested);
     QObject::connect(&mpris, &Mpris::quitRequested, &app, &AppController::quit);
@@ -307,7 +308,7 @@ int main(int argc, char *argv[])
     // the media keys, headphone buttons and control centre's now playing
     NowPlaying nowPlaying(&player, &artwork);
 #endif
-#ifdef SWIFTIFY_DESKTOP_INTEGRATION
+#if defined(SWIFTIFY_DESKTOP_INTEGRATION) && defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
     AudioDeviceMonitor devices;
     QObject::connect(&devices, &AudioDeviceMonitor::outputLost, &player, &PlaybackController::invalidateAudioOutput);
     QObject::connect(&devices, &AudioDeviceMonitor::outputArrived, &mpris, &Mpris::noteOutputArrived);

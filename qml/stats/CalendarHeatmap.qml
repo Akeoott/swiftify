@@ -133,7 +133,7 @@ Item {
             StyledToolTip {
                 visible: pointed.visible
                 delay: 0
-                text: (pointed.count === 1 ? "1 play" : pointed.count + " plays") + " · "
+                text: (pointed.count === 1 ? qsTr("%n play", "", pointed.count) : qsTr("%n plays", "", pointed.count)) + " · "
                       + root.dateOf(pointed.week, pointed.day).toLocaleDateString(Qt.locale(), Locale.ShortFormat)
             }
         }
@@ -147,7 +147,7 @@ Item {
 
         StyledText {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Less"
+            text: qsTr("Less")
             font.pixelSize: Appearance.fontSize.smallest
             color: Appearance.colors.outline
         }
@@ -166,7 +166,7 @@ Item {
         }
         StyledText {
             anchors.verticalCenter: parent.verticalCenter
-            text: "More"
+            text: qsTr("More")
             font.pixelSize: Appearance.fontSize.smallest
             color: Appearance.colors.outline
         }

@@ -120,7 +120,7 @@ ItemDelegate {
 
             // a count the source left out (-1) shows as nothing, not as none
             readonly property string playsText: root.plays < 0 ? ""
-                : root.plays === 1 ? "1 play" : root.plays.toLocaleString(Qt.locale(), "f", 0) + " plays"
+                : root.plays === 1 ? qsTr("%n play", "", root.plays) : qsTr("%n plays", "", root.plays)
             readonly property string timeText: Format.totalDuration(root.listenedMs)
             readonly property string first: root.timeFirst && timeText.length > 0 ? timeText
                                           : playsText.length > 0 ? playsText : timeText

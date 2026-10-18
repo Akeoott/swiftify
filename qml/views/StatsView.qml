@@ -18,7 +18,7 @@ Flickable {
     readonly property bool needsUsername: usesStatsFm && Stats.username.length === 0
     readonly property bool wide: innerWidth >= 860
     property bool allTracks: false
-    readonly property list<string> periodNames: ["today", "the last 4 weeks", "the last 6 months", "all time"]
+    readonly property list<string> periodNames: [qsTr("today"), qsTr("the last 4 weeks"), qsTr("the last 6 months"), qsTr("all time")]
     readonly property list<string> weekdayNames: {
         const names = []
         for (let day = 1; day <= 7; ++day) {
@@ -51,7 +51,7 @@ Flickable {
             return Format.totalDuration(listenedMs)
         }
         if (plays >= 0) {
-            return plays === 1 ? "1 play" : figure(plays) + " plays"
+            return (plays === 1 ? qsTr("%n play", "", plays) : qsTr("%n plays", "", plays))
         }
         return listenedMs > 0 ? Format.totalDuration(listenedMs) : ""
     }
@@ -63,17 +63,17 @@ Flickable {
     function listeningTime(milliseconds: real): string {
         const minutes = Math.round(milliseconds / 60000)
         if (minutes >= 600) {
-            return figure(minutes / 60) + " hr"
+            return figure(minutes / 60) + qsTr(" hr")
         }
-        return minutes >= 60 ? Format.totalDuration(milliseconds) : figure(minutes) + " min"
+        return minutes >= 60 ? Format.totalDuration(milliseconds) : figure(minutes) + qsTr(" min")
     }
     /// "5m", "3h", "2d" ago
     function ago(when: date): string {
         const seconds = Math.max(0, (Date.now() - when.getTime()) / 1000)
-        if (seconds < 60) return "now"
-        if (seconds < 3600) return Math.floor(seconds / 60) + "m"
-        if (seconds < 86400) return Math.floor(seconds / 3600) + "h"
-        return Math.floor(seconds / 86400) + "d"
+        if (seconds < 60) return qsTr("now")
+        if (seconds < 3600) return qsTr("%1m").arg(Math.floor(seconds / 60))
+        if (seconds < 86400) return qsTr("%1h").arg(Math.floor(seconds / 3600))
+        return qsTr("%1d").arg(Math.floor(seconds / 86400))
     }
     function openGenre(name: string) {
         Library.searchQuery = name
@@ -157,7 +157,7 @@ Flickable {
             spacing: 6
 
             TitleText {
-                text: "Stats"
+                text: qsTr("Stats")
                 font.pixelSize: Appearance.fontSize.display
                 font.weight: Font.Bold
                 font.letterSpacing: -0.8
@@ -177,10 +177,10 @@ Flickable {
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.usesStatsFm
-                          ? (Stats.profileName.length > 0 ? Stats.profileName + " on stats.fm" : "From stats.fm")
+                          ? (Stats.profileName.length > 0 ? qsTr("%1 on stats.fm").arg(Stats.profileName) : qsTr("From stats.fm"))
                             + (Stats.isPlus ? " · Plus" : "")
-                          : "Played in Swiftify · " + Format.songCount(Stats.historyCount).replace("song", "play")
-                            + (Stats.tracking ? "" : " · tracking paused")
+                          : qsTr("Played in Swiftify") + " · " + (Stats.historyCount === 1 ? qsTr("%n play", "", Stats.historyCount) : qsTr("%n plays", "", Stats.historyCount))
+                            + (Stats.tracking ? "" : " · " + qsTr("tracking paused"))
                     color: Appearance.colors.onSurfaceVariant
                 }
             }
@@ -195,41 +195,41 @@ Flickable {
                 currentIndex: root.usesStatsFm ? 0 : 1
                 segments: [
                     Segment { text: "stats.fm"; symbol: "query_stats" },
-                    Segment { text: "This computer"; symbol: "computer" }
+                    Segment { text: qsTr("This computer"); symbol: "computer" }
                 ]
                 onActivated: (index) => Stats.source = index === 0 ? "statsfm" : "local"
             }
             SegmentedControl {
                 currentIndex: Stats.period
                 segments: [
-                    Segment { text: "Today" },
-                    Segment { text: "4 Weeks" },
-                    Segment { text: "6 Months" },
-                    Segment { text: "All Time" }
+                    Segment { text: qsTr("Today") },
+                    Segment { text: qsTr("4 Weeks") },
+                    Segment { text: qsTr("6 Months") },
+                    Segment { text: qsTr("All Time") }
                 ]
                 onActivated: (index) => Stats.period = index
             }
             SegmentedControl {
                 currentIndex: Stats.rankByTime ? 1 : 0
                 segments: [
-                    Segment { symbol: "leaderboard"; tooltip: "Rank by plays" },
-                    Segment { symbol: "schedule"; tooltip: "Rank by listening time" }
+                    Segment { symbol: "leaderboard"; tooltip: qsTr("Rank by plays") },
+                    Segment { symbol: "schedule"; tooltip: qsTr("Rank by listening time") }
                 ]
                 onActivated: (index) => Stats.rankByTime = index === 1
             }
             IconButton {
                 symbol: "refresh"
-                tooltip: "Refresh"
+                tooltip: qsTr("Refresh")
                 enabled: !Stats.loading && !root.needsUsername
                 onClicked: Stats.refresh()
             }
             IconButton {
                 visible: !root.usesStatsFm && Stats.historyCount > 0
                 symbol: "download"
-                tooltip: "Export listening history as CSV"
+                tooltip: qsTr("Export listening history as CSV")
                 onClicked: {
                     const path = Stats.exportHistory()
-                    UiState.toastRequested(path.length > 0 ? "Saved to " + path : "Could not export the history")
+                    UiState.toastRequested(path.length > 0 ? qsTr("Saved to %1").arg(path) : qsTr("Could not export the history"))
                 }
             }
         }
@@ -239,7 +239,7 @@ Flickable {
             x: root.margin
             width: Math.min(root.innerWidth, 640)
             visible: root.usesStatsFm && (root.needsUsername || Stats.errorMessage.length > 0)
-            title: root.needsUsername ? "Connect stats.fm" : "stats.fm"
+            title: root.needsUsername ? qsTr("Connect stats.fm") : "stats.fm"
             symbol: "link"
             iconShape: "clover4"
 
@@ -252,7 +252,7 @@ Flickable {
             }
             StyledText {
                 width: parent.width
-                text: "Type your stats.fm username, or paste your profile link. Your profile's stats have to be public."
+                text: qsTr("Type your stats.fm username, or paste your profile link. Your profile's stats have to be public.")
                 wrapMode: Text.Wrap
                 color: Appearance.colors.onSurfaceVariant
             }
@@ -264,7 +264,7 @@ Flickable {
                 OutlinedTextField {
                     id: usernameField
                     width: parent.width - connectButton.width - 10
-                    placeholder: "stats.fm username"
+                    placeholder: qsTr("stats.fm username")
                     text: Stats.username
                     onAccepted: Stats.username = text
                 }
@@ -273,7 +273,7 @@ Flickable {
                     anchors.verticalCenter: parent.verticalCenter
                     variant: TextButton.Tonal
                     symbol: "query_stats"
-                    text: "Show Stats"
+                    text: qsTr("Show Stats")
                     enabled: usernameField.text.trim().length > 0
                     onClicked: {
                         Stats.username = usernameField.text
@@ -286,7 +286,7 @@ Flickable {
             StyledText {
                 width: parent.width
                 topPadding: 4
-                text: "stats.fm sees what Spotify records as played. If songs played in Swiftify do not show up there, the stats from this computer still count them."
+                text: qsTr("stats.fm sees what Spotify records as played. If songs played in Swiftify do not show up there, the stats from this computer still count them.")
                 wrapMode: Text.Wrap
                 font.pixelSize: Appearance.fontSize.smaller
                 color: Appearance.colors.outline
@@ -303,7 +303,7 @@ Flickable {
                 spacing: 12
                 LoadingSpinner { anchors.horizontalCenter: parent.horizontalCenter }
                 StyledText {
-                    text: "Counting your plays…"
+                    text: qsTr("Counting your plays…")
                     color: Appearance.colors.onSurfaceVariant
                 }
             }
@@ -314,14 +314,14 @@ Flickable {
             width: root.innerWidth
             visible: !Stats.loading && !Stats.hasData && !root.needsUsername && Stats.errorMessage.length === 0
             symbol: "insights"
-            title: root.usesStatsFm ? "Nothing for " + root.periodNames[Stats.period] : "No plays yet"
+            title: root.usesStatsFm ? qsTr("Nothing for %1").arg(root.periodNames[Stats.period]) : qsTr("No plays yet")
             description: root.usesStatsFm
-                ? "stats.fm has no plays for this period. Try a longer one."
+                ? qsTr("stats.fm has no plays for this period. Try a longer one.")
                 : Stats.tracking
                   ? (Stats.historyCount > 0
-                     ? "Nothing played " + root.periodNames[Stats.period] + ". Try a longer period."
-                     : "Songs you listen to for 30 seconds or more show up here.")
-                  : "Listening tracking is off. Turn it on in Settings to collect stats."
+                     ? qsTr("Nothing played %1. Try a longer period.").arg(root.periodNames[Stats.period])
+                     : qsTr("Songs you listen to for 30 seconds or more show up here."))
+                  : qsTr("Listening tracking is off. Turn it on in Settings to collect stats.")
         }
 
         // --- the overview -------------------------------------------------------------------
@@ -339,42 +339,42 @@ Flickable {
                 width: overview.tileWidth
                 accent: true
                 value: root.listeningTime(Stats.listenedMs)
-                label: "Listening time"
+                label: qsTr("Listening time")
                 symbol: "headphones"
                 iconShape: "sunny"
             }
             StatTile {
                 width: overview.tileWidth
                 value: root.figure(Stats.plays)
-                label: "Plays"
+                label: qsTr("Plays")
                 symbol: "play_arrow"
                 iconShape: "cookie9"
             }
             StatTile {
                 width: overview.tileWidth
                 value: root.figure(Stats.uniqueTracks)
-                label: "Songs"
+                label: qsTr("Songs")
                 symbol: "music_note"
                 iconShape: "heart"
             }
             StatTile {
                 width: overview.tileWidth
                 value: root.figure(Stats.uniqueArtists)
-                label: "Artists"
+                label: qsTr("Artists")
                 symbol: "person"
                 iconShape: "cookie12"
             }
             StatTile {
                 width: overview.tileWidth
                 value: Stats.uniqueAlbums > 0 ? root.figure(Stats.uniqueAlbums) : root.figure(Stats.activeDays)
-                label: Stats.uniqueAlbums > 0 ? "Albums" : "Days listened"
+                label: Stats.uniqueAlbums > 0 ? qsTr("Albums") : qsTr("Days listened")
                 symbol: Stats.uniqueAlbums > 0 ? "album" : "today"
                 iconShape: "flower"
             }
             StatTile {
                 width: overview.tileWidth
-                value: Stats.streakDays + (Stats.streakDays === 1 ? " day" : " days")
-                label: "Streak"
+                value: Stats.streakDays === 1 ? qsTr("%n day", "", Stats.streakDays) : qsTr("%n days", "", Stats.streakDays)
+                label: qsTr("Streak")
                 symbol: "local_fire_department"
                 iconShape: "burst"
             }
@@ -385,10 +385,10 @@ Flickable {
             x: root.margin
             width: root.innerWidth
             visible: Stats.topTracks.count > 0
-            title: "Top Songs"
+            title: qsTr("Top Songs")
             symbol: "music_note"
             iconShape: "heart"
-            note: "Top " + Math.min(Stats.topTracks.count, 50) + " · " + root.periodNames[Stats.period]
+            note: qsTr("Top %1 · %2").arg(Math.min(Stats.topTracks.count, 50)).arg(root.periodNames[Stats.period])
 
             Repeater {
                 model: Stats.topTracks
@@ -417,7 +417,7 @@ Flickable {
                 visible: Stats.topTracks.count > 10
                 variant: TextButton.Text
                 symbol: root.allTracks ? "expand_less" : "expand_more"
-                text: root.allTracks ? "Show fewer" : "Show all " + Stats.topTracks.count
+                text: root.allTracks ? qsTr("Show fewer") : qsTr("Show all %1").arg(Stats.topTracks.count)
                 onClicked: root.allTracks = !root.allTracks
             }
         }
@@ -428,7 +428,7 @@ Flickable {
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             visible: Stats.topArtists.count > 0
-            title: "Top Artists"
+            title: qsTr("Top Artists")
             symbol: "person"
             iconShape: "cookie12"
             model: Stats.topArtists
@@ -455,7 +455,7 @@ Flickable {
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             visible: Stats.topAlbums.count > 0
-            title: "Top Albums"
+            title: qsTr("Top Albums")
             symbol: "album"
             iconShape: "sunny"
             model: Stats.topAlbums
@@ -482,11 +482,11 @@ Flickable {
             x: root.margin
             width: root.innerWidth
             visible: Stats.topGenres.count > 0 || (!root.usesStatsFm && Stats.hasData)
-            title: "Top Genres"
+            title: qsTr("Top Genres")
             symbol: "sell"
             iconShape: "clover8"
             note: !root.usesStatsFm && Stats.topGenres.count === 0
-                  ? (Session.libraryConnected ? "Looking up your artists…" : "Connect your library to see genres") : ""
+                  ? (Session.libraryConnected ? qsTr("Looking up your artists…") : qsTr("Connect your library to see genres")) : ""
 
             Flow {
                 width: parent.width
@@ -527,7 +527,7 @@ Flickable {
                             active: chipHover.hovered
                             sourceComponent: StyledToolTip {
                                 visible: true
-                                text: (chip.plays > 0 ? root.figure(chip.plays) + " plays · " : "") + "search for it"
+                                text: (chip.plays > 0 ? (chip.plays === 1 ? qsTr("%n play", "", chip.plays) : qsTr("%n plays", "", chip.plays)) + " · " : "") + qsTr("search for it")
                             }
                         }
                         TapHandler {
@@ -550,21 +550,22 @@ Flickable {
 
             Card {
                 width: activity.cardWidth
-                title: "By Hour"
+                title: qsTr("By Hour")
                 symbol: "schedule"
                 iconShape: "cookie6"
-                note: Stats.peakHour >= 0 ? "Most active around " + root.hourName(Stats.peakHour) : ""
+                note: Stats.peakHour >= 0 ? qsTr("Most active around %1").arg(root.hourName(Stats.peakHour)) : ""
 
                 BarChart {
                     width: parent.width
                     values: Stats.hourly
                     labels: root.hourNames
                     labelEvery: 6
+                    unit: qsTr("plays")
                 }
             }
             Card {
                 width: activity.cardWidth
-                title: "By Weekday"
+                title: qsTr("By Weekday")
                 symbol: "calendar_month"
                 iconShape: "pentagon"
                 note: {
@@ -576,13 +577,14 @@ Flickable {
                             best = day
                         }
                     }
-                    return best >= 0 ? "Busiest day: " + Qt.locale().dayName((best + 1) % 7, Locale.LongFormat) : ""
+                    return best >= 0 ? qsTr("Busiest day: %1").arg(Qt.locale().dayName((best + 1) % 7, Locale.LongFormat)) : ""
                 }
 
                 BarChart {
                     width: parent.width
                     values: Stats.weekdays
                     labels: root.weekdayNames
+                    unit: qsTr("plays")
                 }
             }
         }
@@ -592,10 +594,10 @@ Flickable {
             x: root.margin
             width: root.innerWidth
             visible: Stats.calendarTotal > 0
-            title: "Listening Calendar"
+            title: qsTr("Listening Calendar")
             symbol: "calendar_month"
             iconShape: "squircle"
-            note: root.figure(Stats.calendarTotal) + " plays in the last year"
+            note: qsTr("%n plays in the last year", "", Stats.calendarTotal)
 
             CalendarHeatmap {
                 width: parent.width
@@ -610,7 +612,7 @@ Flickable {
             x: root.margin
             width: root.innerWidth
             visible: Stats.recent.count > 0
-            title: "Recently Played"
+            title: qsTr("Recently Played")
             symbol: "history"
             iconShape: "clamShell"
 

@@ -77,7 +77,7 @@ Item {
             }
             NavigationItem {
                 width: parent.width
-                text: "Stats"
+                text: qsTr("Stats")
                 iconShape: "softBurst"
                 symbol: "insights"
                 selected: root.isSelected(Library.Page.Stats)

@@ -100,7 +100,7 @@ Platform.MenuBar {
             onTriggered: Library.showLocalFiles()
         }
         Platform.MenuItem {
-            text: "Stats"
+            text: qsTr("Stats")
             shortcut: "Ctrl+6"
             checkable: true
             checked: Library.page === Library.Page.Stats

@@ -1,3 +1,4 @@
+#include "app/Translations.h"
 #include "FakeCore.h"
 #include "ViewRig.h"
 
@@ -149,6 +150,31 @@ private:
     using Rig = swiftify::testing::ViewRig;
 
 private slots:
+    void languageSelectionRetranslatesTheSettings()
+    {
+        Rig rig;
+        rig.settings.setLanguage(QStringLiteral("en"));
+        Translations translations(&rig.settings);
+        connect(&translations, &Translations::languageChanged, &rig.engine, &QQmlEngine::retranslate);
+        const auto pages = rig.show(QStringLiteral("SettingsPages"));
+        QVERIFY(pages);
+        pages->setProperty("page", 4);
+        auto *selection = pages->findChild<QObject *>(QStringLiteral("languageSelection"));
+        QVERIFY(selection);
+        QCOMPARE(selection->property("text").toString(), QStringLiteral("Interface language"));
+        QVERIFY(QMetaObject::invokeMethod(selection, "activated", Q_ARG(int, 2)));
+        QCOMPARE(rig.settings.language(), QStringLiteral("ru"));
+        QCOMPARE(selection->property("text").toString(), QStringLiteral("Язык интерфейса"));
+        for (int page = 0; page < 8; ++page) {
+            pages->setProperty("page", page);
+            Rig::settle();
+            QVERIFY(!rig.render().isNull());
+        }
+        QVERIFY(QMetaObject::invokeMethod(selection, "activated", Q_ARG(int, 1)));
+        QCOMPARE(rig.settings.language(), QStringLiteral("en"));
+        QCOMPARE(selection->property("text").toString(), QStringLiteral("Interface language"));
+    }
+
     void initTestCase()
     {
         // the face the app draws in, as main() loads it
@@ -2708,6 +2734,14 @@ private slots:
         // Toggle window controls to right
         rig.settings.setWindowControlsOnRight(true);
         Rig::settle();
+
+        if (rig.app.isMacOS()) {
+            // macOS uses native traffic lights, not the in-app controls.
+            // Moving hidden controls must not move the inspector.
+            QCOMPARE(inspector->property("y").toReal(), 8.0);
+            QVERIFY(!controls->isVisible());
+            return;
+        }
 
         // Controls on right: x is window width - controls width - 12
         QCOMPARE(controls->x(), window->width() - controls->width() - 12.0);

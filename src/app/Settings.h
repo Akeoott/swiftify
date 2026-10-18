@@ -56,6 +56,7 @@ class Settings : public QObject {
     Q_PROPERTY(bool trayIcon READ trayIcon WRITE setTrayIcon NOTIFY trayIconChanged FINAL)
     /// the whole window's zoom, as ctrl + and ctrl - set it
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY zoomChanged FINAL)
+    Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged FINAL)
 
 public:
     /// the default file, ~/.config/Swiftify/Swiftify.conf. no default argument:
@@ -144,6 +145,8 @@ public:
     void setTrayIcon(bool value);
     double zoom() const { return m_zoom; }
     void setZoom(double value);
+    QString language() const { return m_language; }
+    void setLanguage(const QString &value);
 
 signals:
     void visualizersEnabledChanged();
@@ -174,6 +177,7 @@ signals:
     void nativeTitleBarChanged();
     void trayIconChanged();
     void zoomChanged();
+    void languageChanged();
 
 private:
     void load();
@@ -212,6 +216,7 @@ private:
 #endif
     bool m_trayIcon = true;
     double m_zoom = 1.0;
+    QString m_language = QStringLiteral("system");
 };
 
 } // namespace swiftify

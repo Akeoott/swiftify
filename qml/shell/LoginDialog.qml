@@ -19,31 +19,31 @@ StyledDialog {
         }
     }
 
-    headline: "Waiting for your browser…"
+    headline: qsTr("Waiting for your browser…")
 symbol: "key"
 iconShape: "clover4"
     body: Session.loginIsForLibrary
-        ? "Sign in to Spotify in the browser window that just opened to connect your library."
-        : "Sign in to Spotify in the browser window that just opened to connect playback."
+        ? qsTr("Sign in to Spotify in the browser window that just opened to connect your library.")
+        : qsTr("Sign in to Spotify in the browser window that just opened to connect playback.")
     onRejected: Session.cancelLogin()
 
     buttons: [
         TextButton {
             variant: TextButton.Text
-            text: "Cancel"
+            text: qsTr("Cancel")
             onClicked: Session.cancelLogin()
         },
         TextButton {
             variant: TextButton.Text
-            text: "Copy Link"
+            text: qsTr("Copy Link")
             onClicked: {
                 App.copyToClipboard(Session.authorizationUrl.toString())
-                UiState.toastRequested("Login link copied")
+                UiState.toastRequested(qsTr("Login link copied"))
             }
         },
         TextButton {
             variant: TextButton.Tonal
-            text: "Open Again"
+            text: qsTr("Open Again")
             onClicked: Session.reopenLoginPage()
         }
     ]

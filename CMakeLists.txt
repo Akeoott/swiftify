@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(Swiftify
-    VERSION 0.6.1
+    VERSION 0.7.0
     DESCRIPTION "A native Spotify client"
     LANGUAGES C CXX)
 
@@ -196,6 +196,10 @@ file(GLOB SWIFTIFY_SHADERS CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR
     shaders/*.frag shaders/*.vert)
 
 qt_add_library(swiftify_app STATIC)
+qt_add_resources(swiftify_app "swiftify_translations"
+    PREFIX "/translations"
+    BASE translations
+    FILES translations/ru.json)
 qt_add_qml_module(swiftify_app
     URI Swiftify
     VERSION 1.0

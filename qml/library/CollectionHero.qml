@@ -119,7 +119,7 @@ Item {
                 }
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: root.kind
+                    text: qsTranslate("CollectionKind", root.kind)
                     font.pixelSize: Appearance.fontSize.smallest
                     font.weight: Font.Bold
                     font.letterSpacing: 0.8

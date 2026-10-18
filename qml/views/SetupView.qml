@@ -84,7 +84,7 @@ Flickable {
 
         TitleText {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Connect Your Music"
+            text: qsTr("Connect Your Music")
             font.pixelSize: Appearance.fontSize.display
             font.weight: Font.Bold
         }
@@ -93,7 +93,7 @@ Flickable {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            text: "Swiftify needs a Client ID from your own Spotify developer app. You only have to set this up once."
+            text: qsTr("Swiftify needs a Client ID from your own Spotify developer app. You only have to set this up once.")
             color: Appearance.colors.onSurfaceVariant
         }
 
@@ -103,22 +103,22 @@ Flickable {
 
             Step {
                 number: 1
-                title: "Create a Spotify app"
-                detail: "Open the Spotify Developer Dashboard, choose Create app, and select Web API if Spotify asks."
+                title: qsTr("Create a Spotify app")
+                detail: qsTr("Open the Spotify Developer Dashboard, choose Create app, and select Web API if Spotify asks.")
             }
 
             TextButton {
                 x: 38
                 variant: TextButton.Text
                 symbol: "open_in_new"
-                text: "Open Spotify Developer Dashboard"
+                text: qsTr("Open Spotify Developer Dashboard")
                 onClicked: App.openUrl("https://developer.spotify.com/dashboard")
             }
 
             Step {
                 number: 2
-                title: "Add Swiftify's redirect URI"
-                detail: "In the app settings, add this exact address under Redirect URIs, then save:"
+                title: qsTr("Add Swiftify's redirect URI")
+                detail: qsTr("In the app settings, add this exact address under Redirect URIs, then save:")
             }
 
             Rectangle {
@@ -144,15 +144,15 @@ Flickable {
 
             Step {
                 number: 3
-                title: "Paste your Client ID"
-                detail: "Copy the Client ID from the app settings. You do not need the Client Secret."
+                title: qsTr("Paste your Client ID")
+                detail: qsTr("Copy the Client ID from the app settings. You do not need the Client Secret.")
             }
         }
 
         OutlinedTextField {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(460, parent.width)
-            placeholder: "Spotify Client ID"
+            placeholder: qsTr("Spotify Client ID")
             text: Session.libraryClientId
             onTextEdited: Session.libraryClientId = text
             onAccepted: Session.beginLibraryLogin()
@@ -167,14 +167,14 @@ Flickable {
             TextButton {
                 variant: Session.libraryConnected ? TextButton.Tonal : TextButton.Filled
                 symbol: Session.libraryConnected ? "check" : ""
-                text: Session.libraryConnected ? "Library Connected" : "Connect Library"
+                text: Session.libraryConnected ? qsTr("Library Connected") : qsTr("Connect Library")
                 enabled: !Session.libraryConnected && Session.libraryClientId.trim().length > 0
                 onClicked: Session.beginLibraryLogin()
             }
             TextButton {
                 variant: Session.libraryConnected && !Session.connected ? TextButton.Filled : TextButton.Tonal
                 symbol: Session.connected ? "check" : ""
-                text: Session.connected ? "Playback Connected" : "Connect Playback"
+                text: Session.connected ? qsTr("Playback Connected") : qsTr("Connect Playback")
                 enabled: !Session.connected
                 onClicked: Session.beginPlaybackLogin()
             }
@@ -186,10 +186,10 @@ Flickable {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
             text: Session.libraryConnected && !Session.connected
-                  ? "Your library is connected. Now connect playback so Swiftify can play music."
+                  ? qsTr("Your library is connected. Now connect playback so Swiftify can play music.")
                   : Session.connected && !Session.libraryConnected
-                    ? "Playback is connected. Now connect your library to see your music."
-                    : "Connect Library first, then Connect Playback so Swiftify can play music."
+                    ? qsTr("Playback is connected. Now connect your library to see your music.")
+                    : qsTr("Connect Library first, then Connect Playback so Swiftify can play music.")
             font.pixelSize: Appearance.fontSize.smaller
             color: Session.libraryConnected !== Session.connected ? Appearance.colors.primary
                                                                   : Appearance.colors.onSurfaceVariant

@@ -54,7 +54,7 @@ Flickable {
 
                 TitleText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Played from Search"
+                    text: qsTr("Played from Search")
                     font.pixelSize: Appearance.fontSize.title
                     font.weight: Font.Bold
                 }
@@ -62,7 +62,7 @@ Flickable {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     variant: TextButton.Text
-                    text: "Clear"
+                    text: qsTr("Clear")
                     onClicked: Library.clearSearchHistory()
                 }
             }
@@ -83,7 +83,7 @@ Flickable {
                 x: root.margin
                 topPadding: Library.searchHistory.count > 0 ? 26 : 0
                 bottomPadding: 18
-                text: "Browse Categories"
+                text: qsTr("Browse Categories")
                 font.pixelSize: 32
                 font.weight: Font.Bold
             }
@@ -135,7 +135,7 @@ Flickable {
                 }
                 StyledText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "You found it."
+                    text: qsTr("You found it.")
                     color: Appearance.colors.onSurfaceVariant
                 }
             }
@@ -151,7 +151,7 @@ Flickable {
                 spacing: 12
                 LoadingSpinner { anchors.horizontalCenter: parent.horizontalCenter }
                 StyledText {
-                    text: "Searching Spotify…"
+                    text: qsTr("Searching Spotify…")
                     color: Appearance.colors.onSurfaceVariant
                 }
             }
@@ -165,8 +165,8 @@ Flickable {
             EmptyState {
                 anchors.centerIn: parent
                 symbol: "search_off"
-                title: "No Results for “" + Library.searchQuery.trim() + "”"
-                description: "Check the spelling or try a new search."
+                title: qsTr("No Results for “%1”").arg(Library.searchQuery.trim())
+                description: qsTr("Check the spelling or try a new search.")
             }
         }
 
@@ -181,7 +181,7 @@ Flickable {
                 x: root.margin
                 Reveal.shown: Library.searchSongs.count > 0
                 bottomPadding: 10
-                text: "Songs"
+                text: qsTr("Songs")
                 font.pixelSize: Appearance.fontSize.title
                 font.weight: Font.Bold
             }
@@ -204,7 +204,7 @@ Flickable {
                 nearScreen: root.reaches(column.y + results.y + y, height, root.height / 2)
                 Reveal.shown: Library.searchAlbums.count > 0
                 topPadding: 28
-                title: "Albums"
+                title: qsTr("Albums")
                 symbol: "album"
                 iconShape: "sunny"
                 model: Library.searchAlbums
@@ -223,7 +223,7 @@ Flickable {
                 nearScreen: root.reaches(column.y + results.y + y, height, root.height / 2)
                 Reveal.shown: Library.searchArtists.count > 0
                 topPadding: 28
-                title: "Artists"
+                title: qsTr("Artists")
                 symbol: "person"
                 iconShape: "cookie12"
                 model: Library.searchArtists
@@ -244,7 +244,7 @@ Flickable {
                 nearScreen: root.reaches(column.y + results.y + y, height, root.height / 2)
                 Reveal.shown: Library.searchPlaylists.count > 0
                 topPadding: 28
-                title: "Playlists"
+                title: qsTr("Playlists")
                 symbol: "queue_music"
                 iconShape: "bun"
                 model: Library.searchPlaylists

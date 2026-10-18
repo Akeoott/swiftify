@@ -16,7 +16,7 @@ ShapeButton {
     morphTo: "cookie9"
     morphed: playing
     spinRate: 25
-    tooltip: playing ? "Pause" : "Play"
+    tooltip: playing ? qsTr("Pause") : qsTr("Play")
 
     onPlayingChanged: if (!Appearance.performanceMode) pop.restart()
     // starting music throws out a little burst of cookies

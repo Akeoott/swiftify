@@ -23,7 +23,7 @@ Item {
         anchors.centerIn: parent
         Reveal.shown: !root.playlist.valid
         symbol: "queue_music"
-        title: "Playlist Unavailable"
+        title: qsTr("Playlist Unavailable")
     }
 
     SongListPage {
@@ -35,8 +35,8 @@ Item {
         reorderable: Library.canReorderPlaylist
         showsEmpty: Library.playlistSongs.count === 0 || Library.displayedPlaylistSongs.count === 0
         emptySymbol: Library.playlistSongs.count === 0 ? "music_note" : "search_off"
-        emptyTitle: Library.playlistSongs.count === 0 ? "No Songs" : "No Results for “" + Library.playlistFilterQuery.trim() + "”"
-        emptyDescription: Library.playlistSongs.count > 0 ? "Check the spelling or try a new search." : root.playlist.isLocal ? "Add tracks from anywhere on your computer, or drop them here." : "Add songs from Search using the More menu."
+        emptyTitle: Library.playlistSongs.count === 0 ? qsTr("No Songs") : qsTr("No Results for “%1”").arg(Library.playlistFilterQuery.trim())
+        emptyDescription: Library.playlistSongs.count > 0 ? qsTr("Check the spelling or try a new search.") : root.playlist.isLocal ? qsTr("Add tracks from anywhere on your computer, or drop them here.") : qsTr("Add songs from Search using the More menu.")
 
         MusicPicker {
             id: trackPicker
@@ -62,7 +62,7 @@ Item {
                     wavy: true
                     symbol: "play_arrow"
                     burst: "play"
-                    text: "Play"
+                    text: qsTr("Play")
                     enabled: Library.playlistSongs.count > 0
                     onClicked: Player.playFromModel(Library.playlistSongs, 0)
                 },
@@ -76,7 +76,7 @@ Item {
                     wavy: true
                     symbol: "shuffle"
                     burst: "play"
-                    text: "Shuffle"
+                    text: qsTr("Shuffle")
                     colBackground: shuffleButton.scheme.primaryContainer
                     colBackgroundHover: shuffleButton.scheme.primaryContainerHover
                     colRipple: shuffleButton.scheme.primaryContainerActive
@@ -93,7 +93,7 @@ Item {
                     implicitHeight: iconOnly ? compactSize : 48
                     variant: TextButton.Tonal
                     symbol: "add"
-                    text: "Add Tracks"
+                    text: qsTr("Add Tracks")
                     busy: LocalFiles.copying
                     onClicked: trackPicker.pickFiles()
                 }

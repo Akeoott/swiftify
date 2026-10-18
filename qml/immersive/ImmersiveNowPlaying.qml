@@ -244,7 +244,7 @@ Item {
                         iconSize: 20
                         iconColor: Qt.rgba(1, 1, 1, 0.62)
                         colBackgroundHover: Qt.rgba(1, 1, 1, 0.1)
-                        tooltip: "More"
+                        tooltip: qsTr("More")
                         onClicked: SongMenus.open(Player.currentSong, false)
                     }
                 }
@@ -311,7 +311,7 @@ Item {
                     toggledShape: "clover4"
                     toggled: Player.shuffle
                     enabled: Player.hasSong
-                    tooltip: "Shuffle"
+                    tooltip: qsTr("Shuffle")
                     onClicked: Player.toggleShuffle()
                 }
                 Control {
@@ -322,7 +322,7 @@ Item {
                     iconSize: 30
                     alwaysFilled: true
                     enabled: Player.canSkipBackward
-                    tooltip: "Previous song"
+                    tooltip: qsTr("Previous song")
                     onClicked: Player.skipBackward()
                 }
 
@@ -359,7 +359,7 @@ Item {
                     iconSize: 30
                     alwaysFilled: true
                     enabled: Player.canSkipForward
-                    tooltip: "Next song"
+                    tooltip: qsTr("Next song")
                     onClicked: Player.skipForward()
                 }
                 Control {
@@ -368,7 +368,7 @@ Item {
                     toggledShape: Player.repeatMode === Player.RepeatMode.One ? "cookie4" : "cookie6"
                     toggled: Player.repeatMode !== Player.RepeatMode.Off
                     enabled: Player.hasSong
-                    tooltip: Player.repeatMode === Player.RepeatMode.One ? "Repeat song" : (Player.repeatMode === Player.RepeatMode.All ? "Repeat queue" : "Repeat off")
+                    tooltip: Player.repeatMode === Player.RepeatMode.One ? qsTr("Repeat song") : (Player.repeatMode === Player.RepeatMode.All ? qsTr("Repeat queue") : qsTr("Repeat off"))
                     onClicked: Player.cycleRepeatMode()
                 }
             }
@@ -387,7 +387,7 @@ Item {
                     iconSize: 20
                     iconColor: Qt.rgba(1, 1, 1, 0.78)
                     colBackgroundHover: Qt.rgba(1, 1, 1, 0.1)
-                    tooltip: Player.volume <= 0.01 ? "Unmute" : "Mute"
+                    tooltip: Player.volume <= 0.01 ? qsTr("Unmute") : qsTr("Mute")
                     onClicked: Player.toggleMute()
                 }
                 StyledSlider {

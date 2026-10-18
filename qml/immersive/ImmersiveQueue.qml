@@ -22,7 +22,7 @@ Item {
         Reveal.shown: !Player.hasSong && Player.upNext.count === 0
         scheme: root.scheme
         symbol: "queue_music"
-        title: "Queue Empty"
+        title: qsTr("Queue Empty")
         description: UiState.catchphrase
     }
 

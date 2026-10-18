@@ -14,7 +14,7 @@ Item {
         id: header
         x: 18
         y: 16
-        text: "Playing Next"
+        text: qsTr("Playing Next")
         font.pixelSize: Appearance.fontSize.normal
         font.weight: Font.DemiBold
         color: root.scheme.onSurfaceVariant
@@ -41,7 +41,7 @@ Item {
             StyledText {
                 Reveal.shown: Player.hasSong
                 leftPadding: 6
-                text: "Now Playing"
+                text: qsTr("Now Playing")
                 font.pixelSize: Appearance.fontSize.smaller
                 font.weight: Font.Bold
                 color: root.scheme.onSurfaceVariant
@@ -58,7 +58,7 @@ Item {
                 leftPadding: 6
                 topPadding: 8
                 bottomPadding: 2
-                text: "Up Next"
+                text: qsTr("Up Next")
                 font.pixelSize: Appearance.fontSize.smaller
                 font.weight: Font.Bold
                 color: root.scheme.onSurfaceVariant
@@ -80,7 +80,7 @@ Item {
         width: parent.width - 32
         Reveal.shown: Player.upNext.count === 0
         symbol: "queue_music"
-        title: "Queue Empty"
+        title: qsTr("Queue Empty")
         description: UiState.catchphrase
     }
 }

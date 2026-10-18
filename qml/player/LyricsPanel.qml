@@ -19,7 +19,7 @@ Item {
         spacing: 12
         LoadingSpinner { anchors.horizontalCenter: parent.horizontalCenter }
         StyledText {
-            text: "Loading lyrics…"
+            text: qsTr("Loading lyrics…")
             color: root.scheme.onSurfaceVariant
         }
     }
@@ -29,7 +29,7 @@ Item {
         width: parent.width - 32
         Reveal.shown: !Player.loadingLyrics && !Player.hasLyrics
         symbol: "lyrics"
-        title: "Lyrics Unavailable"
+        title: qsTr("Lyrics Unavailable")
         description: Player.lyricsMessage.length > 0 ? Player.lyricsMessage : "i guess bro"
     }
 
@@ -169,7 +169,7 @@ Item {
 
         footer: StyledText {
             topPadding: 18
-            text: "Lyrics provided by " + Player.lyricsProvider
+            text: qsTr("Lyrics provided by ") + Player.lyricsProvider
             font.pixelSize: Appearance.fontSize.smaller
             color: root.scheme.outline
         }

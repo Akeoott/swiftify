@@ -253,7 +253,7 @@ FocusScope {
             colRipple: Qt.rgba(1, 1, 1, 0.24)
             backgroundItem.border.width: 1
             backgroundItem.border.color: Qt.rgba(1, 1, 1, 0.14)
-            tooltip: "Close Immersive Player"
+            tooltip: qsTr("Close Immersive Player")
             onClicked: root.closeRequested()
         }
 
@@ -273,11 +273,11 @@ FocusScope {
             selectedContentColor: "#141414"
             currentIndex: root.panels.indexOf(root.panel)
             segments: [
-                Segment { symbol: "image"; tooltip: "Artwork" },
-                Segment { symbol: "lyrics"; tooltip: "Lyrics"; enabled: root.lyricsAvailable },
-                Segment { symbol: "queue_music"; tooltip: "Playing Next" },
-                Segment { symbol: "bedtime"; tooltip: "Sleep Timer" },
-                Segment { symbol: "tune"; tooltip: "Sound" }
+                Segment { symbol: "image"; tooltip: qsTr("Artwork") },
+                Segment { symbol: "lyrics"; tooltip: qsTr("Lyrics"); enabled: root.lyricsAvailable },
+                Segment { symbol: "queue_music"; tooltip: qsTr("Playing Next") },
+                Segment { symbol: "bedtime"; tooltip: qsTr("Sleep Timer") },
+                Segment { symbol: "tune"; tooltip: qsTr("Sound") }
             ]
             onActivated: (index) => {
                 const next = root.panels[index]
@@ -352,8 +352,8 @@ FocusScope {
             Reveal.shown: !Player.hasSong
             scheme: root.scheme
             symbol: "music_note"
-            title: "Nothing Playing"
-            description: "Choose a song to open the immersive player."
+            title: qsTr("Nothing Playing")
+            description: qsTr("Choose a song to open the immersive player.")
         }
     }
 

@@ -12,15 +12,15 @@ StyledDialog {
         open()
     }
 
-    headline: "Delete “" + playlist.name + "”?"
+    headline: qsTr("Delete “%1”?").arg(playlist.name)
 symbol: "delete"
 iconShape: "ghostish"
-    body: playlist.isLocal ? "This deletes the playlist from this computer. Its music files stay where they are."
-                           : "This removes the playlist from your Spotify library."
+    body: playlist.isLocal ? qsTr("This deletes the playlist from this computer. Its music files stay where they are.")
+                           : qsTr("This removes the playlist from your Spotify library.")
 
     buttons: [
         TextButton {
-            text: "Delete Playlist"
+            text: qsTr("Delete Playlist")
             colBackground: Appearance.colors.error
             colBackgroundHover: Appearance.colors.errorHover
             labelColor: Appearance.colors.onError
@@ -31,7 +31,7 @@ iconShape: "ghostish"
         },
         TextButton {
             variant: TextButton.Text
-            text: "Cancel"
+            text: qsTr("Cancel")
             onClicked: root.close()
         }
     ]

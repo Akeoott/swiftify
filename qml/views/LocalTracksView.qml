@@ -10,11 +10,11 @@ SongListPage {
 
     songs: LocalFiles.songs
     loading: LocalFiles.scanning && LocalFiles.songs.count === 0
-    loadingText: "Looking through your music…"
+    loadingText: qsTr("Looking through your music…")
     showsEmpty: LocalFiles.songs.count === 0
     emptySymbol: "folder_open"
-    emptyTitle: LocalFiles.sources.length === 0 ? "No Local Files Yet" : "No Music Found"
-    emptyDescription: LocalFiles.sources.length === 0 ? "Add a folder of music, or drop files onto the window." : "The folders you added hold no music Swiftify can play."
+    emptyTitle: LocalFiles.sources.length === 0 ? qsTr("No Local Files Yet") : qsTr("No Music Found")
+    emptyDescription: LocalFiles.sources.length === 0 ? qsTr("Add a folder of music, or drop files onto the window.") : qsTr("The folders you added hold no music Swiftify can play.")
 
     MusicPicker {
         id: picker
@@ -22,8 +22,8 @@ SongListPage {
 
     hero: CollectionHero {
         kind: "LOCAL FILES"
-        title: "Local Tracks"
-        description: LocalFiles.sources.length === 1 ? LocalFiles.sources[0] : LocalFiles.sources.length > 1 ? LocalFiles.sources.length + " folders and files" : ""
+        title: qsTr("Local Tracks")
+        description: LocalFiles.sources.length === 1 ? LocalFiles.sources[0] : LocalFiles.sources.length > 1 ? LocalFiles.sources.length + qsTr(" folders and files") : ""
         facts: Format.joined([Format.songCount(LocalFiles.songs.count), Format.totalDuration(LocalFiles.songs.totalDurationMs)], "  •  ")
 
         artwork: Rectangle {
@@ -61,7 +61,7 @@ SongListPage {
                 wavy: true
                 symbol: "play_arrow"
                 burst: "play"
-                text: "Play"
+                text: qsTr("Play")
                 enabled: LocalFiles.songs.count > 0
                 onClicked: Player.playFromModel(LocalFiles.songs, 0)
             },
@@ -75,7 +75,7 @@ SongListPage {
                 wavy: true
                 symbol: "shuffle"
                 burst: "play"
-                text: "Shuffle"
+                text: qsTr("Shuffle")
                 colBackground: shuffleButton.scheme.primaryContainer
                 colBackgroundHover: shuffleButton.scheme.primaryContainerHover
                 colRipple: shuffleButton.scheme.primaryContainerActive
@@ -89,14 +89,14 @@ SongListPage {
                 implicitHeight: iconOnly ? compactSize : 48
                 variant: TextButton.Outlined
                 symbol: "create_new_folder"
-                text: "Add Folder"
+                text: qsTr("Add Folder")
                 onClicked: picker.pickFolder()
             },
             IconButton {
                 size: parent ? parent.actionSize : 36
                 symbol: "refresh"
                 enabled: LocalFiles.sources.length > 0 && !LocalFiles.scanning
-                tooltip: "Look Again"
+                tooltip: qsTr("Look Again")
                 onClicked: LocalFiles.rescan()
             }
         ]

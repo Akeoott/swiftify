@@ -26,7 +26,7 @@ Item {
             trackColor: Qt.rgba(1, 1, 1, 0.12)
         }
         StyledText {
-            text: "Loading lyrics…"
+            text: qsTr("Loading lyrics…")
             color: Qt.rgba(1, 1, 1, 0.7)
         }
     }
@@ -36,7 +36,7 @@ Item {
         Reveal.shown: !Player.loadingLyrics && !Player.hasLyrics
         scheme: root.scheme
         symbol: "lyrics"
-        title: "Lyrics Unavailable"
+        title: qsTr("Lyrics Unavailable")
         description: Player.lyricsMessage.length > 0 ? Player.lyricsMessage : UiState.catchphrase
     }
 
@@ -236,7 +236,7 @@ Item {
         footer: StyledText {
             leftPadding: 18
             topPadding: 46
-            text: "Lyrics provided by " + Player.lyricsProvider
+            text: qsTr("Lyrics provided by ") + Player.lyricsProvider
             font.pixelSize: Appearance.fontSize.smaller
             color: Qt.rgba(1, 1, 1, 0.4)
         }

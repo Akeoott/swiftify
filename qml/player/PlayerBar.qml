@@ -73,7 +73,7 @@ Item {
             iconSize: root.tiny ? 18 : 20
             toggled: Player.shuffle
             fillWhenToggled: false
-            tooltip: Player.shuffle ? "Disable shuffle" : "Enable shuffle"
+            tooltip: Player.shuffle ? qsTr("Disable shuffle") : qsTr("Enable shuffle")
             onClicked: Player.toggleShuffle()
         }
         TransportButton {
@@ -87,7 +87,7 @@ Item {
             iconSize: root.tiny ? 20 : 24
             fillWhenToggled: false
             enabled: Player.canSkipBackward
-            tooltip: "Previous song"
+            tooltip: qsTr("Previous song")
             onClicked: Player.skipBackward()
             alwaysFilled: true
         }
@@ -113,7 +113,7 @@ Item {
             size: root.buttonSize
             iconSize: root.tiny ? 20 : 24
             enabled: Player.canSkipForward
-            tooltip: "Next song"
+            tooltip: qsTr("Next song")
             onClicked: Player.skipForward()
             alwaysFilled: true
         }
@@ -129,7 +129,7 @@ Item {
             toggled: Player.repeatMode !== Player.RepeatMode.Off
             fillWhenToggled: false
             enabled: Player.hasSong
-            tooltip: Player.repeatMode === Player.RepeatMode.One ? "Repeat song" : (Player.repeatMode === Player.RepeatMode.All ? "Repeat queue" : "Repeat off")
+            tooltip: Player.repeatMode === Player.RepeatMode.One ? qsTr("Repeat song") : (Player.repeatMode === Player.RepeatMode.All ? qsTr("Repeat queue") : qsTr("Repeat off"))
             onClicked: Player.cycleRepeatMode()
         }
     }
@@ -278,7 +278,7 @@ Item {
 
                 TitleText {
                     width: parent.width
-                    text: Player.hasSong ? Player.currentSong.name : "Not Playing"
+                    text: Player.hasSong ? Player.currentSong.name : qsTr("Not Playing")
                     elide: Text.ElideRight
                     animateChange: true
                     changeDistanceX: 6
@@ -322,7 +322,7 @@ Item {
                 }
                 StyledText {
                     width: parent.width
-                    text: Player.hasSong ? Player.currentSong.artists : "Choose something to play"
+                    text: Player.hasSong ? Player.currentSong.artists : qsTr("Choose something to play")
                     elide: Text.ElideRight
                     font.pixelSize: Appearance.fontSize.smaller
                     color: root.scheme.onSurfaceVariant
@@ -432,7 +432,7 @@ Item {
             size: root.buttonSize
             iconSize: root.tiny ? 18 : 20
             toggled: Player.showingLyrics
-            tooltip: "Lyrics"
+            tooltip: qsTr("Lyrics")
             onClicked: Player.toggleLyricsPanel()
         }
         IconButton {
@@ -442,7 +442,7 @@ Item {
             size: root.buttonSize
             iconSize: root.tiny ? 18 : 20
             toggled: Player.showingQueue
-            tooltip: "Playing Next"
+            tooltip: qsTr("Playing Next")
             onClicked: Player.toggleQueuePanel()
         }
         VolumeControl {
@@ -455,7 +455,7 @@ Item {
         id: artMenu
         sourceComponent: StyledMenu {
             StyledMenuItem {
-                text: "Open Immersive Player"
+                text: qsTr("Open Immersive Player")
                 symbol: "open_in_full"
                 enabled: Player.hasSong
                 onTriggered: root.immersiveRequested()

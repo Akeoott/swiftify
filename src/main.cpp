@@ -3,6 +3,7 @@
 #include "app/Fonts.h"
 #include "app/Paths.h"
 #include "app/Settings.h"
+#include "app/Translations.h"
 #include "artwork/ArtworkCache.h"
 #include "audio/AudioShaping.h"
 #include "core/RustCore.h"
@@ -264,6 +265,7 @@ int main(int argc, char *argv[])
     fonts::loadInterfaceFont();
 
     Settings settings(nullptr);
+    Translations translations(&settings);
     Theme theme(&settings);
     ErrorCenter errors(nullptr);
     QNetworkAccessManager network;
@@ -315,6 +317,7 @@ int main(int argc, char *argv[])
 #endif
 
     QQmlApplicationEngine engine;
+    QObject::connect(&translations, &Translations::languageChanged, &engine, &QQmlEngine::retranslate);
 #ifdef Q_OS_WIN
     WindowsIntegration windowsIntegration(&player, &theme);
     engine.setInitialProperties({{QStringLiteral("visible"), false}});

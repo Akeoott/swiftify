@@ -10,6 +10,24 @@ class SettingsTest : public QObject {
     Q_OBJECT
 
 private slots:
+    void languagePreferencePersists()
+    {
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("swiftify.conf"));
+        {
+            Settings settings(path);
+            QCOMPARE(settings.language(), QStringLiteral("system"));
+            QSignalSpy language(&settings, &Settings::languageChanged);
+            settings.setLanguage(QStringLiteral("ru"));
+            settings.setLanguage(QStringLiteral("ru"));
+            QCOMPARE(language.count(), 1);
+        }
+        Settings reopened(path);
+        QCOMPARE(reopened.language(), QStringLiteral("ru"));
+        reopened.setLanguage(QStringLiteral("unknown"));
+        QCOMPARE(reopened.language(), QStringLiteral("system"));
+    }
+
     void defaultsMatchTheMacApp()
     {
         QTemporaryDir directory;

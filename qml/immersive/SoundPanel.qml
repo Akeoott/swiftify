@@ -118,7 +118,7 @@ Item {
                 StyledText {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Crossfade"
+                    text: qsTr("Crossfade")
                     font.pixelSize: Appearance.fontSize.small
                     font.weight: Font.DemiBold
                     color: "white"
@@ -139,7 +139,7 @@ Item {
 
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Duration"
+                    text: qsTr("Duration")
                     font.pixelSize: Appearance.fontSize.smaller
                     color: root.secondaryText
                 }
@@ -147,7 +147,7 @@ Item {
                 StyledText {
                     id: durationValue
                     anchors.verticalCenter: parent.verticalCenter
-                    text: Settings.crossfadeDurationSeconds + " s"
+                    text: Settings.crossfadeDurationSeconds + qsTr(" s")
                     tabularNumbers: true
                     font.pixelSize: Appearance.fontSize.smaller
                     font.weight: Font.DemiBold
@@ -178,7 +178,7 @@ Item {
                 StyledText {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Equalizer"
+                    text: qsTr("Equalizer")
                     font.pixelSize: Appearance.fontSize.small
                     font.weight: Font.DemiBold
                     color: "white"
@@ -209,7 +209,9 @@ Item {
 
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: Sound.activePresetName.length > 0 ? Sound.activePresetName : "Custom"
+                                text: Sound.activePresetName.length === 0 ? qsTr("Custom")
+                                    : Sound.isSavedPreset(Sound.activePresetName) ? Sound.activePresetName
+                                    : qsTranslate("Presets", Sound.activePresetName)
                                 font.pixelSize: Appearance.fontSize.smaller
                                 font.weight: Font.DemiBold
                                 color: "white"
@@ -309,7 +311,7 @@ Item {
                 StyledText {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Tempo & Pitch"
+                    text: qsTr("Tempo & Pitch")
                     font.pixelSize: Appearance.fontSize.small
                     font.weight: Font.DemiBold
                     color: "white"
@@ -320,7 +322,7 @@ Item {
                     variant: TextButton.Text
                     scheme: root.scheme
                     implicitHeight: 28
-                    text: "Reset"
+                    text: qsTr("Reset")
                     labelColor: root.secondaryText
                     opacity: root.tempoModified || root.pitchModified ? 1 : 0
                     enabled: opacity > 0.5
@@ -353,7 +355,7 @@ Item {
                 StyledText {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Keep Original Pitch"
+                    text: qsTr("Keep Original Pitch")
                     color: "white"
                 }
                 StyledSwitch {
@@ -368,8 +370,8 @@ Item {
             StyledText {
                 width: parent.width
                 text: Sound.preservesPitch
-                    ? "speed changes the tempo only, not the key"
-                    : "speed also affects the key, js like sped up or slowed down songs are"
+                    ? qsTr("speed changes the tempo only, not the key")
+                    : qsTr("speed also affects the key, js like sped up or slowed down songs are")
                 wrapMode: Text.Wrap
                 font.pixelSize: Appearance.fontSize.smaller
                 color: root.secondaryText
@@ -416,7 +418,7 @@ Item {
         }
 
         StyledMenuItem {
-            text: "Custom"
+            text: qsTr("Custom")
             checkmark: true
             checked: true
             enabled: false
@@ -424,14 +426,14 @@ Item {
             height: visible ? implicitHeight : 0
         }
         StyledMenuItem {
-            text: "Save Current…"
+            text: qsTr("Save Current…")
             symbol: "save"
             enabled: !Sound.flat
             onTriggered: saveDialog.ask()
         }
         StyledMenuItem {
             readonly property string preset: Sound.activePresetName
-            text: "Delete “" + preset + "”"
+            text: qsTr("Delete “%1”").arg(preset)
             symbol: "delete"
             destructive: true
             visible: preset.length > 0 && Sound.isSavedPreset(preset)
@@ -439,7 +441,7 @@ Item {
             onTriggered: Sound.deletePreset(preset)
         }
         StyledMenuItem {
-            text: "Reset"
+            text: qsTr("Reset")
             symbol: "restart_alt"
             enabled: !Sound.flat
             onTriggered: Sound.reset()
@@ -447,7 +449,7 @@ Item {
 
         StyledMenu {
             id: savedMenu
-            title: "Custom Presets"
+            title: qsTr("Custom Presets")
             enabled: presetMenu.savedPresets.length > 0
 
             // nothing else is in it, so a place in the list is its place here
@@ -473,7 +475,7 @@ Item {
             model: presetMenu.builtInPresets
             delegate: StyledMenuItem {
                 required property string modelData
-                text: modelData
+                text: qsTranslate("Presets", modelData)
                 checkmark: true
                 checked: modelData === Sound.activePresetName
                 onTriggered: Sound.applyPreset(modelData)
@@ -500,26 +502,26 @@ Item {
             }
         }
 
-        headline: "Save Preset"
+        headline: qsTr("Save Preset")
         symbol: "tune"
         iconShape: "flower"
 
         OutlinedTextField {
             id: name
             width: parent.width
-            placeholder: "Name"
+            placeholder: qsTr("Name")
             onAccepted: saveDialog.save()
         }
 
         buttons: [
             TextButton {
-                text: "Save"
+                text: qsTr("Save")
                 enabled: name.text.trim().length > 0
                 onClicked: saveDialog.save()
             },
             TextButton {
                 variant: TextButton.Text
-                text: "Cancel"
+                text: qsTr("Cancel")
                 onClicked: saveDialog.close()
             }
         ]

@@ -159,7 +159,7 @@ ApplicationWindow {
     Connections {
         target: LocalFiles
         function onTracksAdded(playlistId: string, count: int, problem: string) {
-            const added = count === 1 ? "Added 1 track." : count > 1 ? "Added " + count + " tracks." : ""
+            const added = count > 0 ? qsTr("Tracks added: %1").arg(count) : ""
             const said = [added, problem].filter(part => part.length > 0).join(" ")
             if (said.length > 0) {
                 toast.show(said)
@@ -185,7 +185,7 @@ ApplicationWindow {
     readonly property real zoomStep: 0.1
     function setZoom(value: real) {
         Settings.zoom = Math.round(Math.min(2, Math.max(0.5, value)) * 10) / 10
-        toast.show("Zoom " + Math.round(Settings.zoom * 100) + "%")
+        toast.show(qsTr("Zoom ") + Math.round(Settings.zoom * 100) + "%")
     }
     property list<Item> zoomedItems
     function fitZoomed(item: Item) {
@@ -333,7 +333,7 @@ ApplicationWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: topBar.bottom
                 anchors.topMargin: 4
-                message: Errors.message
+                message: qsTranslate("Errors", Errors.message)
                 serial: Errors.serial
                 onDismissed: Errors.clear()
             }
@@ -406,12 +406,12 @@ ApplicationWindow {
                 // onto a playlist made here, they are copied into it
                 if (Library.page === Library.Page.Playlist && Library.selectedPlaylist.isLocal) {
                     LocalFiles.addFiles(Library.selectedPlaylistId, drop.urls)
-                    toast.show("Adding to “" + Library.selectedPlaylist.name + "”…")
+                    toast.show(qsTr("Adding to “%1”…").arg(Library.selectedPlaylist.name))
                 } else if (LocalFiles.addSources(drop.urls) > 0) {
                     Library.showLocalTracks()
-                    toast.show("Looking for music…")
+                    toast.show(qsTr("Looking for music…"))
                 } else {
-                    toast.show("No new music there")
+                    toast.show(qsTr("No new music there"))
                 }
             }
 
@@ -445,7 +445,7 @@ ApplicationWindow {
                     }
                     TitleText {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Add to Local Files"
+                        text: qsTr("Add to Local Files")
                         font.pixelSize: Appearance.fontSize.headline
                         color: Appearance.colors.onPrimaryContainer
                     }
@@ -779,17 +779,17 @@ ApplicationWindow {
 
             menu: Platform.Menu {
                 Platform.MenuItem {
-                    text: "Show Swiftify"
+                    text: qsTr("Show Swiftify")
                     onTriggered: window.reveal()
                 }
                 Platform.MenuItem {
-                    text: Player.playing ? "Pause" : "Play"
+                    text: Player.playing ? qsTr("Pause") : qsTr("Play")
                     enabled: Player.hasSong
                     onTriggered: Player.togglePlayback()
                 }
                 Platform.MenuSeparator {}
                 Platform.MenuItem {
-                    text: "Quit Swiftify"
+                    text: qsTr("Quit Swiftify")
                     onTriggered: App.quit()
                 }
             }

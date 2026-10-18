@@ -72,7 +72,7 @@ Item {
             iconSize: 20
             symbol: root.symbol
             iconColor: root.expanded ? root.scheme.primary : root.scheme.onSurfaceVariant
-            tooltip: root.expanded ? (Player.volume <= 0.01 ? "Unmute" : "Mute") : "Show Volume"
+            tooltip: root.expanded ? (Player.volume <= 0.01 ? qsTr("Unmute") : qsTr("Mute")) : qsTr("Show Volume")
             onClicked: {
                 if (root.expanded) {
                     Player.toggleMute()

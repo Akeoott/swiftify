@@ -161,6 +161,9 @@ void Settings::load()
     m_nativeTitleBar = stored<bool>(m_store, "nativeTitleBar", m_nativeTitleBar);
     m_trayIcon = stored<bool>(m_store, "trayIcon", m_trayIcon);
     m_zoom = std::clamp(stored<double>(m_store, "zoom", m_zoom), 0.5, 2.0);
+    m_language = oneOf(stored<QString>(m_store, "language", m_language),
+                      {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+
 }
 
 void Settings::setVisualizersEnabled(bool value)
@@ -455,5 +458,16 @@ void Settings::setZoom(double raw)
     m_store.setValue(QStringLiteral("zoom"), value);
     emit zoomChanged();
 }
+
+void Settings::setLanguage(const QString &raw)
+{
+    const QString value = oneOf(raw, {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+    if (m_language == value) return;
+    m_language = value;
+    m_store.setValue(QStringLiteral("language"), value);
+    emit languageChanged();
+}
+
+
 
 } // namespace swiftify

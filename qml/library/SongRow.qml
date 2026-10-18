@@ -248,7 +248,7 @@ T.AbstractButton {
                 symbol: "more_horiz"
                 size: 28
                 iconSize: 18
-                tooltip: "More"
+                tooltip: qsTr("More")
                 onClicked: SongMenus.open(root.song, root.allowsPlaylistRemoval)
             }
 
@@ -294,7 +294,7 @@ T.AbstractButton {
                     }
                 }
 
-                tooltip: root.saved ? "Remove from Favourite Songs" : "Add to Favourite Songs"
+                tooltip: root.saved ? qsTr("Remove from Favourite Songs") : qsTr("Add to Favourite Songs")
             }
 
         }

@@ -56,7 +56,7 @@ Flickable {
                     wavy: true
                     symbol: "play_arrow"
                     burst: "play"
-                    text: "Play"
+                    text: qsTr("Play")
                     enabled: Library.artistTopSongs.count > 0
                     onClicked: Player.playFromModel(Library.artistTopSongs, 0)
                 }
@@ -75,7 +75,7 @@ Flickable {
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
                 StyledText {
-                    text: "Loading albums…"
+                    text: qsTr("Loading albums…")
                     color: Appearance.colors.onSurfaceVariant
                 }
             }
@@ -85,7 +85,7 @@ Flickable {
             x: root.margin
             Reveal.shown: Library.artistTopSongs.count > 0
             bottomPadding: 10
-            text: "Top Songs"
+            text: qsTr("Top Songs")
             font.pixelSize: Appearance.fontSize.title
             font.weight: Font.Bold
         }
@@ -105,7 +105,7 @@ Flickable {
             Reveal.shown: !Library.loadingArtist
             topPadding: 28
             bottomPadding: 14
-            text: "Albums & Singles"
+            text: qsTr("Albums & Singles")
             font.pixelSize: Appearance.fontSize.title
             font.weight: Font.Bold
         }
@@ -114,7 +114,7 @@ Flickable {
             anchors.horizontalCenter: parent.horizontalCenter
             Reveal.shown: !Library.loadingArtist && Library.artistAlbums.count === 0
             symbol: "album"
-            title: "No Albums Found"
+            title: qsTr("No Albums Found")
         }
 
         Flow {

@@ -22,22 +22,22 @@ Item {
     function add(urls: list<url>) {
         if (playlistId.length > 0) {
             LocalFiles.addFiles(playlistId, urls)
-            UiState.toastRequested("Adding to the playlist…")
+            UiState.toastRequested(qsTr("Adding to the playlist…"))
             return
         }
         const added = LocalFiles.addSources(urls)
-        UiState.toastRequested(added > 0 ? "Looking for music…" : "Already in Local Files")
+        UiState.toastRequested(added > 0 ? qsTr("Looking for music…") : qsTr("Already in Local Files"))
     }
 
     FolderDialog {
         id: folderDialog
-        title: "Add a Folder of Music"
+        title: qsTr("Add a Folder of Music")
         onAccepted: root.add([selectedFolder])
     }
 
     FileDialog {
         id: fileDialog
-        title: root.playlistId.length > 0 ? "Add Tracks" : "Add Music Files"
+        title: root.playlistId.length > 0 ? qsTr("Add Tracks") : qsTr("Add Music Files")
         fileMode: FileDialog.OpenFiles
         nameFilters: ["Music (*.mp3 *.flac *.ogg *.oga *.m4a *.mp4 *.aac *.wav *.aif *.aiff)"]
         onAccepted: root.add(selectedFiles)

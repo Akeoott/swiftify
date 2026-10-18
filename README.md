@@ -46,6 +46,16 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
 
 ## Building from source
 
+### Interface language
+
+In **Settings → Appearance → Language**, choose **System**, **English**, or
+**Русский**. The preference is saved and applies immediately, without restarting.
+Track metadata, playlist names, search queries and custom preset names are not translated.
+
+Translations use Qt `qsTr` / `qsTranslate` and an embedded UTF-8 catalog at
+`translations/ru.json`; no additional Linguist tools are required. Russian plural
+entries contain three forms (one, few, many).
+
 ### Build requirements
 
 - Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools

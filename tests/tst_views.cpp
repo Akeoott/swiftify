@@ -2313,7 +2313,7 @@ private slots:
     void viewsHoldStillAtRest_data()
     {
         QTest::addColumn<QString>("type");
-        for (const char *type : {"HomeView", "SearchView", "PlaylistsView", "SavedSongsView", "LocalFilesView", "LocalTracksView", "Sidebar",
+        for (const char *type : {"HomeView", "SearchView", "PlaylistsView", "SavedSongsView", "LocalFilesView", "LocalTracksView", "StatsView", "Sidebar",
                                  "PlayerBar", "SettingsPages", "EmptyState", "Stickers", "ShapeIcon"}) {
             QTest::addRow("%s", type) << QString::fromLatin1(type);
         }
@@ -2998,7 +2998,7 @@ private slots:
         QTest::addColumn<QString>("type");
         for (const char *type : {"SoundPanel", "SleepTimerPanel", "ImmersiveQueue", "ImmersiveLyrics", "SegmentedControl",
                                  "StyledSwitch", "RollingText", "PlayerBar", "LyricsPanel", "QueuePanel", "Sidebar",
-                                 "PageHost", "HomeView", "SearchView", "ArtistView", "AlbumView", "PlaylistView", "PlaylistsView", "SavedSongsView", "LocalFilesView", "LocalTracksView", "StartupView",
+                                 "PageHost", "HomeView", "SearchView", "ArtistView", "AlbumView", "PlaylistView", "PlaylistsView", "SavedSongsView", "LocalFilesView", "LocalTracksView", "StatsView", "StartupView",
                                  "SetupView", "CompactMeter", "MaterialShape", "ShapeIcon", "SquiggleRing", "WavyLine",
                                  "LoadingSpinner", "ShapeButton", "WavyPill", "ToolbarButton", "PlayButton"}) {
             QTest::newRow(type) << QString::fromLatin1(type);
@@ -3011,6 +3011,41 @@ private slots:
         Rig rig;
         rig.playSomething();
         QVERIFY(rig.show(type));
+    }
+
+    // the stats page with plays to show draws every part of itself: the
+    // figures, the top lists, the charts and the calendar
+    void theStatsPageDrawsLocalPlays()
+    {
+        Rig rig;
+        for (int index = 0; index < 12; ++index) {
+            Song song;
+            song.uri = QStringLiteral("spotify:track:stats%1").arg(index % 4);
+            song.name = QStringLiteral("Song %1").arg(index % 4);
+            song.artists = QStringLiteral("Artist %1").arg(index % 2);
+            song.albumName = QStringLiteral("Album");
+            song.albumId = QStringLiteral("album%1").arg(index % 2);
+            song.durationMs = 180'000;
+            Artist artist;
+            artist.id = QStringLiteral("artist%1").arg(index % 2);
+            artist.name = song.artists;
+            song.artistItems = {artist};
+            QVERIFY(rig.listeningHistory.record(song, QDateTime::currentDateTimeUtc().addDays(-index).addSecs(-3600 * index), 120'000));
+        }
+        QTRY_COMPARE(rig.stats.plays(), 12);
+        const auto view = rig.show(QStringLiteral("StatsView"));
+        QVERIFY(view);
+        QCOMPARE(rig.stats.topTracks()->count(), 4);
+        QCOMPARE(rig.stats.topArtists()->count(), 2);
+        QVERIFY(rig.stats.calendarTotal() >= 12);
+        // the latest play leads the recent ones, though it was kept first
+        QCOMPARE(rig.stats.recent()->nameAt(0), QStringLiteral("Song 0"));
+        rig.stats.setRankByTime(true);
+        rig.stats.setPeriod(0);
+        Rig::settle();
+        rig.stats.setPeriod(3);
+        Rig::settle();
+        QCOMPARE(rig.stats.plays(), 12);
     }
 };
 

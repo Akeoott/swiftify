@@ -55,6 +55,11 @@ class Settings : public QObject {
     Q_PROPERTY(QString matugenColorsPath READ matugenColorsPath WRITE setMatugenColorsPath NOTIFY matugenColorsPathChanged FINAL)
     Q_PROPERTY(bool showWindowControls READ showWindowControls WRITE setShowWindowControls NOTIFY showWindowControlsChanged FINAL)
     Q_PROPERTY(bool windowControlsOnRight READ windowControlsOnRight WRITE setWindowControlsOnRight NOTIFY windowControlsOnRightChanged FINAL)
+    /// where the stats page reads from: "statsfm" or "local"
+    Q_PROPERTY(QString statsSource READ statsSource WRITE setStatsSource NOTIFY statsSourceChanged FINAL)
+    Q_PROPERTY(QString statsFmUsername READ statsFmUsername WRITE setStatsFmUsername NOTIFY statsFmUsernameChanged FINAL)
+    /// whether songs played here are kept for the local stats
+    Q_PROPERTY(bool trackListening READ trackListening WRITE setTrackListening NOTIFY trackListeningChanged FINAL)
     Q_PROPERTY(bool nativeTitleBar READ nativeTitleBar WRITE setNativeTitleBar NOTIFY nativeTitleBarChanged FINAL)
     Q_PROPERTY(bool trayIcon READ trayIcon WRITE setTrayIcon NOTIFY trayIconChanged FINAL)
     /// the whole window's zoom, as ctrl + and ctrl - set it
@@ -150,6 +155,12 @@ public:
     bool showWindowControls() const { return m_showWindowControls; }
     void setShowWindowControls(bool value);
     bool windowControlsOnRight() const { return m_windowControlsOnRight; }
+    QString statsSource() const { return m_statsSource; }
+    void setStatsSource(const QString &value);
+    QString statsFmUsername() const { return m_statsFmUsername; }
+    void setStatsFmUsername(const QString &value);
+    bool trackListening() const { return m_trackListening; }
+    void setTrackListening(bool value);
     void setWindowControlsOnRight(bool value);
     bool nativeTitleBar() const { return m_nativeTitleBar; }
     void setNativeTitleBar(bool value);
@@ -190,6 +201,9 @@ signals:
     void matugenColorsPathChanged();
     void showWindowControlsChanged();
     void windowControlsOnRightChanged();
+    void statsSourceChanged();
+    void statsFmUsernameChanged();
+    void trackListeningChanged();
     void nativeTitleBarChanged();
     void trayIconChanged();
     void zoomChanged();
@@ -228,6 +242,9 @@ private:
     QString m_matugenColorsPath = QString();
     bool m_showWindowControls = true;
     bool m_windowControlsOnRight = false;
+    QString m_statsSource = QStringLiteral("local");
+    QString m_statsFmUsername;
+    bool m_trackListening = true;
 #ifdef Q_OS_WIN
     bool m_nativeTitleBar = false;
 #else

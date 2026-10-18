@@ -58,7 +58,7 @@ GridView {
         TitleText {
             x: 10
             anchors.verticalCenter: parent.verticalCenter
-            text: root.local ? "Local Files" : root.pinnedOnly ? "Pinned Playlists" : "My Playlists"
+            text: root.local ? qsTr("Local Files") : root.pinnedOnly ? qsTr("Pinned Playlists") : qsTr("My Playlists")
             font.pixelSize: Appearance.fontSize.display
             font.weight: Font.Bold
         }
@@ -81,7 +81,7 @@ GridView {
             visible: cell.isTracksTile
             artworkSize: root.tile
             placeholderSymbol: "folder_open"
-            title: "Local Tracks"
+            title: qsTr("Local Tracks")
             subtitle: Format.songCount(LocalFiles.songs.count)
             onClicked: Library.showLocalTracks()
         }
@@ -153,19 +153,20 @@ GridView {
                 }
                 StyledText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "New Playlist"
+                    text: qsTr("New Playlist")
                     font.weight: Font.DemiBold
                 }
             }
         }
     }
 
+
     EmptyState {
         anchors.centerIn: parent
         Reveal.shown: root.pinnedOnly && Library.pinnedPlaylists.count === 0
         symbol: "push_pin"
-        title: "No Pinned Playlists"
-        description: "Right-click a playlist to pin it here."
+        title: qsTr("No Pinned Playlists")
+        description: qsTr("Right-click a playlist to pin it here.")
     }
 
     MenuLoader {
@@ -174,7 +175,7 @@ GridView {
             StyledMenuItem {
                 id: pinItem
                 readonly property bool pinned: Library.pinsRevision >= 0 && Library.isPinned(root.menuPlaylist.id)
-                text: pinned ? "Unpin Playlist" : "Pin Playlist"
+                text: pinned ? qsTr("Unpin Playlist") : qsTr("Pin Playlist")
                 symbol: pinned ? "keep_off" : "keep"
                 onTriggered: {
                     if (!pinItem.pinned) {
@@ -192,7 +193,7 @@ GridView {
             StyledMenuItem {
                 visible: root.local
                 height: visible ? implicitHeight : 0
-                text: "Delete Playlist"
+                text: qsTr("Delete Playlist")
                 symbol: "delete"
                 destructive: true
                 onTriggered: UiState.deletePlaylistRequested(root.menuPlaylist)

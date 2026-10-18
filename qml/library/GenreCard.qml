@@ -95,7 +95,7 @@ T.AbstractButton {
             anchors.left: parent.left
             anchors.bottom: parent.bottom
             anchors.margins: 14
-            text: root.name
+                text: qsTranslate("Genres", root.name)
             color: "white"
             font.pixelSize: Appearance.fontSize.larger
             font.weight: Font.Bold

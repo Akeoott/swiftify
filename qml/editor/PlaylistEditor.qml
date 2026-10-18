@@ -81,7 +81,7 @@ StyledDialog {
         }
     }
 
-    headline: creating ? "New Playlist" : "Edit Playlist"
+    headline: creating ? qsTr("New Playlist") : qsTr("Edit Playlist")
 symbol: "queue_music"
 iconShape: "bun"
     preferredWidth: 440
@@ -111,7 +111,7 @@ iconShape: "bun"
 
     FileDialog {
         id: picker
-        title: "Choose a Cover Photo"
+        title: qsTr("Choose a Cover Photo")
         nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.gif *.bmp *.tif *.tiff *.avif *.heic)"]
         onAccepted: {
             maker.photo = selectedFile
@@ -119,7 +119,7 @@ iconShape: "bun"
                 root.problem = ""
                 cropper.begin()
             } else {
-                root.problem = "That image could not be used as a cover."
+                root.problem = qsTr("That image could not be used as a cover.")
             }
         }
     }
@@ -176,7 +176,7 @@ iconShape: "bun"
             required property int index
 
             selected: index === 0 ? root.pickedCover !== null && root.selectedDesign < 0 : root.selectedDesign === index - 1
-            tooltip: index === 0 ? "Choose a photo for the cover" : ""
+            tooltip: index === 0 ? qsTr("Choose a photo for the cover") : ""
             onClicked: {
                 if (index === 0) {
                     picker.open()
@@ -205,7 +205,7 @@ iconShape: "bun"
                         }
                         StyledText {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "Photo"
+                            text: qsTr("Photo")
                             font.pixelSize: Appearance.fontSize.smaller
                             color: Appearance.colors.onSurfaceVariant
                         }
@@ -268,14 +268,14 @@ iconShape: "bun"
     OutlinedTextField {
         id: nameField
         width: parent.width
-        placeholder: "Name"
+        placeholder: qsTr("Name")
         onAccepted: root.save()
     }
 
     OutlinedTextField {
         id: descriptionField
         width: parent.width
-        placeholder: "Description"
+        placeholder: qsTr("Description")
         minimumLines: 3
         maximumLines: 6
     }
@@ -288,7 +288,7 @@ iconShape: "bun"
         StyledText {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            text: "Public playlist"
+            text: qsTr("Public playlist")
         }
         StyledSwitch {
             id: publicSwitch
@@ -300,14 +300,14 @@ iconShape: "bun"
     buttons: [
         TextButton {
             id: saveButton
-            text: "Save"
+            text: qsTr("Save")
             busy: root.saving
             enabled: !root.nameIsEmpty && !root.saving
             onClicked: root.save()
         },
         TextButton {
             variant: TextButton.Text
-            text: "Cancel"
+            text: qsTr("Cancel")
             onClicked: root.close()
         }
     ]

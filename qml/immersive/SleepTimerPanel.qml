@@ -12,9 +12,9 @@ Item {
     readonly property color secondaryText: Qt.rgba(1, 1, 1, 0.6)
     readonly property list<string> fades: ["none", "finalSeconds", "entire"]
     readonly property list<string> explanations: [
-        "track just stops when the timer runs out",
-        "track fades out at the last 10 seconds",
-        "track steadily fades out along with the timers whole duration, volume cant be adjusted during this time..."
+        qsTr("track just stops when the timer runs out"),
+        qsTr("track fades out at the last 10 seconds"),
+        qsTr("track steadily fades out along with the timers whole duration, volume cant be adjusted during this time...")
     ]
     readonly property int fadeIndex: Math.max(0, fades.indexOf(Settings.sleepTimerFade))
 
@@ -209,7 +209,7 @@ Item {
                     }
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "until playback stops"
+                        text: qsTr("until playback stops")
                         color: root.secondaryText
                     }
                 }
@@ -229,9 +229,9 @@ Item {
             enabled: !Player.sleepTimerRunning
             opacity: enabled ? 1 : 0.38
             segments: [
-                Segment { text: "None" },
-                Segment { text: "Last 10 Seconds" },
-                Segment { text: "Whole Timer" }
+                Segment { text: qsTr("None") },
+                Segment { text: qsTr("Last 10 Seconds") },
+                Segment { text: qsTr("Whole Timer") }
             ]
             onActivated: (index) => Settings.sleepTimerFade = root.fades[index]
         }
@@ -244,7 +244,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 scheme: root.scheme
                 symbol: Player.sleepTimerRunning ? "close" : "bedtime"
-                text: Player.sleepTimerRunning ? "Cancel Timer" : "Start Timer"
+                text: Player.sleepTimerRunning ? qsTr("Cancel Timer") : qsTr("Start Timer")
                 colBackground: Qt.rgba(1, 1, 1, 0.14)
                 colBackgroundHover: Qt.rgba(1, 1, 1, 0.2)
                 colRipple: Qt.rgba(1, 1, 1, 0.24)

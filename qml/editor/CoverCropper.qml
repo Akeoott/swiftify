@@ -50,7 +50,7 @@ StyledDialog {
         accept()
     }
 
-    headline: "Adjust Cover"
+    headline: qsTr("Adjust Cover")
 symbol: "crop"
 iconShape: "square"
     preferredWidth: viewport + 48
@@ -161,13 +161,13 @@ iconShape: "square"
 
     buttons: [
         TextButton {
-            text: "Use"
+            text: qsTr("Use")
             enabled: root.maker.photoValid
             onClicked: root.use()
         },
         TextButton {
             variant: TextButton.Text
-            text: "Cancel"
+            text: qsTr("Cancel")
             onClicked: root.close()
         }
     ]

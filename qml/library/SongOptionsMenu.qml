@@ -26,7 +26,7 @@ StyledMenu {
         id: saveItem
         visible: !root.local
         height: visible ? implicitHeight : 0
-        text: root.saved ? "Remove from Songs" : "Save to Songs"
+        text: root.saved ? qsTr("Remove from Songs") : qsTr("Save to Songs")
         symbol: root.saved ? "star" : "star"
         onTriggered: {
             if (!root.saved) {
@@ -38,14 +38,14 @@ StyledMenu {
     StyledMenuItem {
         visible: root.local
         height: visible ? implicitHeight : 0
-        text: "Edit Info…"
+        text: qsTr("Edit Info…")
         symbol: "edit_note"
         onTriggered: UiState.editLocalTrackRequested(root.song)
     }
     StyledMenuItem {
         visible: root.local
         height: visible ? implicitHeight : 0
-        text: App.macOS ? "Show in Finder" : "Show in Folder"
+        text: App.macOS ? qsTr("Show in Finder") : qsTr("Show in Folder")
         symbol: "folder_open"
         onTriggered: App.openUrl(root.song.uri.substring(0, root.song.uri.lastIndexOf("/")))
     }
@@ -56,32 +56,32 @@ StyledMenu {
     StyledMenuItem {
         visible: !root.local && root.song.albumName.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to Album"
+        text: qsTr("Go to Album")
         symbol: "album"
         onTriggered: UiState.goToAlbum(root.song)
     }
     StyledMenuItem {
         visible: !root.local && root.song.artists.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to Artist"
+        text: qsTr("Go to Artist")
         symbol: "person"
         onTriggered: UiState.goToArtist(root.song)
     }
     StyledMenuSeparator {}
     StyledMenuItem {
-        text: "Play Next"
+        text: qsTr("Play Next")
         symbol: "queue_play_next"
         onTriggered: Player.playNext(root.song)
     }
     StyledMenuItem {
-        text: "Play Last"
+        text: qsTr("Play Last")
         symbol: "playlist_add"
         onTriggered: Player.playLast(root.song)
     }
 
     StyledMenu {
         id: addMenu
-        title: "Add to Playlist"
+        title: qsTr("Add to Playlist")
 
         Instantiator {
             model: root.editablePlaylists
@@ -109,7 +109,7 @@ StyledMenu {
         StyledMenuItem {
             visible: root.local
             height: visible ? implicitHeight : 0
-            text: "New Playlist…"
+            text: qsTr("New Playlist…")
             symbol: "add"
             onTriggered: UiState.createLocalPlaylistRequested(root.song)
         }
@@ -122,7 +122,7 @@ StyledMenu {
     StyledMenuItem {
         visible: root.allowsPlaylistRemoval
         height: visible ? implicitHeight : 0
-        text: "Remove from Playlist"
+        text: qsTr("Remove from Playlist")
         symbol: "delete"
         destructive: true
         onTriggered: Library.removeFromSelectedPlaylist(root.song)

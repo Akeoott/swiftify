@@ -69,11 +69,11 @@ Item {
             visible: root.page === 0
 
             ContentSection {
-                title: "Visualizer"
+                title: qsTr("Visualizer")
                 symbol: "graphic_eq"
 
                 ConfigSwitch {
-                    text: "Show audio visualizers"
+                    text: qsTr("Show audio visualizers")
                     checked: Settings.visualizersEnabled
                     onToggledTo: (checked) => Settings.visualizersEnabled = checked
                 }
@@ -96,27 +96,27 @@ Item {
                     onToggledTo: (checked) => Settings.immersiveVisualizer = checked
                 }
                 ConfigSelection {
-                    text: "Style"
+                    text: qsTr("Style")
                     enabled: Settings.visualizersEnabled && Settings.immersiveVisualizer
                     currentIndex: Settings.circularVisualizer ? 1 : 0
                     segments: [
-                        Segment { text: "Normal" },
-                        Segment { text: "Circular" }
+                        Segment { text: qsTr("Normal") },
+                        Segment { text: qsTr("Circular") }
                     ]
                     onActivated: (index) => Settings.circularVisualizer = index === 1
                 }
                 ConfigSelection {
-                    text: "Shape"
+                    text: qsTr("Shape")
                     enabled: Settings.visualizersEnabled && Settings.immersiveVisualizer
                     currentIndex: Settings.visualizerShape === "wave" ? 1 : 0
                     segments: [
-                        Segment { text: "Bars" },
-                        Segment { text: "Wave" }
+                        Segment { text: qsTr("Bars") },
+                        Segment { text: qsTr("Wave") }
                     ]
                     onActivated: (index) => Settings.visualizerShape = index === 1 ? "wave" : "bars"
                 }
                 ConfigSwitch {
-                    text: "Round artwork"
+                    text: qsTr("Round artwork")
                     // with visualizers on, the circular style rounds the
                     // cover inside its ring
                     enabled: !Settings.visualizersEnabled || !Settings.immersiveVisualizer
@@ -124,7 +124,7 @@ Item {
                     onToggledTo: (checked) => Settings.roundArtwork = checked
                 }
                 ConfigSlider {
-                    text: "Sensitivity"
+                    text: qsTr("Sensitivity")
                     enabled: Settings.visualizersEnabled && (Settings.playerBarVisualizer || Settings.trackListVisualizer || Settings.immersiveVisualizer)
                     from: 0.6
                     to: 1.8
@@ -134,7 +134,7 @@ Item {
                     onMoved: (value) => Settings.visualizerSensitivity = value
                 }
                 NoteText {
-                    text: "turn this off if u want lower cpu cost"
+                    text: qsTr("turn this off if u want lower cpu cost")
                 }
             }
         }
@@ -143,16 +143,16 @@ Item {
             visible: root.page === 1
 
             ContentSection {
-                title: "Background"
+                title: qsTr("Background")
                 symbol: "wallpaper"
 
                 ConfigSwitch {
-                    text: "Live background"
+                    text: qsTr("Live background")
                     checked: Settings.livingBackdrop
                     onToggledTo: (checked) => Settings.livingBackdrop = checked
                 }
                 ConfigSlider {
-                    text: "Blur"
+                    text: qsTr("Blur")
                     from: 0
                     to: 60
                     stepSize: 1
@@ -160,7 +160,7 @@ Item {
                     onMoved: (value) => Settings.backdropBlur = value
                 }
                 ConfigSlider {
-                    text: "Reactivity"
+                    text: qsTr("Reactivity")
                     enabled: Settings.livingBackdrop
                     from: 0
                     to: 3
@@ -170,7 +170,7 @@ Item {
                     onMoved: (value) => Settings.backdropReactivity = value
                 }
                 NoteText {
-                    text: "turn this off if u want lower cpu cost"
+                    text: qsTr("turn this off if u want lower cpu cost")
                 }
             }
         }
@@ -179,71 +179,71 @@ Item {
             visible: root.page === 2
 
             ContentSection {
-                title: "Crossfade"
+                title: qsTr("Crossfade")
                 symbol: "play_circle"
 
                 ConfigSwitch {
-                    text: "Crossfade between songs"
+                    text: qsTr("Crossfade between songs")
                     checked: Settings.crossfadeEnabled
                     onToggledTo: (checked) => Settings.crossfadeEnabled = checked
                 }
                 ConfigSlider {
-                    text: "Crossfade duration"
+                    text: qsTr("Crossfade duration")
                     enabled: Settings.crossfadeEnabled
                     from: 1
                     to: 12
                     stepSize: 1
                     value: Settings.crossfadeDurationSeconds
-                    valueText: Settings.crossfadeDurationSeconds + " s"
+                    valueText: Settings.crossfadeDurationSeconds + qsTr(" s")
                     onMoved: (value) => Settings.crossfadeDurationSeconds = Math.round(value)
                 }
             }
 
             ContentSection {
-                title: "Sleep Timer"
+                title: qsTr("Sleep Timer")
                 symbol: "bedtime"
 
                 ConfigSelection {
-                    text: "Fade Out"
+                    text: qsTr("Fade Out")
                     currentIndex: Math.max(0, root.fades.indexOf(Settings.sleepTimerFade))
                     segments: [
-                        Segment { text: "None" },
-                        Segment { text: "Last 10 Seconds" },
-                        Segment { text: "Whole Timer" }
+                        Segment { text: qsTr("None") },
+                        Segment { text: qsTr("Last 10 Seconds") },
+                        Segment { text: qsTr("Whole Timer") }
                     ]
                     onActivated: (index) => Settings.sleepTimerFade = root.fades[index]
                 }
                 NoteText {
-                    text: "fading lowers the volume as the timer runs down and restores it once playback stops."
+                    text: qsTr("fading lowers the volume as the timer runs down and restores it once playback stops.")
                 }
             }
 
             ContentSection {
-                title: "Audio Quality"
+                title: qsTr("Audio Quality")
                 symbol: "high_quality"
 
                 ConfigSelection {
-                    text: "Streaming"
+                    text: qsTr("Streaming")
                     currentIndex: Math.max(0, root.qualities.indexOf(Settings.streamingQuality))
                     segments: [
-                        Segment { text: "96 kbps" },
-                        Segment { text: "160 kbps" },
-                        Segment { text: "320 kbps" }
+                        Segment { text: qsTr("96 kbps") },
+                        Segment { text: qsTr("160 kbps") },
+                        Segment { text: qsTr("320 kbps") }
                     ]
                     onActivated: (index) => Settings.streamingQuality = root.qualities[index]
                 }
                 ConfigSelection {
-                    text: "Song cache"
+                    text: qsTr("Song cache")
                     currentIndex: Math.max(0, root.cacheSizes.indexOf(Settings.songCacheMegabytes))
                     segments: [
-                        Segment { text: "500 MB" },
-                        Segment { text: "1 GB" },
-                        Segment { text: "2 GB" }
+                        Segment { text: qsTr("500 MB") },
+                        Segment { text: qsTr("1 GB") },
+                        Segment { text: qsTr("2 GB") }
                     ]
                     onActivated: (index) => Settings.songCacheMegabytes = root.cacheSizes[index]
                 }
                 NoteText {
-                    text: "both cache and quality apply the next time playback connects"
+                    text: qsTr("both cache and quality apply the next time playback connects")
                 }
             }
         }
@@ -252,7 +252,7 @@ Item {
             visible: root.page === 3
 
             ContentSection {
-                title: "Local Files"
+                title: qsTr("Local Files")
                 symbol: "folder_open"
 
                 MusicPicker {
@@ -295,7 +295,7 @@ Item {
                             symbol: "close"
                             size: 32
                             iconSize: 18
-                            tooltip: "Remove"
+                            tooltip: qsTr("Remove")
                             onClicked: LocalFiles.removeSource(source.modelData)
                         }
                     }
@@ -311,27 +311,27 @@ Item {
                     TextButton {
                         variant: TextButton.Tonal
                         symbol: "create_new_folder"
-                        text: "Add Folder"
+                        text: qsTr("Add Folder")
                         onClicked: musicPicker.pickFolder()
                     }
                     TextButton {
                         variant: TextButton.Text
                         symbol: "audio_file"
-                        text: "Add Files"
+                        text: qsTr("Add Files")
                         onClicked: musicPicker.pickFiles()
                     }
                     TextButton {
                         variant: TextButton.Text
                         symbol: "refresh"
-                        text: LocalFiles.scanning ? "Looking…" : "Look Again"
+                        text: LocalFiles.scanning ? qsTr("Looking…") : qsTr("Look Again")
                         enabled: LocalFiles.sources.length > 0 && !LocalFiles.scanning
                         onClicked: LocalFiles.rescan()
                     }
                 }
 
                 NoteText {
-                    text: "each songs title, artists, album and cover come from its own tags, and a .lrc file "
-                          + "beside a song gives its lyrics. you can also drop files or folders onto the window"
+                    text: qsTr("each songs title, artists, album and cover come from its own tags, and a .lrc file ")
+                          + qsTr("beside a song gives its lyrics. you can also drop files or folders onto the window")
                 }
             }
         }
@@ -340,17 +340,34 @@ Item {
             visible: root.page === 4
 
             ContentSection {
-                title: "Colours"
+                title: qsTr("Language")
+                symbol: "language"
+
+                ConfigSelection {
+                    text: qsTr("Interface language")
+                    objectName: "languageSelection"
+                    currentIndex: ["system", "en", "ru"].indexOf(Settings.language)
+                    segments: [
+                        Segment { text: qsTr("System") },
+                        Segment { text: "English" },
+                        Segment { text: "Русский" }
+                    ]
+                    onActivated: (index) => Settings.language = ["system", "en", "ru"][index]
+                }
+            }
+
+            ContentSection {
+                title: qsTr("Colours")
                 symbol: "palette"
 
                 ConfigSelection {
-                    text: "Light or dark"
+                    text: qsTr("Light or dark")
                     // Matugen exports can contain both light and dark variants.
                     currentIndex: Math.max(0, ["system", "light", "dark"].indexOf(Settings.themeMode))
                     segments: [
-                        Segment { text: "System"; symbol: "brightness_auto" },
-                        Segment { text: "Light"; symbol: "light_mode" },
-                        Segment { text: "Dark"; symbol: "dark_mode" }
+                        Segment { text: qsTr("System"); symbol: "brightness_auto" },
+                        Segment { text: qsTr("Light"); symbol: "light_mode" },
+                        Segment { text: qsTr("Dark"); symbol: "dark_mode" }
                     ]
                     onActivated: (index) => Settings.themeMode = ["system", "light", "dark"][index]
                 }
@@ -384,7 +401,7 @@ Item {
                         x: 8
                         y: 8
                         width: parent.width - 16
-                        placeholder: "Automatic (optional JSON file path)"
+                        placeholder: qsTr("Automatic (optional JSON file path)")
                         text: Settings.matugenColorsPath
                         onAccepted: Settings.matugenColorsPath = text
                     }
@@ -394,7 +411,7 @@ Item {
                         y: path.y + path.height + 8
                         variant: TextButton.Tonal
                         symbol: "refresh"
-                        text: "Auto-detect"
+                        text: qsTr("Auto-detect")
                         onClicked: {
                             path.text = ""
                             Settings.matugenColorsPath = ""
@@ -412,54 +429,54 @@ Item {
                 }
                 NoteText {
                     text: Settings.themeSource !== "system"
-                        ? "these are hardcoded themes"
+                        ? qsTr("these are hardcoded themes")
                         : (Theme.usingSystemScheme
-                            ? "following " + Theme.systemSchemePath + "; updates when the file changes."
+                            ? qsTr("following ") + Theme.systemSchemePath + qsTr("; updates when the file changes.")
                             : Settings.matugenColorsPath.length > 0
-                              ? "no valid Matugen scheme found at " + Theme.systemSchemePath
-                              : "automatically looks for Matugen JSON in common config and cache folders. an optional path overrides discovery.")
+                              ? qsTr("no valid Matugen scheme found at ") + Theme.systemSchemePath
+                              : qsTr("automatically looks for Matugen JSON in common config and cache folders. an optional path overrides discovery."))
                 }
             }
 
             ContentSection {
                 // a mac window keeps its traffic lights, and has no tray
                 visible: !App.macOS
-                title: "Window"
+                title: qsTr("Window")
                 symbol: "web_asset"
 
                 ConfigSelection {
                     objectName: "windowControlsMode"
                     visible: App.windows
-                    text: "Window controls"
+                    text: qsTr("Window controls")
                     currentIndex: Settings.nativeTitleBar ? 0 : 1
                     segments: [
-                        Segment { text: "Native title bar" },
-                        Segment { text: "In-app" }
+                        Segment { text: qsTr("Native title bar") },
+                        Segment { text: qsTr("In-app") }
                     ]
                     onActivated: (index) => Settings.nativeTitleBar = index === 0
                 }
                 ConfigSwitch {
-                    text: "Window buttons"
+                    text: qsTr("Window buttons")
                     visible: !App.windows
                     checked: Settings.showWindowControls
                     onToggledTo: (checked) => Settings.showWindowControls = checked
                 }
                 ConfigSwitch {
                     objectName: "windowControlsOnRightSwitch"
-                    text: App.windows ? "Window controls on right" : "Window buttons on right"
+                    text: App.windows ? qsTr("Window controls on right") : qsTr("Window buttons on right")
                     checked: Settings.windowControlsOnRight
                     enabled: App.windows ? !Settings.nativeTitleBar : Settings.showWindowControls
                     onToggledTo: (checked) => Settings.windowControlsOnRight = checked
                 }
                 ConfigSwitch {
-                    text: App.windows ? "Always show tray icon" : "Tray icon"
+                    text: App.windows ? qsTr("Always show tray icon") : qsTr("Tray icon")
                     checked: Settings.trayIcon
                     onToggledTo: (checked) => Settings.trayIcon = checked
                 }
                 NoteText {
                     text: App.windows
-                        ? "closing the window keeps Swiftify running in the tray. choose Quit Swiftify from the tray menu to exit."
-                        : "window buttons are for desktops that draw none of their own, Hyprland closes and moves windows itself"
+                        ? qsTr("closing the window keeps Swiftify running in the tray. choose Quit Swiftify from the tray menu to exit.")
+                        : qsTr("window buttons are for desktops that draw none of their own, Hyprland closes and moves windows itself")
                 }
             }
         }
@@ -468,37 +485,37 @@ Item {
             visible: root.page === 5
 
             ContentSection {
-                title: "Motion"
+                title: qsTr("Motion")
                 symbol: "animation"
 
                 ConfigSwitch {
-                    text: "Reduce motion"
+                    text: qsTr("Reduce motion")
                     checked: Settings.reduceMotion || Settings.performanceMode
                     enabled: !Settings.performanceMode
                     onToggledTo: (checked) => Settings.reduceMotion = checked
                 }
                 ConfigSwitch {
-                    text: "Performance mode"
+                    text: qsTr("Performance mode")
                     checked: Settings.performanceMode
                     onToggledTo: (checked) => Settings.performanceMode = checked
                 }
                 NoteText {
-                    text: "reduced motion stops anything from constantly animating on its own, interactions still animate tho. "
-                        + "performance mode goes way further, NOTHING animates! drastically improves performance but looks ugly imo"
+                    text: qsTr("reduced motion stops anything from constantly animating on its own, interactions still animate tho. ")
+                        + qsTr("performance mode goes way further, NOTHING animates! drastically improves performance but looks ugly imo")
                 }
             }
 
             ContentSection {
-                title: "Shapes"
+                title: qsTr("Shapes")
                 symbol: "category"
 
                 ConfigSwitch {
-                    text: "No shapes"
+                    text: qsTr("No shapes")
                     checked: Settings.noShapes
                     onToggledTo: (checked) => Settings.noShapes = checked
                 }
                 NoteText {
-                    text: "less shapes if you prefer minimalistic look"
+                    text: qsTr("less shapes if you prefer minimalistic look")
                 }
             }
         }
@@ -508,8 +525,9 @@ Item {
         Page {
             visible: root.page === 6
 
+
             ContentSection {
-                title: "Account"
+                title: qsTr("Account")
                 symbol: "account_circle"
 
                 Item {
@@ -556,9 +574,9 @@ Item {
                         }
                         StyledText {
                             width: parent.width
-                            text: Session.libraryConnected && Session.connected ? "Library and playback connected"
-                                : Session.libraryConnected ? "Library connected"
-                                : Session.connected ? "Playback connected" : "Not signed in"
+                            text: Session.libraryConnected && Session.connected ? qsTr("Library and playback connected")
+                                : Session.libraryConnected ? qsTr("Library connected")
+                                : Session.connected ? qsTr("Playback connected") : qsTr("Not signed in")
                             elide: Text.ElideRight
                             color: Appearance.colors.onSurfaceVariant
                         }
@@ -572,7 +590,7 @@ Item {
 
                     TextButton {
                         symbol: "logout"
-                        text: "Log Out"
+                        text: qsTr("Log Out")
                         colBackground: Appearance.colors.error
                         colBackgroundHover: Appearance.colors.errorHover
                         labelColor: Appearance.colors.onError
@@ -581,19 +599,19 @@ Item {
                     }
                 }
                 NoteText {
-                    text: "forgets both logins on this computer, local files stay of course"
+                    text: qsTr("forgets both logins on this computer, local files stay of course")
                 }
 
                 StyledDialog {
                     id: logOutDialog
-                    headline: "Log Out of Spotify?"
+                    headline: qsTr("Log Out of Spotify?")
                     symbol: "logout"
                     iconShape: "ghostish"
-                    body: "swiftify forgets your library and playback logins on this computer. you can connect again any time."
+                    body: qsTr("swiftify forgets your library and playback logins on this computer. you can connect again any time.")
 
                     buttons: [
                         TextButton {
-                            text: "Log Out"
+                            text: qsTr("Log Out")
                             colBackground: Appearance.colors.error
                             colBackgroundHover: Appearance.colors.errorHover
                             labelColor: Appearance.colors.onError
@@ -604,7 +622,7 @@ Item {
                         },
                         TextButton {
                             variant: TextButton.Text
-                            text: "Cancel"
+                            text: qsTr("Cancel")
                             onClicked: logOutDialog.close()
                         }
                     ]
@@ -612,18 +630,18 @@ Item {
             }
 
             ContentSection {
-                title: "Library"
+                title: qsTr("Library")
                 symbol: "library_music"
 
                 StatusRow {
-                    label: "Status"
-                    value: Session.libraryStatus
+                    label: qsTr("Status")
+                    value: qsTranslate("SpotifySession", Session.libraryStatus)
                     good: Session.libraryConnected && !Session.libraryNeedsAuthorizationUpgrade
                 }
                 OutlinedTextField {
                     x: 8
                     width: Math.min(460, parent.width - 16)
-                    placeholder: "Spotify Client ID"
+                    placeholder: qsTr("Spotify Client ID")
                     text: Session.libraryClientId
                     onTextEdited: Session.libraryClientId = text
                 }
@@ -636,25 +654,25 @@ Item {
                     TextButton {
                         variant: TextButton.Tonal
                         symbol: "library_music"
-                        text: Session.libraryConnected ? "Reconnect Library" : "Connect Library"
+                        text: Session.libraryConnected ? qsTr("Reconnect Library") : qsTr("Connect Library")
                         enabled: Session.libraryClientId.trim().length > 0 && !Session.loginInProgress
                         onClicked: Session.beginLibraryLogin()
                     }
                 }
                 NoteText {
                     text: Session.libraryNeedsAuthorizationUpgrade
-                          ? "reconnect once to let Swiftify edit playlists and save songs"
-                          : "your playlists, saved songs and search come through the Spotify app whose Client ID is above."
+                          ? qsTr("reconnect once to let Swiftify edit playlists and save songs")
+                          : qsTr("your playlists, saved songs and search come through the Spotify app whose Client ID is above.")
                 }
             }
 
             ContentSection {
-                title: "Playback"
+                title: qsTr("Playback")
                 symbol: "play_circle"
 
                 StatusRow {
-                    label: "Status"
-                    value: Session.connected ? "Connected" : "Not connected"
+                    label: qsTr("Status")
+                    value: Session.connected ? qsTr("Connected") : qsTr("Not connected")
                     good: Session.connected
                 }
                 Flow {
@@ -666,13 +684,13 @@ Item {
                     TextButton {
                         variant: TextButton.Tonal
                         symbol: "play_circle"
-                        text: Session.connected ? "Reconnect Playback" : "Connect Playback"
+                        text: Session.connected ? qsTr("Reconnect Playback") : qsTr("Connect Playback")
                         enabled: !Session.loginInProgress
                         onClicked: Session.beginPlaybackLogin()
                     }
                 }
                 NoteText {
-                    text: "playing music needs a Spotify Premium login of its own, separate from the librarys"
+                    text: qsTr("playing music needs a Spotify Premium login of its own, separate from the librarys")
                 }
             }
         }
@@ -681,16 +699,16 @@ Item {
             visible: root.page === 7
 
             ContentSection {
-                title: "Debugging"
+                title: qsTr("Debugging")
                 symbol: "bug_report"
 
                 ConfigSwitch {
-                    text: "Debugging shortcuts"
+                    text: qsTr("Debugging shortcuts")
                     checked: Settings.debuggingEnabled
                     onToggledTo: (checked) => Settings.debuggingEnabled = checked
                 }
                 NoteText {
-                    text: "Adds a seconds dial to the sleep timer, so a fade can be watched without waiting out a long ass timer"
+                    text: qsTr("Adds a seconds dial to the sleep timer, so a fade can be watched without waiting out a long ass timer")
                 }
 
                 Flow {
@@ -702,12 +720,12 @@ Item {
                     TextButton {
                         variant: TextButton.Tonal
                         symbol: "hourglass_empty"
-                        text: "Play Loading Test"
+                        text: qsTr("Play Loading Test")
                         onClicked: Player.playLoadingTest()
                     }
                 }
                 NoteText {
-                    text: "plays a song that never finishes loading, so the visualizers loading animation can be watched"
+                    text: qsTr("plays a song that never finishes loading, so the visualizers loading animation can be watched")
                 }
             }
 
@@ -716,7 +734,7 @@ Item {
 
                 property bool revealed: false
 
-                title: "About"
+                title: qsTr("About")
                 symbol: "info"
 
                 Row {
@@ -759,7 +777,7 @@ Item {
                             }
                         }
                         StyledText {
-                            text: "developed by addenator, the best programmer on earth"
+                            text: qsTr("developed by addenator, the best programmer on earth")
                             font.pixelSize: Appearance.fontSize.smaller
                             color: Appearance.colors.onSurfaceVariant
                         }
@@ -769,7 +787,7 @@ Item {
                             opacity: about.revealed ? 1 : 0
                             scale: about.revealed ? 1 : 0.92
                             transformOrigin: Item.Left
-                            text: "no secret dev options here..."
+                            text: qsTr("no secret dev options here...")
                             font.weight: Font.DemiBold
                             color: Appearance.colors.primary
 

@@ -20,7 +20,7 @@ SongListPage {
 
     songs: Library.albumSongs
     loading: Library.loadingSongs
-    loadingText: "Loading album…"
+    loadingText: qsTr("Loading album…")
 
     hero: CollectionHero {
         artworkUrl: root.album.artworkUrl
@@ -37,7 +37,7 @@ SongListPage {
                 wavy: true
                 symbol: "play_arrow"
                 burst: "play"
-                text: "Play"
+                text: qsTr("Play")
                 enabled: Library.albumSongs.count > 0
                 onClicked: Player.playFromModel(Library.albumSongs, 0)
             }

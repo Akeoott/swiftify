@@ -15,7 +15,7 @@ ListView {
     property SongListModel songs
     property Component hero
     property bool loading: false
-    property string loadingText: "Loading songs…"
+    property string loadingText: qsTr("Loading songs…")
     property bool showsEmpty: false
     property string emptySymbol: "music_note"
     property string emptyTitle

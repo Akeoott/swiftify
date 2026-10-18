@@ -61,6 +61,7 @@ class Settings : public QObject {
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY zoomChanged FINAL)
     Q_PROPERTY(bool discordEnabled READ discordEnabled WRITE setDiscordEnabled NOTIFY discordEnabledChanged FINAL)
     Q_PROPERTY(QString discordApplicationId READ discordApplicationId WRITE setDiscordApplicationId NOTIFY discordApplicationIdChanged FINAL)
+    Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged FINAL)
 
 public:
     /// the default file, ~/.config/Swiftify/Swiftify.conf. no default argument:
@@ -159,11 +160,12 @@ public:
     void setTrayIcon(bool value);
     double zoom() const { return m_zoom; }
     void setZoom(double value);
-    void setLanguage(const QString &value);
     bool discordEnabled() const { return m_discordEnabled; }
     void setDiscordEnabled(bool value);
     QString discordApplicationId() const { return m_discordApplicationId; }
     void setDiscordApplicationId(const QString &value);
+    QString language() const { return m_language; }
+    void setLanguage(const QString &value);
 
 signals:
     void visualizersEnabledChanged();
@@ -199,6 +201,7 @@ signals:
     void zoomChanged();
     void discordEnabledChanged();
     void discordApplicationIdChanged();
+    void languageChanged();
 
 private:
     void load();
@@ -242,6 +245,7 @@ private:
     double m_zoom = 1.0;
     bool m_discordEnabled = false;
     QString m_discordApplicationId;
+    QString m_language = QStringLiteral("system");
 };
 
 } // namespace swiftify

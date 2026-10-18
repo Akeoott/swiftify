@@ -62,7 +62,7 @@ Item {
         visible: root.showsSeeAll
         variant: TextButton.Tonal
         symbol: "arrow_forward"
-        text: "See All"
+        text: qsTr("See All")
         iconOnly: root.width < titleText.x + titleText.implicitWidth + naturalWidth + 24
         compactSize: root.width < 280 ? 32 : 40
         onClicked: root.seeAll()

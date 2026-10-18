@@ -143,6 +143,10 @@ DiscordPresence::DiscordPresence(PlaybackController *player, Settings *settings,
     });
     connect(settings, &Settings::discordEnabledChanged, this, &DiscordPresence::configure);
     connect(settings, &Settings::discordApplicationIdChanged, this, &DiscordPresence::configure);
+    connect(settings, &Settings::languageChanged, this, [this] {
+        emit statusChanged();
+        scheduleUpdate();
+    });
     connect(player, &PlaybackController::mediaStateChanged, this, &DiscordPresence::scheduleUpdate);
     connect(player, &PlaybackController::currentSongChanged, this, &DiscordPresence::scheduleUpdate);
     connect(player, &PlaybackController::playingChanged, this, &DiscordPresence::scheduleUpdate);

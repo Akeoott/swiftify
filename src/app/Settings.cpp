@@ -170,6 +170,9 @@ void Settings::load()
     if (QRegularExpression(QStringLiteral("^[0-9]{17,20}$")).match(id).hasMatch()) {
         m_discordApplicationId = id;
     }
+    m_language = oneOf(stored<QString>(m_store, "language", m_language),
+                      {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+
 }
 
 void Settings::setVisualizersEnabled(bool value)
@@ -513,5 +516,15 @@ void Settings::setDiscordApplicationId(const QString &raw)
     m_store.setValue(QStringLiteral("discordApplicationId"), value);
     emit discordApplicationIdChanged();
 }
+void Settings::setLanguage(const QString &raw)
+{
+    const QString value = oneOf(raw, {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+    if (m_language == value) return;
+    m_language = value;
+    m_store.setValue(QStringLiteral("language"), value);
+    emit languageChanged();
+}
+
+
 
 } // namespace swiftify

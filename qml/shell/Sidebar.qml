@@ -36,7 +36,7 @@ Item {
 
             NavigationItem {
                 width: parent.width
-                text: "Home"
+                text: qsTr("Home")
                 iconShape: "cookie9"
                 symbol: "home"
                 selected: root.isSelected(Library.Page.Home)
@@ -44,7 +44,7 @@ Item {
             }
             NavigationItem {
                 width: parent.width
-                text: "Search"
+                text: qsTr("Search")
                 iconShape: "clover4"
                 symbol: "search"
                 selected: root.isSelected(Library.Page.Search)
@@ -53,11 +53,11 @@ Item {
 
             SectionLabel {
                 width: parent.width
-                text: "Library"
+                text: qsTr("Library")
             }
             NavigationItem {
                 width: parent.width
-                text: "Songs"
+                text: qsTr("Songs")
                 iconShape: "heart"
                 keepsShape: true
                 symbol: "music_note"
@@ -66,7 +66,7 @@ Item {
             }
             NavigationItem {
                 width: parent.width
-                text: "Local Files"
+                text: qsTr("Local Files")
                 iconShape: "clamShell"
                 symbol: "folder_open"
                 // and everything that opens from it: every file, and the
@@ -78,7 +78,7 @@ Item {
 
             SectionLabel {
                 width: parent.width
-                text: "Playlists"
+                text: qsTr("Playlists")
                 trailing: IconButton {
                     symbol: "add"
                     size: 32
@@ -86,13 +86,13 @@ Item {
                     iconColor: Appearance.colors.primary
                     onClicked: UiState.beginCreatePlaylist()
 
-                    tooltip: "New playlist"
+                    tooltip: qsTr("New playlist")
                 }
             }
 
             NavigationItem {
                 width: parent.width
-                text: "Pinned Playlists"
+                text: qsTr("Pinned Playlists")
                 iconShape: "flower"
                 symbol: "push_pin"
                 selected: root.isSelected(Library.Page.PinnedPlaylists)
@@ -109,6 +109,7 @@ Item {
                     }
                 }
             }
+
 
             // the pinned group opens and shuts on a spring: past its height
             // and back opening, and a rebound shutting
@@ -137,7 +138,7 @@ Item {
                         Reveal.shown: Library.pinnedPlaylists.count === 0
                         leftPadding: 28
                         height: 28
-                        text: "No playlists"
+                        text: qsTr("No playlists")
                         font.pixelSize: Appearance.fontSize.smaller
                         color: Appearance.colors.onSurfaceVariant
                     }
@@ -154,7 +155,7 @@ Item {
 
             NavigationItem {
                 width: parent.width
-                text: "All Playlists"
+                text: qsTr("All Playlists")
                 iconShape: "bun"
                 symbol: "grid_view"
                 selected: root.isSelected(Library.Page.Playlists)
@@ -176,7 +177,7 @@ Item {
                 Reveal.shown: Settings.allPlaylistsExpanded && Library.playlists.count === 0
                 leftPadding: 28
                 height: 28
-                text: "No playlists"
+                text: qsTr("No playlists")
                 font.pixelSize: Appearance.fontSize.smaller
                 color: Appearance.colors.onSurfaceVariant
             }
@@ -280,7 +281,7 @@ Item {
             StyledMenuItem {
                 id: pinItem
                 readonly property bool pinned: Library.pinsRevision >= 0 && Library.isPinned(root.menuPlaylist.id)
-                text: pinned ? "Unpin Playlist" : "Pin Playlist"
+                text: pinned ? qsTr("Unpin Playlist") : qsTr("Pin Playlist")
                 symbol: pinned ? "keep_off" : "keep"
                 onTriggered: {
                     if (!pinItem.pinned) {
@@ -296,7 +297,7 @@ Item {
             StyledMenuItem {
                 visible: root.menuPlaylistEditable
                 height: visible ? implicitHeight : 0
-                text: "Delete Playlist"
+                text: qsTr("Delete Playlist")
                 symbol: "delete"
                 destructive: true
                 onTriggered: UiState.deletePlaylistRequested(root.menuPlaylist)
@@ -311,7 +312,7 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: 8
-        text: "Settings"
+        text: qsTr("Settings")
         iconShape: "cookie12"
         symbol: "settings"
         onClicked: UiState.settingsRequested()

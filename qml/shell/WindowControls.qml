@@ -23,7 +23,7 @@ Row {
         shapeHoverColor: root.scheme.errorContainer
         shapePressedColor: root.scheme.errorContainerActive
         symbol: "close"
-        tooltip: "Close window"
+        tooltip: qsTr("Close window")
         onClicked: root.window.close()
     }
     ToolbarButton {
@@ -33,7 +33,7 @@ Row {
         iconSize: root.compact ? 14 : 16
         shape: "cookie6"
         symbol: root.window.visibility === Window.Maximized ? "close_fullscreen" : "open_in_full"
-        tooltip: root.window.visibility === Window.Maximized ? "Restore" : "Maximize"
+        tooltip: root.window.visibility === Window.Maximized ? qsTr("Restore") : qsTr("Maximize")
         onClicked: root.window.visibility === Window.Maximized ? root.window.showNormal() : root.window.showMaximized()
     }
     ToolbarButton {
@@ -44,7 +44,7 @@ Row {
         shape: "pill"
         turnsOnHover: false
         symbol: "remove"
-        tooltip: "Minimize"
+        tooltip: qsTr("Minimize")
         onClicked: root.window.showMinimized()
     }
 }

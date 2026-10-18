@@ -9,7 +9,7 @@ Rectangle {
 
     property alias text: input.text
     readonly property bool editing: input.activeFocus
-    property string placeholder: "Search"
+    property string placeholder: qsTr("Search")
     signal accepted()
 
     function focusField() {

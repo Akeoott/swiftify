@@ -62,7 +62,7 @@ Item {
             turnsOnHover: false
             enabled: Library.canGoBack
             onClicked: Library.goBack()
-            tooltip: "Back"
+            tooltip: qsTr("Back")
         }
 
         Row {
@@ -81,7 +81,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 symbol: "more_vert"
                 onClicked: playbackMenu.popupAt(overflow, 0, overflow.height)
-                tooltip: "Playback"
+                tooltip: qsTr("Playback")
             }
 
         }
@@ -101,7 +101,7 @@ Item {
                 shape: "clover4"
                 symbol: "add"
                 onClicked: Library.selectedPlaylist.isLocal ? UiState.createLocalPlaylistRequested(null) : UiState.beginCreatePlaylist()
-                tooltip: "New Playlist"
+                tooltip: qsTr("New Playlist")
             }
             ToolbarButton {
                 effect: ToolbarButton.Pop
@@ -111,7 +111,7 @@ Item {
                 shape: "puffy"
                 symbol: "edit"
                 onClicked: UiState.editPlaylistRequested()
-                tooltip: "Edit Playlist"
+                tooltip: qsTr("Edit Playlist")
             }
             ToolbarButton {
                 effect: ToolbarButton.Pop
@@ -122,9 +122,9 @@ Item {
                 symbol: "share"
                 onClicked: {
                     App.copyToClipboard(root.playlistLink);
-                    UiState.toastRequested("Playlist link copied");
+                    UiState.toastRequested(qsTr("Playlist link copied"));
                 }
-                tooltip: "Copy Link"
+                tooltip: qsTr("Copy Link")
             }
             ToolbarButton {
                 id: more
@@ -134,7 +134,7 @@ Item {
                 shape: "sunny"
                 symbol: "more_horiz"
                 onClicked: moreMenu.popupAt(more, 0, more.height)
-                tooltip: "More"
+                tooltip: qsTr("More")
             }
             ToolbarButton {
                 id: sort
@@ -145,7 +145,7 @@ Item {
                 shape: "flower"
                 symbol: "sort"
                 onClicked: sortMenu.popupAt(sort, 0, sort.height)
-                tooltip: "Sort Options"
+                tooltip: qsTr("Sort Options")
             }
         }
     }
@@ -234,7 +234,7 @@ Item {
                 return 0;
             return editing ? Math.max(40, Math.min(340, root.searchRightEdge - root.searchLeftEdge)) : root.reservedSearchWidth;
         }
-        placeholder: root.searching ? "Search Spotify" : "Find in Playlist"
+        placeholder: root.searching ? qsTr("Search Spotify") : qsTr("Find in Playlist")
         text: root.searching ? Library.searchQuery : Library.playlistFilterQuery
         onTextChanged: {
             if (root.searching) {
@@ -263,35 +263,35 @@ Item {
         id: moreMenu
         sourceComponent: StyledMenu {
             StyledMenuItem {
-                text: "New Playlist"
+                text: qsTr("New Playlist")
                 symbol: "add"
                 onTriggered: Library.selectedPlaylist.isLocal ? UiState.createLocalPlaylistRequested(null) : UiState.beginCreatePlaylist()
             }
             StyledMenuItem {
                 visible: Library.selectedPlaylistEditable
                 height: visible ? implicitHeight : 0
-                text: "Edit Playlist"
+                text: qsTr("Edit Playlist")
                 symbol: "edit"
                 onTriggered: UiState.editPlaylistRequested()
             }
             StyledMenuItem {
                 visible: Library.selectedPlaylist.isLocal
                 height: visible ? implicitHeight : 0
-                text: "Add Tracks…"
+                text: qsTr("Add Tracks…")
                 symbol: "playlist_add"
                 onTriggered: trackPicker.pickFiles()
             }
             StyledMenuItem {
                 visible: Library.selectedPlaylist.isLocal
                 height: visible ? implicitHeight : 0
-                text: "Add a Folder…"
+                text: qsTr("Add a Folder…")
                 symbol: "create_new_folder"
                 onTriggered: trackPicker.pickFolder()
             }
             StyledMenuItem {
                 visible: !Library.selectedPlaylist.isLocal
                 height: visible ? implicitHeight : 0
-                text: "Open in Spotify"
+                text: qsTr("Open in Spotify")
                 symbol: "open_in_new"
                 onTriggered: App.openUrl(root.playlistLink)
             }
@@ -302,7 +302,7 @@ Item {
             StyledMenuItem {
                 visible: Library.selectedPlaylistEditable
                 height: visible ? implicitHeight : 0
-                text: "Delete Playlist"
+                text: qsTr("Delete Playlist")
                 symbol: "delete"
                 destructive: true
                 onTriggered: UiState.deletePlaylistRequested(Library.selectedPlaylist)
@@ -317,23 +317,23 @@ Item {
             Repeater {
                 model: [
                     {
-                        label: "Playlist Order",
+                        label: qsTr("Playlist Order"),
                         order: Library.SortOrder.Playlist
                     },
                     {
-                        label: "Title",
+                        label: qsTr("Title"),
                         order: Library.SortOrder.Title
                     },
                     {
-                        label: "Artist",
+                        label: qsTr("Artist"),
                         order: Library.SortOrder.Artist
                     },
                     {
-                        label: "Album",
+                        label: qsTr("Album"),
                         order: Library.SortOrder.Album
                     },
                     {
-                        label: "Time",
+                        label: qsTr("Time"),
                         order: Library.SortOrder.Duration
                     }
                 ]

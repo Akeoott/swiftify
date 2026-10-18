@@ -84,7 +84,7 @@ Flickable {
                 }
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: ["Good morning", "Good afternoon", "Good evening", "Up late..."][greeting.part]
+                    text: [qsTr("Good morning"), qsTr("Good afternoon"), qsTr("Good evening"), qsTr("Up late...")][greeting.part]
                           + "."
                     color: Appearance.colors.onSurfaceVariant
                 }
@@ -105,7 +105,7 @@ Flickable {
                 spacing: 12
                 LoadingSpinner { anchors.horizontalCenter: parent.horizontalCenter }
                 StyledText {
-                    text: "Loading your music…"
+                    text: qsTr("Loading your music…")
                     color: Appearance.colors.onSurfaceVariant
                 }
             }
@@ -220,7 +220,7 @@ Flickable {
                 StyledText {
                     width: parent.width
                     elide: Text.ElideRight
-                    text: root.spotlightIsCurrent && Player.playing ? "NOW PLAYING" : "CONTINUE LISTENING"
+                    text: root.spotlightIsCurrent && Player.playing ? qsTr("NOW PLAYING") : qsTr("CONTINUE LISTENING")
                     font.pixelSize: parent.width < 180 ? Appearance.fontSize.smallest : Appearance.fontSize.smaller
                     font.weight: Font.Bold
                     font.letterSpacing: 0.7
@@ -285,9 +285,9 @@ Flickable {
                         id: resumeLabel
                         visible: resume.width >= 176
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.ceil(Math.max(labelMetrics.advanceWidth("Pause"), labelMetrics.advanceWidth("Resume"),
-                                                  labelMetrics.advanceWidth("Play")))
-                        text: root.spotlightIsCurrent ? (Player.playing ? "Pause" : "Resume") : "Play"
+                        width: Math.ceil(Math.max(labelMetrics.advanceWidth(qsTr("Pause")), labelMetrics.advanceWidth(qsTr("Resume")),
+                                                  labelMetrics.advanceWidth(qsTr("Play"))))
+                        text: root.spotlightIsCurrent ? (Player.playing ? qsTr("Pause") : qsTr("Resume")) : qsTr("Play")
                         font.pixelSize: Appearance.fontSize.normal
                         font.weight: Font.DemiBold
                         animateChange: true
@@ -324,9 +324,9 @@ Flickable {
 
             HomeShortcut {
                 width: parent.sideBySide ? (parent.width - 12) / 2 : parent.width
-                title: "Favourite Songs"
+                title: qsTr("Favourite Songs")
                 // spotify's count, until the list itself has loaded
-                subtitle: Library.savedSongTotal >= 0 ? Library.savedSongTotal + " favourited" : "Made for repeat"
+                subtitle: Library.savedSongTotal >= 0 ? qsTr("Favourited: %1").arg(Library.savedSongTotal) : qsTr("Made for repeat")
                 symbol: "star"
                 iconShape: "heart"
                 keepsShape: true
@@ -334,20 +334,22 @@ Flickable {
             }
             HomeShortcut {
                 width: parent.sideBySide ? (parent.width - 12) / 2 : parent.width
-                title: "Your Playlists"
-                subtitle: Library.playlists.count + " collections to explore"
+                title: qsTr("Your Playlists")
+                subtitle: qsTr("Collections to explore: %1").arg(Library.playlists.count)
                 symbol: "library_music"
                 iconShape: "bun"
                 onClicked: Library.showPlaylists()
             }
         }
 
+
+
         Shelf {
             width: root.width
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             Reveal.shown: Library.pinnedPlaylists.count > 0
-            title: "Pinned Playlists"
+            title: qsTr("Pinned Playlists")
             symbol: "push_pin"
             iconShape: "flower"
             showsSeeAll: true
@@ -369,7 +371,7 @@ Flickable {
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             Reveal.shown: Library.playlists.count > 0
-            title: "Your Playlists"
+            title: qsTr("Your Playlists")
             symbol: "queue_music"
             iconShape: "bun"
             showsSeeAll: true
@@ -391,7 +393,7 @@ Flickable {
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             Reveal.shown: Library.recentlyPlayed.count > 0
-            title: "Recently Played"
+            title: qsTr("Recently Played")
             symbol: "history"
             iconShape: "clamShell"
             model: Library.recentlyPlayed
@@ -413,7 +415,7 @@ Flickable {
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             Reveal.shown: Library.recommendedArtists.count > 0
-            title: "Artists in Your Rotation"
+            title: qsTr("Artists in Your Rotation")
             symbol: "person"
             iconShape: "cookie12"
             model: Math.min(10, Library.recommendedArtists.count)
@@ -434,7 +436,7 @@ Flickable {
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
             Reveal.shown: Library.recommendedAlbums.count > 0
-            title: "Albums From Your Listening"
+            title: qsTr("Albums From Your Listening")
             symbol: "album"
             iconShape: "sunny"
             model: Math.min(10, Library.recommendedAlbums.count)
@@ -452,7 +454,7 @@ Flickable {
             width: root.width
             onScreen: root.reaches(column.y + y, height, 0)
             nearScreen: root.reaches(column.y + y, height, root.height / 2)
-            title: "Explore Genres"
+            title: qsTr("Explore Genres")
             symbol: "explore"
             iconShape: "clover8"
             rowHeight: 120

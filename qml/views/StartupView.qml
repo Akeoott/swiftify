@@ -64,7 +64,7 @@ Item {
 
         StyledText {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Checking your saved Spotify login…"
+            text: qsTr("Checking your saved Spotify login…")
             color: Appearance.colors.onSurfaceVariant
         }
     }

@@ -12,8 +12,8 @@ T.Popup {
     id: root
 
     property int page: 0
-    readonly property list<string> titles: ["Visualizer", "Background", "Playback", "Files", "Appearance", "Performance",
-                                            "Account", "About"]
+    readonly property list<string> titles: [qsTr("Visualizer"), qsTr("Background"), qsTr("Playback"), qsTr("Files"), qsTr("Appearance"), qsTr("Performance"),
+                                            qsTr("Account"), qsTr("About")]
     readonly property list<string> symbols: ["graphic_eq", "wallpaper", "play_circle", "folder", "palette", "speed",
                                              "account_circle", "info"]
     readonly property list<string> shapes: ["sunny", "flower", "cookie9", "softBoom", "clover4", "gem", "cookie12", "heart"]
@@ -62,7 +62,7 @@ T.Popup {
             id: rail
             x: 12
             y: 16
-            width: 80
+            width: 104
             spacing: 4
 
             Repeater {
@@ -117,6 +117,9 @@ T.Popup {
                         }
                         StyledText {
                             anchors.horizontalCenter: parent.horizontalCenter
+                            width: rail.width
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
                             text: root.titles[destination.index]
                             font.pixelSize: Appearance.fontSize.smaller
                             font.weight: destination.selected ? Font.DemiBold : Font.Normal
@@ -192,7 +195,7 @@ T.Popup {
             shape: "cookie6"
             symbol: "close"
             onClicked: root.close()
-            tooltip: "Close"
+            tooltip: qsTr("Close")
         }
     }
 }

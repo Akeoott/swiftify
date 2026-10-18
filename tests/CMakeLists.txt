@@ -14,6 +14,7 @@ endfunction()
 
 swiftify_test(tst_settings)
 swiftify_test(tst_discord FakeCore.h)
+swiftify_test(tst_translations)
 swiftify_test(tst_theme)
 swiftify_test(tst_playback FakeCore.h)
 swiftify_test(tst_palette)
@@ -22,6 +23,9 @@ swiftify_test(tst_covers)
 swiftify_test(tst_views FakeCore.h)
 swiftify_test(tst_local FakeCore.h)
 swiftify_test(tst_session FakeCore.h)
+if(SWIFTIFY_SOLOIST)
+    swiftify_test(tst_soloist FakeCore.h)
+endif()
 # frames are read back through qrhi, which is only offered as a private api
 # only this test binary, which is rebuilt with qt anyway
 set(QT_NO_PRIVATE_MODULE_WARNING ON)
@@ -52,6 +56,8 @@ if(Python3_FOUND AND SWIFTIFY_ICON_CODEPOINTS)
 endif()
 # a script line opening with a bracket runs on from the one before
 if(Python3_FOUND)
+    add_test(NAME translations_catalog
+        COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/check_translations.py ${PROJECT_SOURCE_DIR})
     add_test(NAME qml_statements
         COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/check_qml_statements.py ${PROJECT_SOURCE_DIR}/qml)
 endif()

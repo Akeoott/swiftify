@@ -10,12 +10,12 @@ SongListPage {
     loading: Library.loadingSavedSongs && Library.savedSongs.count === 0
     showsEmpty: Library.savedSongs.count === 0
     emptySymbol: "star"
-    emptyTitle: "No Saved Songs"
-    emptyDescription: "Save tracks from Search or a playlist."
+    emptyTitle: qsTr("No Saved Songs")
+    emptyDescription: qsTr("Save tracks from Search or a playlist.")
 
     hero: CollectionHero {
         kind: "PLAYLIST"
-        title: "Favourite Songs"
+        title: qsTr("Favourite Songs")
         facts: Format.joined([Format.songCount(Library.savedSongs.count), Format.totalDuration(Library.savedSongs.totalDurationMs)], "  •  ")
 
         artwork: Rectangle {
@@ -50,7 +50,7 @@ SongListPage {
                 wavy: true
                 symbol: "play_arrow"
                 burst: "play"
-                text: "Play"
+                text: qsTr("Play")
                 enabled: Library.savedSongs.count > 0
                 onClicked: Player.playFromModel(Library.savedSongs, 0)
             }

@@ -60,7 +60,7 @@ StyledDialog {
         }, pickedCover ?? new ArrayBuffer(0), removingCover && pickedCover === null)
     }
 
-    headline: "Edit Info"
+    headline: qsTr("Edit Info")
     symbol: "edit_note"
     iconShape: "puffy"
     preferredWidth: 480
@@ -74,7 +74,7 @@ StyledDialog {
             }
             root.saving = false
             if (ok) {
-                UiState.toastRequested("Saved to the file")
+                UiState.toastRequested(qsTr("Saved to the file"))
                 root.accept()
             } else {
                 root.problem = error
@@ -88,7 +88,7 @@ StyledDialog {
 
     FileDialog {
         id: picker
-        title: "Choose Cover Art"
+        title: qsTr("Choose Cover Art")
         nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.gif *.bmp *.tif *.tiff *.avif *.heic)"]
         onAccepted: {
             maker.photo = selectedFile
@@ -96,7 +96,7 @@ StyledDialog {
                 root.problem = ""
                 cropper.begin()
             } else {
-                root.problem = "That image could not be used as cover art."
+                root.problem = qsTr("That image could not be used as cover art.")
             }
         }
     }
@@ -167,13 +167,13 @@ StyledDialog {
                 variant: TextButton.Tonal
                 symbol: "add_photo_alternate"
                 text: root.pickedCover !== null || (root.currentCover.toString().length > 0 && !root.removingCover)
-                      ? "Change Cover…" : "Add Cover…"
+                      ? qsTr("Change Cover…") : qsTr("Add Cover…")
                 onClicked: picker.open()
             }
             TextButton {
                 variant: TextButton.Text
                 symbol: "hide_image"
-                text: "Remove Cover"
+                text: qsTr("Remove Cover")
                 visible: root.pickedCover !== null || (root.currentCover.toString().length > 0 && !root.removingCover)
                 onClicked: {
                     root.pickedCover = null
@@ -195,28 +195,28 @@ StyledDialog {
     OutlinedTextField {
         id: titleField
         width: parent.width
-        placeholder: "Title"
+        placeholder: qsTr("Title")
         onAccepted: root.save()
     }
 
     OutlinedTextField {
         id: artistField
         width: parent.width
-        placeholder: "Artist"
+        placeholder: qsTr("Artist")
         onAccepted: root.save()
     }
 
     OutlinedTextField {
         id: albumField
         width: parent.width
-        placeholder: "Album"
+        placeholder: qsTr("Album")
         onAccepted: root.save()
     }
 
     OutlinedTextField {
         id: albumArtistField
         width: parent.width
-        placeholder: "Album Artist"
+        placeholder: qsTr("Album Artist")
         onAccepted: root.save()
     }
 
@@ -227,13 +227,13 @@ StyledDialog {
         OutlinedTextField {
             id: genreField
             width: (parent.width - parent.spacing) / 2
-            placeholder: "Genre"
+            placeholder: qsTr("Genre")
             onAccepted: root.save()
         }
         OutlinedTextField {
             id: dateField
             width: (parent.width - parent.spacing) / 2
-            placeholder: "Year"
+            placeholder: qsTr("Year")
             onAccepted: root.save()
         }
     }
@@ -245,14 +245,14 @@ StyledDialog {
         OutlinedTextField {
             id: trackField
             width: (parent.width - parent.spacing) / 2
-            placeholder: "Track"
+            placeholder: qsTr("Track")
             inputItem.inputMethodHints: Qt.ImhDigitsOnly
             onAccepted: root.save()
         }
         OutlinedTextField {
             id: discField
             width: (parent.width - parent.spacing) / 2
-            placeholder: "Disc"
+            placeholder: qsTr("Disc")
             inputItem.inputMethodHints: Qt.ImhDigitsOnly
             onAccepted: root.save()
         }
@@ -260,14 +260,14 @@ StyledDialog {
 
     buttons: [
         TextButton {
-            text: "Save"
+            text: qsTr("Save")
             busy: root.saving
             enabled: !root.saving
             onClicked: root.save()
         },
         TextButton {
             variant: TextButton.Text
-            text: "Cancel"
+            text: qsTr("Cancel")
             onClicked: root.close()
         }
     ]

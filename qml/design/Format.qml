@@ -19,14 +19,14 @@ QtObject {
         const hours = Math.floor(totalMinutes / 60)
         const minutes = totalMinutes % 60
         if (hours > 0) {
-            return minutes > 0 ? hours + " hr " + minutes + " min" : hours + " hr"
+            return minutes > 0 ? hours + qsTr(" hr ") + minutes + qsTr(" min") : hours + qsTr(" hr")
         }
-        return minutes + " min"
+        return minutes + qsTr(" min")
     }
 
     /// "12 songs", "1 song"
     function songCount(count: int): string {
-        return count + (count === 1 ? " song" : " songs")
+        return count === 1 ? qsTr("%n song", "", count) : qsTr("%n songs", "", count)
     }
 
     function joined(parts: list<string>, separator: string): string {
@@ -45,12 +45,12 @@ QtObject {
     /// decimal place below a hundred
     function fileSize(bytes: real): string {
         if (bytes <= 0) {
-            return "Zero KB"
+            return qsTr("Zero KB")
         }
         if (bytes < 1000) {
-            return Math.round(bytes) + " bytes"
+            return Math.round(bytes) + qsTr(" bytes")
         }
-        const units = ["KB", "MB", "GB", "TB"]
+        const units = [qsTr("KB"), qsTr("MB"), qsTr("GB"), qsTr("TB")]
         let value = bytes / 1000
         let unit = 0
         while (value >= 1000 && unit < units.length - 1) {

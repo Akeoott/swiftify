@@ -46,17 +46,6 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
 
 ## Building from source
 
-### Generated fallback covers
-
-Missing or failed artwork uses a deterministic abstract sleeve instead of the
-stock gradient/music-note tile. Playlist IDs keep each design stable across the
-grid, hero and sidebar. The raster artwork is cached, respects light/dark mode,
-and adds no animation or idle-frame work. Genuine and custom artwork is unchanged.
-
-Native component previews: [dark](docs/screenshots/fallback-cards-native-dark.png),
-[light](docs/screenshots/fallback-cards-native-light.png),
-[narrow](docs/screenshots/fallback-cards-native-narrow.png).
-
 ### Build requirements
 
 - Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools

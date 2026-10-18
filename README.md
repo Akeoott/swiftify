@@ -83,6 +83,14 @@ Translations use Qt `qsTr` / `qsTranslate` and an embedded UTF-8 catalog at
 `translations/ru.json`; no additional Linguist tools are required. Russian plural
 entries contain three forms (one, few, many).
 
+### Full-screen visualizers
+
+**Settings → Visualizer → Full-screen player visualizer** controls the immersive
+bars/wave, artwork ring and the live spectrum behind the equalizer independently
+of the player-bar and track-list meters. The same switch is available at the top
+of the full-screen Sound panel. The global visualizer switch still takes priority.
+Decorative progress-bar shapes and the live background have their own settings.
+
 ### Build requirements
 
 - Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools, and on linux Qt WebSockets (for soloist)

@@ -18,23 +18,25 @@
 #include <dwmapi.h>
 #include <shobjidl.h>
 
+#ifdef SWIFTIFY_HAVE_SMTC
+// mingw-w64's windows.foundation.h specialises IReference for BYTE and for
+// boolean, which it also makes an unsigned char; nothing here uses either
+#ifdef __MINGW32__
+#define ____FIReference_1_boolean_INTERFACE_DEFINED__
+#endif
 #include <roapi.h>
 #include <winstring.h>
 #include <wrl/client.h>
-#include <wrl/event.h>
 #include <wrl/wrappers/corewrappers.h>
 #include <windows.media.h>
 #include <systemmediatransportcontrolsinterop.h>
+#endif
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cwchar>
-
-#ifndef IID_ISystemMediaTransportControlsInterop
-static const GUID IID_ISystemMediaTransportControlsInterop = {
-    0xcda0807a, 0x4416, 0x4121, {0x94, 0x07, 0xda, 0x86, 0x9e, 0x99, 0x5e, 0x95}
-};
-#endif
+#include <functional>
 
 namespace swiftify {
 
@@ -54,6 +56,61 @@ COLORREF nativeColor(const QColor &color)
     return RGB(color.red(), color.green(), color.blue());
 }
 
+#ifdef SWIFTIFY_HAVE_SMTC
+// the media buttons' handler, written out by hand: wrl's Callback lives in
+// <wrl/event.h>, which only msvc's sdk ships, and mingw has to build this too
+using ButtonPressedHandler = ABI::Windows::Foundation::ITypedEventHandler<
+    ABI::Windows::Media::SystemMediaTransportControls *,
+    ABI::Windows::Media::SystemMediaTransportControlsButtonPressedEventArgs *>;
+
+class ButtonPressedCallback final : public ButtonPressedHandler
+{
+public:
+    using Function = std::function<void(ABI::Windows::Media::SystemMediaTransportControlsButton)>;
+
+    explicit ButtonPressedCallback(Function function)
+        : m_function(std::move(function))
+    {
+    }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **object) override
+    {
+        if (!object) return E_POINTER;
+        if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IAgileObject)
+            || IsEqualIID(riid, __uuidof(ButtonPressedHandler))) {
+            *object = static_cast<ButtonPressedHandler *>(this);
+            AddRef();
+            return S_OK;
+        }
+        *object = nullptr;
+        return E_NOINTERFACE;
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override { return ++m_references; }
+
+    ULONG STDMETHODCALLTYPE Release() override
+    {
+        const ULONG remaining = --m_references;
+        if (remaining == 0) delete this;
+        return remaining;
+    }
+
+    HRESULT STDMETHODCALLTYPE Invoke(ABI::Windows::Media::ISystemMediaTransportControls *,
+                                     ABI::Windows::Media::ISystemMediaTransportControlsButtonPressedEventArgs *args) override
+    {
+        ABI::Windows::Media::SystemMediaTransportControlsButton button;
+        if (args && SUCCEEDED(args->get_Button(&button))) {
+            m_function(button);
+        }
+        return S_OK;
+    }
+
+private:
+    std::atomic<ULONG> m_references {1};
+    Function m_function;
+};
+#endif
+
 } // namespace
 
 struct WindowsIntegration::Native {
@@ -65,8 +122,10 @@ struct WindowsIntegration::Native {
     HWND handle = nullptr;
     std::array<HICON, 4> icons {};
 
+#ifdef SWIFTIFY_HAVE_SMTC
     Microsoft::WRL::ComPtr<ABI::Windows::Media::ISystemMediaTransportControls> controls;
     EventRegistrationToken buttonToken {};
+#endif
 
     Native()
     {
@@ -82,6 +141,7 @@ struct WindowsIntegration::Native {
 
     void cleanupMediaControls()
     {
+#ifdef SWIFTIFY_HAVE_SMTC
         if (controls) {
             if (buttonToken.value != 0) {
                 controls->remove_ButtonPressed(buttonToken);
@@ -90,6 +150,7 @@ struct WindowsIntegration::Native {
             controls->put_IsEnabled(false);
             controls.Reset();
         }
+#endif
     }
 
     ~Native()
@@ -427,6 +488,7 @@ bool WindowsIntegration::nativeEventFilter(const QByteArray &eventType, void *me
     return false;
 }
 
+#ifdef SWIFTIFY_HAVE_SMTC
 void WindowsIntegration::initializeMediaControls()
 {
     if (!m_window || !m_native || !m_window->handle()) return;
@@ -435,7 +497,6 @@ void WindowsIntegration::initializeMediaControls()
 
     using namespace ABI::Windows::Media;
     using namespace ABI::Windows::Foundation;
-    using Microsoft::WRL::Callback;
     using Microsoft::WRL::ComPtr;
     using Microsoft::WRL::Wrappers::HStringReference;
 
@@ -457,20 +518,15 @@ void WindowsIntegration::initializeMediaControls()
     m_native->controls->put_IsPreviousEnabled(true);
 
     m_native->buttonToken.value = 0;
-    m_native->controls->add_ButtonPressed(
-        Callback<ITypedEventHandler<SystemMediaTransportControls*, SystemMediaTransportControlsButtonPressedEventArgs*>>(
-            [this](ISystemMediaTransportControls *, ISystemMediaTransportControlsButtonPressedEventArgs *args) -> HRESULT {
-                SystemMediaTransportControlsButton button;
-                if (args && SUCCEEDED(args->get_Button(&button))) {
-                    QMetaObject::invokeMethod(this, [this, button] {
-                        handleMediaButton(int(button));
-                    }, Qt::QueuedConnection);
-                }
-                return S_OK;
-            }
-        ).Get(),
-        &m_native->buttonToken
-    );
+    // the buttons are pressed on a thread of windows' own; the press is
+    // queued onto this one
+    ComPtr<ButtonPressedHandler> handler;
+    handler.Attach(new ButtonPressedCallback([this](SystemMediaTransportControlsButton button) {
+        QMetaObject::invokeMethod(this, [this, button] {
+            handleMediaButton(int(button));
+        }, Qt::QueuedConnection);
+    }));
+    m_native->controls->add_ButtonPressed(handler.Get(), &m_native->buttonToken);
 
     updateMediaMetadata();
     updateMediaControls();
@@ -553,10 +609,12 @@ void WindowsIntegration::updateMediaMetadata()
         artist.Set(reinterpret_cast<const wchar_t *>(song.artists.utf16()), UINT32(song.artists.length()));
         music->put_Artist(artist.Get());
 
-        if (!song.albumName.isEmpty()) {
+        // the album title came in the interface's second version
+        ComPtr<IMusicDisplayProperties2> music2;
+        if (!song.albumName.isEmpty() && SUCCEEDED(music.As(&music2)) && music2) {
             HString album;
             album.Set(reinterpret_cast<const wchar_t *>(song.albumName.utf16()), UINT32(song.albumName.length()));
-            music->put_AlbumTitle(album.Get());
+            music2->put_AlbumTitle(album.Get());
         }
     }
 
@@ -583,5 +641,12 @@ void WindowsIntegration::updateMediaMetadata()
 
     updater->Update();
 }
+#else
+// built without the media controls: the headers had no declarations for them
+void WindowsIntegration::initializeMediaControls() {}
+void WindowsIntegration::handleMediaButton(int) {}
+void WindowsIntegration::updateMediaControls() {}
+void WindowsIntegration::updateMediaMetadata() {}
+#endif
 
 } // namespace swiftify

@@ -283,6 +283,38 @@ target_link_libraries(swiftify_app PUBLIC
 
 if(WIN32)
     target_link_libraries(swiftify_app PUBLIC Qt6::Widgets comctl32 dwmapi ole32 shell32 uuid runtimeobject)
+
+    # older mingw-w64 headers (qt's bundled mingw 13.1, say) have no
+    # SystemMediaTransportControls in windows.media.h; the media controls are
+    # left out there, and the taskbar and window styling still build
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_LIBRARIES runtimeobject)
+    check_cxx_source_compiles([=[
+        #ifdef __MINGW32__
+        #define ____FIReference_1_boolean_INTERFACE_DEFINED__
+        #endif
+        #include <windows.h>
+        #include <roapi.h>
+        #include <windows.media.h>
+        #include <systemmediatransportcontrolsinterop.h>
+        using Handler = ABI::Windows::Foundation::ITypedEventHandler<
+            ABI::Windows::Media::SystemMediaTransportControls *,
+            ABI::Windows::Media::SystemMediaTransportControlsButtonPressedEventArgs *>;
+        int main()
+        {
+            ABI::Windows::Media::ISystemMediaTransportControls *controls = nullptr;
+            ABI::Windows::Media::IMusicDisplayProperties2 *music = nullptr;
+            ISystemMediaTransportControlsInterop *interop = nullptr;
+            Handler *handler = nullptr;
+            return __uuidof(Handler).Data1 != 0 && !controls && !music && !interop && !handler ? 0 : 1;
+        }
+    ]=] SWIFTIFY_HAVE_SMTC)
+    unset(CMAKE_REQUIRED_LIBRARIES)
+    if(SWIFTIFY_HAVE_SMTC)
+        target_compile_definitions(swiftify_app PRIVATE SWIFTIFY_HAVE_SMTC)
+    else()
+        message(STATUS "windows.media.h has no SystemMediaTransportControls; building without media controls")
+    endif()
 endif()
 
 qt_add_executable(swiftify src/main.cpp)

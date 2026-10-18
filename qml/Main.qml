@@ -861,6 +861,11 @@ ApplicationWindow {
         enabled: Library.canGoBack && !UiState.immersiveOpen
         onActivated: Library.goBack()
     }
+    TapHandler {
+        acceptedButtons: Qt.BackButton
+        enabled: Library.canGoBack && !UiState.immersiveOpen
+        onTapped: Library.goBack()
+    }
 
     Shortcut { sequences: [StandardKey.Find]; enabled: !App.macOS; onActivated: topBar.focusSearch() }
 

@@ -93,7 +93,7 @@ For more verbose logging run swiftify with `QT_LOGGING_RULES="swiftify.discord.d
 
 - **windows.** unzip it anywhere and run `bin\swiftify.exe`.
 - **linux.** unpack it anywhere and run `bin/swiftify`. it brings its own Qt, but needs
-  libpulse, alsa, openssl and libsecret, which pretty much every desktop already has.
+  alsa and libsecret, which pretty much every desktop already has.
 
 ## Building from source
 

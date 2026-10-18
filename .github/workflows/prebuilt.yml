@@ -16,9 +16,6 @@ on:
 permissions:
   contents: read
 
-env:
-  QT_VERSION: 6.12.0
-
 jobs:
   windows:
     # windows-2025 and windows-latest come with visual studio 2026, which
@@ -38,9 +35,11 @@ jobs:
           fi
           echo "name=swiftify-$version-windows-x86_64" >> "$GITHUB_OUTPUT"
 
+      # qt 6.11 and newer split the windows repository by compiler, which aqt
+      # 3.3 cannot read yet. 6.10 is the newest it can
       - uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4.4.1
         with:
-          version: ${{ env.QT_VERSION }}
+          version: 6.10.3
           arch: win64_msvc2022_64
           modules: qtshadertools
           cache: true
@@ -103,7 +102,7 @@ jobs:
 
       - uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4.4.1
         with:
-          version: ${{ env.QT_VERSION }}
+          version: 6.12.0
           arch: linux_gcc_64
           # soloist, which is only built for linux, talks to spotify's soloist over websockets
           modules: qtshadertools qtwebsockets

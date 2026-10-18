@@ -8,8 +8,8 @@
 #
 # needs cmake, ninja, git, curl, a c++20 compiler (CC and CXX are used when
 # set), rust from rustup, and the dev packages for libpulse, alsa, openssl and
-# libsecret. the tarball still needs libpulse, alsa, openssl and libsecret on
-# the machine it runs on, every desktop has them
+# libsecret. the tarball still needs alsa and libsecret on the machine it
+# runs on, every desktop has them
 
 set -euo pipefail
 
@@ -117,9 +117,12 @@ export QMAKE="$QT/bin/qmake"
 export QML_SOURCES_PATHS="$SOURCE/qml"
 export EXTRA_PLATFORM_PLUGINS="libqwayland.so"
 export LD_LIBRARY_PATH="$DEPS/lib:$QT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-# the linuxdeploy plugin is found next to linuxdeploy, by its name
+# the linuxdeploy plugin is found next to linuxdeploy, by its name.
+# qtkeychain is named outright, linuxdeploy's own pass does not look in
+# LD_LIBRARY_PATH and drops a library it cannot find without a word
 PATH="$WORK/tools:$PATH" "$WORK/tools/linuxdeploy-x86_64.AppImage" \
-    --appdir "$APPDIR" --executable "$APPDIR/usr/bin/swiftify" "${wayland[@]}" --plugin qt
+    --appdir "$APPDIR" --executable "$APPDIR/usr/bin/swiftify" \
+    --library "$DEPS/lib/libqt6keychain.so.1" "${wayland[@]}" --plugin qt
 
 # the tarball is the usr tree: bin, lib, plugins, qml and share. the fonts are
 # found from bin/../share and qt from bin/qt.conf, so it runs from anywhere
@@ -128,5 +131,16 @@ PATH="$WORK/tools:$PATH" "$WORK/tools/linuxdeploy-x86_64.AppImage" \
 [[ -f "$APPDIR/usr/plugins/tls/libqopensslbackend.so" ]] || fail "the openssl tls plugin is missing"
 rm -rf "${WORK:?}/${NAME:?}"
 cp -a "$APPDIR/usr" "$WORK/$NAME"
+
+# everything in it has to find its libraries in the tarball or the system,
+# with none of the build's own paths
+missing=""
+while IFS= read -r -d '' file; do
+    if file "$file" | grep -q ELF; then
+        unresolved="$(env -u LD_LIBRARY_PATH ldd "$file" 2>/dev/null | grep "not found" || true)"
+        [[ -z "$unresolved" ]] || missing+="${file#"$WORK/"}"$'\n'"$unresolved"$'\n'
+    fi
+done < <(find "$WORK/$NAME" -type f \( -path '*/bin/*' -o -name '*.so*' \) -print0)
+[[ -z "$missing" ]] || fail "libraries missing from the tarball"$'\n'"$missing"
 tar -C "$WORK" -czf "$OUT/$NAME.tar.gz" "$NAME"
 echo "built $OUT/$NAME.tar.gz"

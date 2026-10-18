@@ -14,6 +14,8 @@ T.AbstractButton {
 
     enabled: !current
     hoverEnabled: true
+    // click focus would let other mouse buttons grab and press it
+    focusPolicy: Qt.TabFocus
     padding: 8
     leftPadding: 12
     rightPadding: 12

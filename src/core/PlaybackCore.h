@@ -5,6 +5,8 @@
 #include <QStringList>
 #include <QCoroTask>
 
+#include "spotify/SpotifyTypes.h"
+
 /// audio another program plays, as the rust core takes it (swiftify_core.h)
 struct SwiftifyLiveBuffer;
 
@@ -70,11 +72,23 @@ public:
     /// the rate live audio plays at without being resampled; 0 if unknown
     virtual quint32 liveOutputRate() const { return 0; }
 
+    /// skips within what something else started on this core (a song picked
+    /// in spotify on a phone, playing through a connect device), which goes
+    /// on by its own queue. false if nothing else is in charge here
+    virtual bool skipRemote(bool /*forward*/) { return false; }
+
     virtual void setSpectrumEnabled(bool enabled) = 0;
     /// copies up to `capacity` band levels, 0...1; returns how many
     virtual int spectrumLevels(float *out, int capacity) const = 0;
 
     static constexpr int kSpectrumBands = 48;
+
+signals:
+    /// something other than swiftify started `song` here, and what follows
+    /// it is up to that, until swiftify plays something again
+    void remoteTrackStarted(const swiftify::Song &song);
+    /// playback here was paused or resumed from elsewhere
+    void remotePlayingChanged(bool playing);
 };
 
 } // namespace swiftify

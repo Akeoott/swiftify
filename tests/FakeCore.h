@@ -150,6 +150,16 @@ public:
     bool takeEndOfTrack() override { return std::exchange(endOfTrack, false); }
 
     void setSpectrumEnabled(bool enabled) override { spectrumEnabled = enabled; }
+    /// something else started what plays, and takes the skips
+    bool remote = false;
+    bool skipRemote(bool forward) override
+    {
+        if (remote) {
+            log << (forward ? QStringLiteral("skip next") : QStringLiteral("skip previous"));
+        }
+        return remote;
+    }
+
     int spectrumLevels(float *out, int capacity) const override
     {
         std::fill(out, out + capacity, 0.0f);

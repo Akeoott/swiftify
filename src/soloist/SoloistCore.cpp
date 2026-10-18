@@ -22,6 +22,11 @@
 #include <chrono>
 #include <cmath>
 
+#ifdef Q_OS_LINUX
+#include <csignal>
+#include <sys/prctl.h>
+#endif
+
 Q_LOGGING_CATEGORY(lcSoloist, "swiftify.soloist")
 
 namespace swiftify {
@@ -63,6 +68,11 @@ SoloistCore::SoloistCore(PlaybackCore *fallback, SoloistConfig config, QObject *
     , m_liveBuffer(nullptr, &swiftify_live_buffer_free)
 {
     m_process.setProcessChannelMode(QProcess::MergedChannels);
+#ifdef Q_OS_LINUX
+    // soloist goes with a swiftify that crashes or is killed too. one left
+    // behind holds the data directory, and the next soloist will not start
+    m_process.setChildProcessModifier([] { ::prctl(PR_SET_PDEATHSIG, SIGTERM); });
+#endif
     connect(&m_process, &QProcess::readyRead, this, [this] {
         const QString output = QString::fromUtf8(m_process.readAll());
         for (const QStringView line : QStringView(output).split(u'\n', Qt::SkipEmptyParts)) {

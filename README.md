@@ -44,6 +44,8 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   add `http://127.0.0.1:8898/login` as a redirect uri, and paste the apps client id
   into swiftify. you dont need the client secret.
 
+## Tutorials
+
 ### "spotify could not load this track" (soloist)
 
 spotify refuses librespot the keys to decrypt songs on newer accounts (librespot's
@@ -71,51 +73,20 @@ download a new one when it says so.
 if spotify on your phone doesnt list "Swiftify" for step 3, a firewall (ufw) is probably
 dropping the pairing connection; pair from the spotify desktop app on the same computer.
 
+### Discord RPC
+
+Enable under Settings → Account → Discord Rich Presence (disabled by default) to broadcast 
+your current track, artist, public album cover, and playback status to the Discord desktop app.
+This uses a standard listening activity named Swiftify; pauses freeze progress and display Paused. 
+Because this uses custom RPC rather than Spotify's official account integration, Listen Along is not supported.
+Ensure Discord’s own activity privacy settings allow game/activity status.
+To use Discord RPC you need to create an application on [Discord's Developer Portal](https://discord.com/developers/applications)
+and copy it's ID into the settings. Swiftify connects over local IPC (Unix sockets or Windows named pipes) with zero external
+SDKs and automatic reconnection.
+It checks standard paths for native, Flatpak, Snap, Canary, PTB, and third-party clients like Vesktop.
+For more verbose logging run swiftify with `QT_LOGGING_RULES="swiftify.discord.debug=true"`
+
 ## Building from source
-
-### Discord Rich Presence
-
-**Settings → Account → Discord Rich Presence** optionally shares the current track,
-artist, public Spotify cover and progress with the running Discord **desktop** app.
-It is off by default. Activity requests use the listening type and the name
-**Swiftify**. A pause keeps the track visible with **Paused**, without
-running timestamps; resuming restores progress. Disabling RPC clears the activity.
-This is Rich Presence, not Spotify's official linked-account activity; it does not
-enable Listen Along. Some Discord versions may prefer the application's registered
-name over the requested activity name; in that case, name your registered
-application Swiftify in the Developer Portal. Discord's own activity privacy
-settings must also allow displaying activity.
-
-This build has no shared Discord application registered for Swiftify yet. Create
-an application named Swiftify at <https://discord.com/developers/applications> and
-paste its numeric **Application ID** into the field, then press Enter or leave the
-field. This is a public identifier, **not** a bot token, client secret, or Spotify
-Client ID. Applications such as Sonora ship their developer's shared Application ID,
-which is why their users don't need this step; do not reuse another app's ID.
-
-RPC uses local IPC and automatically reconnects when Discord starts again. There
-is no additional SDK or dependency. Local file paths and private cover URLs are
-never included. The RPC protocol has automated tests against a fake local Discord
-server; the transport fixtures support Unix sockets and Windows named pipes.
-Testing the real Discord status requires a valid application ID and Discord.
-
-On Linux, native sockets and common Flatpak/Canary/PTB/Vesktop/Snap layouts are
-searched under the runtime and temporary directories. Sandbox permissions still
-need to allow communication, and clients such as Vesktop need their RPC integration
-enabled. Account settings distinguish missing sockets, permission failures, handshake
-timeouts and Discord rejection codes instead of silently retrying every failure.
-For transport diagnostics, launch with `QT_LOGGING_RULES="swiftify.discord.debug=true"`;
-logs contain only transport/error codes, not activity payloads or credentials.
-
-### Interface language
-
-In **Settings → Appearance → Language**, choose **System**, **English**, or
-**Русский**. The preference is saved and applies immediately, without restarting.
-Track metadata, playlist names, search queries and custom preset names are not translated.
-
-Translations use Qt `qsTr` / `qsTranslate` and an embedded UTF-8 catalog at
-`translations/ru.json`; no additional Linguist tools are required. Russian plural
-entries contain three forms (one, few, many).
 
 ### Build requirements
 

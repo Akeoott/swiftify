@@ -357,6 +357,7 @@ Flickable {
                 required property int index
                 readonly property playlist playlist: Library.pinnedPlaylists.at(index)
                 artworkUrl: playlist.artworkUrl
+                fallbackKey: playlist.id.length > 0 ? playlist.id : playlist.name
                 title: playlist.name
                 subtitle: playlist.ownerDisplayName
                 onClicked: Library.selectPlaylist(playlist)
@@ -378,6 +379,7 @@ Flickable {
                 required property int index
                 readonly property playlist playlist: Library.playlists.at(index)
                 artworkUrl: playlist.artworkUrl
+                fallbackKey: playlist.id.length > 0 ? playlist.id : playlist.name
                 title: playlist.name
                 subtitle: playlist.ownerDisplayName
                 onClicked: Library.selectPlaylist(playlist)

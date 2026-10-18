@@ -64,6 +64,9 @@ struct ViewRig {
 
     ViewRig()
     {
+        // Fallback sleeves use the same image provider as ordinary covers.
+        // Install it just as main() does, even when a fixture has no remote art.
+        engine.addImageProvider(QStringLiteral("art"), new ArtworkImageProvider);
         library.attachPlayer(&player);
         library.attachLocalFiles(&localFiles);
         window->resize(kSize);

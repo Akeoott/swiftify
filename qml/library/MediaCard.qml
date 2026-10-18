@@ -12,6 +12,7 @@ T.AbstractButton {
     /// what shows in place of a cover it has not got
     property string placeholderSymbol: "music_note"
     property string title
+    property string fallbackKey: title
     property string subtitle
     property bool circular: false
     property bool current: false
@@ -46,6 +47,7 @@ T.AbstractButton {
             height: root.artworkSize
             source: root.artworkUrl
             placeholderSymbol: root.placeholderSymbol
+            fallbackKey: root.fallbackKey
             circular: root.circular
             current: root.current
             badgeSymbol: root.badgeSymbol

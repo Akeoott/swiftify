@@ -1,7 +1,14 @@
 #include "artwork/PlaylistCovers.h"
+#include "artwork/ArtworkCache.h"
 
 #include <QBuffer>
 #include <QImageReader>
+#include <QPainter>
+#include <QPainterPath>
+#include <QDir>
+#include <QNetworkAccessManager>
+#include <QTemporaryDir>
+#include <QUrlQuery>
 #include <QTest>
 
 #include <random>
@@ -14,6 +21,128 @@ class CoversTest : public QObject {
     Q_OBJECT
 
 private slots:
+    void fallbackCacheAndRealArtwork()
+    {
+        QNetworkAccessManager network;
+        ArtworkCache cache(&network);
+        const QString identity = QString::fromUtf8("local:Тихий вечер & + # / 🌙");
+        QUrl url(QStringLiteral("swiftify-cover:/dark"));
+        QUrlQuery query;
+        query.addQueryItem(QStringLiteral("key"), identity);
+        url.setQuery(query);
+        QImage generated;
+        cache.image(url, 40, [&](const QImage &image) { generated = image; });
+        QTRY_VERIFY(!generated.isNull());
+        QCOMPARE(generated, covers::fallback(identity, true, ArtworkCache::bucket(40)));
+        // Same URL and size bucket is a synchronous memory-cache hit.
+        bool cached = false;
+        cache.image(url, 48, [&](const QImage &image) {
+            cached = true;
+            QCOMPARE(image, generated);
+        });
+        QVERIFY(cached);
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        QImage photo(64, 64, QImage::Format_ARGB32_Premultiplied);
+        photo.fill(QColor("#28518a"));
+        const QString path = directory.filePath(QStringLiteral("chosen-cover.png"));
+        QVERIFY(photo.save(path));
+        QImage loaded;
+        cache.image(QUrl::fromLocalFile(path), 64, [&](const QImage &image) { loaded = image; });
+        QTRY_VERIFY(!loaded.isNull());
+        QCOMPARE(loaded, photo);
+        bool failed = false;
+        cache.image(QUrl::fromLocalFile(directory.filePath(QStringLiteral("missing.png"))), 64,
+                    [&](const QImage &image) { failed = true; QVERIFY(image.isNull()); });
+        QTRY_VERIFY(failed);
+    }
+
+    void fallbackIsStableAndVaried()
+    {
+        QSet<QByteArray> sleeves;
+        for (int index = 0; index < 24; ++index) {
+            const QString key = QStringLiteral("local:playlist-%1").arg(index);
+            const QImage image = covers::fallback(key, true, 192);
+            QCOMPARE(image, covers::fallback(key, true, 192));
+            QCOMPARE(image.size(), QSize(192, 192));
+            QVERIFY(image != covers::fallback(key, false, 192));
+            sleeves.insert(QByteArray(reinterpret_cast<const char *>(image.constBits()), image.sizeInBytes()));
+            // At navigation sizes both the ink ground and printed shape survive.
+            const QImage small = covers::fallback(key, true, 40);
+            int minimum = 255;
+            int maximum = 0;
+            for (int y = 0; y < 40; ++y) {
+                for (int x = 0; x < 40; ++x) {
+                    const QColor color = small.pixelColor(x, y);
+                    QCOMPARE(color.alpha(), 255);
+                    minimum = std::min(minimum, qGray(color.rgb()));
+                    maximum = std::max(maximum, qGray(color.rgb()));
+                }
+            }
+            QVERIFY(maximum - minimum > 70);
+        }
+        QCOMPARE(sleeves.size(), 24);
+        const QString unicode = QString::fromUtf8("Тихий вечер 🌙");
+        QCOMPARE(covers::fallback(unicode, true, 64), covers::fallback(unicode, true, 64));
+        QVERIFY(covers::fallback({}, true, 0).isNull());
+        QVERIFY(!covers::fallback({}, false, 64).isNull());
+    }
+
+    void fallbackContactSheet()
+    {
+        // Opt-in native QPainter preview, with the production rasterizer and
+        // card proportions. No files are written during an ordinary test run.
+        const QString directory = qEnvironmentVariable("SWIFTIFY_COVER_PREVIEW_DIR");
+        if (directory.isEmpty()) {
+            return;
+        }
+        QVERIFY(QDir().mkpath(directory));
+        const QStringList titles = {QStringLiteral("Quiet mornings"), QString::fromUtf8("Тихий вечер"),
+                                    QStringLiteral("Side streets"), QStringLiteral("Soft focus"),
+                                    QStringLiteral("Sunday ritual"), QStringLiteral("After hours")};
+        const QStringList keys = {QStringLiteral("local:playlist-0"), QStringLiteral("local:playlist-1"),
+                                  QStringLiteral("local:playlist-2"), QStringLiteral("local:playlist-3"),
+                                  QStringLiteral("local:playlist-4"), QStringLiteral("local:playlist-5")};
+        for (const bool dark : {true, false}) {
+            QImage sheet(1120, 884, QImage::Format_RGB32);
+            sheet.fill(QColor(dark ? "#191619" : "#faf4f1"));
+            QPainter painter(&sheet);
+            QFont font;
+            font.setPixelSize(30);
+            font.setWeight(QFont::DemiBold);
+            painter.setFont(font);
+            painter.setPen(QColor(dark ? "#f2e5e9" : "#2b2327"));
+            painter.drawText(QRect(48, 30, 1000, 48), Qt::AlignVCenter, QStringLiteral("Your playlists"));
+            font.setPixelSize(15);
+            painter.setFont(font);
+            painter.setPen(QColor(dark ? "#c1b4ba" : "#675c62"));
+            painter.drawText(48, 101, QStringLiteral("Personal sleeves. A familiar place for every collection."));
+            for (int index = 0; index < 6; ++index) {
+                const int x = 48 + index % 3 * 348;
+                const int y = 138 + index / 3 * 342;
+                painter.save();
+                QPainterPath clip;
+                clip.addRoundedRect(QRectF(x, y, 240, 240), 17, 17);
+                painter.setClipPath(clip);
+                painter.drawImage(QRect(x, y, 240, 240), covers::fallback(keys[index], dark, 480));
+                painter.restore();
+                font.setPixelSize(17);
+                font.setWeight(QFont::DemiBold);
+                painter.setFont(font);
+                painter.setPen(QColor(dark ? "#f2e5e9" : "#2b2327"));
+                painter.drawText(x, y + 268, titles[index]);
+                font.setPixelSize(13);
+                font.setWeight(QFont::Normal);
+                painter.setFont(font);
+                painter.setPen(QColor(dark ? "#c1b4ba" : "#675c62"));
+                painter.drawText(x, y + 290, QStringLiteral("Playlist · 24 songs"));
+                painter.drawImage(QRect(x + 258, y + 8, 48, 48), covers::fallback(keys[index], dark, 96));
+            }
+            painter.end();
+            QVERIFY(sheet.save(directory + (dark ? QStringLiteral("/covers-dark.png") : QStringLiteral("/covers-light.png"))));
+        }
+    }
+
     void tenDesignsAlternatingGrounds()
     {
         const QList<covers::Design> designs = covers::designs({});

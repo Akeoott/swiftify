@@ -12,6 +12,7 @@ Item {
     property bool circular: false
     property string kind
     property string title
+    property string fallbackKey: title
     property string description
     property string facts
     property real titleSize: 34
@@ -78,6 +79,7 @@ Item {
             visible: artworkSlot.children.length === 0
             opacity: artworkBox.awaitingFlight ? 0 : 1
             source: root.artworkUrl
+            fallbackKey: root.fallbackKey
             circular: root.circular
         }
 

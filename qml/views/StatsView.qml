@@ -44,6 +44,17 @@ Flickable {
     function hourName(hour: int): string {
         return new Date(2000, 0, 1, hour).toLocaleTimeString(Qt.locale(), "h AP").replace(":00", "")
     }
+    /// "1,284 plays", "3 hr 5 min" when ranking by time, or "" when the
+    /// source left both out
+    function amount(plays: int, listenedMs: real): string {
+        if (Stats.rankByTime && listenedMs > 0) {
+            return Format.totalDuration(listenedMs)
+        }
+        if (plays >= 0) {
+            return plays === 1 ? "1 play" : figure(plays) + " plays"
+        }
+        return listenedMs > 0 ? Format.totalDuration(listenedMs) : ""
+    }
     /// "1,284"
     function figure(value: real): string {
         return Math.round(value).toLocaleString(Qt.locale(), "f", 0)
@@ -427,8 +438,7 @@ Flickable {
                 artworkUrl: model.artworkUrl
                 placeholderSymbol: "person"
                 title: model.rank + ". " + model.name
-                subtitle: Stats.rankByTime && model.listenedMs > 0 ? Format.totalDuration(model.listenedMs)
-                                                                   : root.figure(model.plays) + " plays"
+                subtitle: root.amount(model.plays, model.listenedMs)
                 circular: true
                 titleLines: 1
                 badgeSymbol: (model.artist?.id ?? "").length > 0 ? "chevron_right" : "person"
@@ -455,9 +465,8 @@ Flickable {
                 artworkUrl: model.artworkUrl
                 placeholderSymbol: "album"
                 title: model.rank + ". " + model.name
-                subtitle: (Stats.rankByTime && model.listenedMs > 0 ? Format.totalDuration(model.listenedMs)
-                                                                    : root.figure(model.plays) + " plays")
-                          + ((model.subtitle ?? "").length > 0 ? " · " + model.subtitle : "")
+                subtitle: [root.amount(model.plays, model.listenedMs), model.subtitle ?? ""]
+                          .filter(part => part.length > 0).join(" · ")
                 // a reused card can be asked about its row while the list resets
                 badgeSymbol: (model.album?.id ?? "").length > 0 ? "chevron_right" : "album"
                 onClicked: {
@@ -518,7 +527,7 @@ Flickable {
                             active: chipHover.hovered
                             sourceComponent: StyledToolTip {
                                 visible: true
-                                text: root.figure(chip.plays) + " plays · search for it"
+                                text: (chip.plays > 0 ? root.figure(chip.plays) + " plays · " : "") + "search for it"
                             }
                         }
                         TapHandler {

@@ -46,9 +46,16 @@ QHash<int, QByteArray> StatsListModel::roleNames() const
 void StatsListModel::setEntries(const QList<StatEntry> &entries, bool byTime)
 {
     QList<StatEntry> sorted = entries;
+    // ranked by what is asked, whatever order the source gave: stats.fm
+    // orders its lists by time heard. a place without a count keeps its
+    // order, after those with one
     if (byTime) {
         std::stable_sort(sorted.begin(), sorted.end(),
                          [](const StatEntry &a, const StatEntry &b) { return a.listenedMs > b.listenedMs; });
+    } else {
+        std::stable_sort(sorted.begin(), sorted.end(), [](const StatEntry &a, const StatEntry &b) {
+            return a.plays >= 0 && b.plays >= 0 ? a.plays > b.plays : a.plays >= 0 && b.plays < 0;
+        });
     }
     beginResetModel();
     m_entries = sorted;

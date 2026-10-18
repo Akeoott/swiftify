@@ -13,6 +13,7 @@
 #include <QTemporaryDir>
 #include <QTest>
 #include <QThread>
+#include <QTimeZone>
 
 using namespace swiftify;
 
@@ -237,6 +238,63 @@ private slots:
         // without plus there is no time heard: the song's length a play
         const StatEntry estimated = StatsFmClient::track(parse(kEstimatedTrackJson));
         QCOMPARE(estimated.listenedMs, 3'000);
+    }
+
+    void freeAccountsGetTheirCountsFromEachPlacesStats()
+    {
+        StatEntry track = StatsFmClient::track(parse(kFreeTrackJson));
+        // left out, not none
+        QCOMPARE(track.plays, -1);
+        QCOMPARE(track.listenedMs, 0);
+        QCOMPARE(track.statsFmId, 42997036);
+        QCOMPARE(track.statsFmAlbumId, 7756776);
+        QCOMPARE(track.song.uri, QStringLiteral("spotify:track:6TxR6ScvxDzMZBj9UgxYx4"));
+        QCOMPARE(track.song.artists, QStringLiteral("Marlon Funaki"));
+
+        StatsFmClient::readCounts(parse(kItemStatsJson), track);
+        QCOMPARE(track.plays, 13);
+        QCOMPARE(track.listenedMs, 4'112'663);
+
+        // albums from songs without counts stay unknown until their own stats come
+        const QList<StatEntry> albums = StatsFmClient::albumsFromTracks({StatsFmClient::track(parse(kFreeTrackJson))});
+        QCOMPARE(albums.size(), 1);
+        QCOMPARE(albums.first().plays, -1);
+        QCOMPARE(albums.first().statsFmId, 7756776);
+
+        StatEntry artist = StatsFmClient::artist(parse(kFreeArtistJson));
+        QCOMPARE(artist.plays, -1);
+        QCOMPARE(artist.statsFmId, 19967);
+        artist.plays = 36;
+        StatEntry other;
+        other.name = QStringLiteral("Other");
+        other.plays = 4;
+        other.genres = {QStringLiteral("indie")};
+        StatEntry psych = StatsFmClient::genre(parse("{\"streams\": null, \"genre\": {\"tag\": \"neo-psychedelic\"}}"));
+        StatEntry indie = StatsFmClient::genre(parse("{\"streams\": null, \"genre\": {\"tag\": \"indie\"}}"));
+        QCOMPARE(psych.plays, -1);
+        QList<StatEntry> genres {psych, indie};
+        StatsFmClient::weighGenres(genres, {artist, other});
+        QCOMPARE(genres.first().name, QStringLiteral("indie"));
+        QCOMPARE(genres.first().plays, 40);
+        QCOMPARE(genres.at(1).plays, 36);
+    }
+
+    void unknownCountsGetNoShare()
+    {
+        StatsListModel model;
+        StatEntry known;
+        known.plays = 5;
+        StatEntry unknown;
+        unknown.plays = -1;
+        model.setEntries({known, unknown}, false);
+        QCOMPARE(model.data(model.index(0), StatsListModel::ShareRole).toDouble(), 1.0);
+        QCOMPARE(model.data(model.index(1), StatsListModel::ShareRole).toDouble(), 0.0);
+    }
+
+    void daysAndHoursAreAskedForInThisTimeZone()
+    {
+        QVERIFY(!StatsFmClient::timeZoneName().isEmpty());
+        QVERIFY(QTimeZone(StatsFmClient::timeZoneName().toUtf8()).isValid());
     }
 
     void readsStatsFmArtistsGenresAndActivity()

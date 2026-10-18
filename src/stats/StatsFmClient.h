@@ -3,6 +3,7 @@
 #include "stats/StatsTypes.h"
 
 #include <QCoroTask>
+#include <QHash>
 #include <QJsonValue>
 #include <QString>
 #include <QUrlQuery>
@@ -51,6 +52,11 @@ public:
     /// reduced to its last part. empty when it cannot be one
     static QString normalizeUsername(const QString &raw);
     static QString rangeName(StatsPeriod period);
+    /// the time zone stats.fm groups days and hours by: this computer's
+    static QString timeZoneName();
+    /// how many places of each top list get their counts asked for, one by
+    /// one, when stats.fm leaves them out
+    static constexpr int kCountedPlaces = 25;
 
     QCoro::Task<StatsFmProfile> profile(QString username);
     /// everything the stats page shows for `period`
@@ -67,11 +73,27 @@ public:
     static void readDays(const QJsonObject &perDay, StatsSnapshot &snapshot);
     /// albums worked out from the top tracks, for accounts without plus
     static QList<StatEntry> albumsFromTracks(const QList<StatEntry> &tracks);
+    /// genres without counts, weighed by the plays of the top artists in them
+    static void weighGenres(QList<StatEntry> &genres, const QList<StatEntry> &artists);
+    /// the plays and time in one item's stats reply
+    static void readCounts(const QJsonObject &stats, StatEntry &entry);
 
 private:
     QCoro::Task<QJsonValue> get(QString path, QUrlQuery query = {});
+    /// asks for the counts stats.fm left out of the first places of
+    /// `entries`, `kind` being "tracks", "artists" or "albums"
+    QCoro::Task<> fillCounts(QString user, QString kind, QList<StatEntry> *entries, QString range);
+
+    struct Counts {
+        int plays = 0;
+        qint64 listenedMs = 0;
+        QDateTime fetchedAt;
+    };
 
     QNetworkAccessManager *m_network;
+    /// counts asked for, by kind, id and range: going back to a period, or
+    /// refreshing soon after, asks again only for what has gone stale
+    QHash<QString, Counts> m_counts;
 };
 
 } // namespace swiftify

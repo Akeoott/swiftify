@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 namespace swiftify {
 
@@ -23,6 +24,13 @@ QString firstSpotifyId(const QJsonObject &object)
 {
     const QJsonArray ids = object.value(QStringLiteral("externalIds")).toObject().value(QStringLiteral("spotify")).toArray();
     return ids.isEmpty() ? QString() : ids.first().toString();
+}
+
+/// a count stats.fm gives, or -1 where it leaves it null (no plus)
+int countOf(const QJsonObject &entry)
+{
+    const QJsonValue streams = entry.value(QStringLiteral("streams"));
+    return streams.isDouble() ? streams.toInt() : -1;
 }
 
 QUrl imageUrl(const QJsonValue &value)
@@ -72,6 +80,12 @@ QString StatsFmClient::normalizeUsername(const QString &raw)
     }
     static const QRegularExpression valid(QStringLiteral("^[A-Za-z0-9._-]{1,64}$"));
     return valid.match(name).hasMatch() ? name : QString();
+}
+
+QString StatsFmClient::timeZoneName()
+{
+    const QByteArray id = QTimeZone::systemTimeZoneId();
+    return id.isEmpty() ? QStringLiteral("UTC") : QString::fromUtf8(id);
 }
 
 QString StatsFmClient::rangeName(StatsPeriod period)
@@ -147,8 +161,13 @@ QCoro::Task<StatsSnapshot> StatsFmClient::snapshot(QString username, StatsPeriod
     auto genresTask = get(user + QStringLiteral("/top/genres"), top);
     auto statsTask = get(user + QStringLiteral("/streams/stats"), range);
     auto recentTask = get(user + QStringLiteral("/streams/recent"), QUrlQuery {{QStringLiteral("limit"), QStringLiteral("20")}});
-    auto datesTask = get(user + QStringLiteral("/streams/stats/dates"), range);
-    auto daysTask = get(user + QStringLiteral("/streams/stats/per-day"), QUrlQuery {{QStringLiteral("range"), QStringLiteral("lifetime")}});
+    // days and hours are grouped by the time zone given, and refused without one
+    QUrlQuery dated = range;
+    dated.addQueryItem(QStringLiteral("timeZone"), timeZoneName());
+    auto datesTask = get(user + QStringLiteral("/streams/stats/dates"), dated);
+    auto daysTask = get(user + QStringLiteral("/streams/stats/per-day"),
+                        QUrlQuery {{QStringLiteral("range"), QStringLiteral("lifetime")},
+                                   {QStringLiteral("timeZone"), timeZoneName()}});
 
     StatsSnapshot snapshot;
     // the top tracks decide whether the profile can be read at all; the rest
@@ -191,6 +210,18 @@ QCoro::Task<StatsSnapshot> StatsFmClient::snapshot(QString username, StatsPeriod
     } else {
         snapshot.topAlbums = albumsFromTracks(snapshot.topTracks);
     }
+
+    // without plus the top lists come without counts: each place's own
+    // stats have them, asked for a few at a time
+    const QString rangeText = rangeName(period);
+    co_await fillCounts(user, QStringLiteral("tracks"), &snapshot.topTracks, rangeText);
+    co_await fillCounts(user, QStringLiteral("artists"), &snapshot.topArtists, rangeText);
+    co_await fillCounts(user, QStringLiteral("albums"), &snapshot.topAlbums, rangeText);
+    if (!isPlus) {
+        std::stable_sort(snapshot.topAlbums.begin(), snapshot.topAlbums.end(),
+                         [](const StatEntry &a, const StatEntry &b) { return a.plays > b.plays; });
+    }
+    weighGenres(snapshot.topGenres, snapshot.topArtists);
     // the days in the period, from the calendar
     const QDateTime start = periodStart(period, QDateTime::currentDateTime());
     for (auto it = snapshot.daily.cbegin(); it != snapshot.daily.cend(); ++it) {
@@ -200,6 +231,92 @@ QCoro::Task<StatsSnapshot> StatsFmClient::snapshot(QString username, StatsPeriod
     }
     snapshot.streakDays = streakEndingAt(snapshot.daily, QDate::currentDate());
     co_return snapshot;
+}
+
+QCoro::Task<> StatsFmClient::fillCounts(QString user, QString kind, QList<StatEntry> *entries, QString range)
+{
+    constexpr qsizetype kAtOnce = 6;
+    constexpr qint64 kFreshSeconds = 10 * 60;
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    const QUrlQuery query {{QStringLiteral("range"), range}, {QStringLiteral("timeZone"), timeZoneName()}};
+    const auto keyOf = [&](const StatEntry &entry) {
+        return kind + u'/' + QString::number(entry.statsFmId) + u'/' + range;
+    };
+
+    QList<qsizetype> missing;
+    for (qsizetype index = 0; index < std::min<qsizetype>(kCountedPlaces, entries->size()); ++index) {
+        StatEntry &entry = (*entries)[index];
+        if (entry.plays >= 0 || entry.statsFmId <= 0) {
+            continue;
+        }
+        if (const auto cached = m_counts.constFind(keyOf(entry));
+            cached != m_counts.cend() && cached->fetchedAt.secsTo(now) < kFreshSeconds) {
+            entry.plays = cached->plays;
+            entry.listenedMs = cached->listenedMs;
+            continue;
+        }
+        missing.append(index);
+    }
+
+    for (qsizetype start = 0; start < missing.size(); start += kAtOnce) {
+        const qsizetype end = std::min(missing.size(), start + kAtOnce);
+        std::vector<QCoro::Task<QJsonValue>> batch;
+        for (qsizetype at = start; at < end; ++at) {
+            const StatEntry &entry = entries->at(missing.at(at));
+            batch.push_back(get(user + QStringLiteral("/streams/%1/%2/stats").arg(kind).arg(entry.statsFmId), query));
+        }
+        // every one awaited to the end, so none is left running unowned
+        bool busy = false;
+        for (qsizetype at = start; at < end; ++at) {
+            StatEntry &entry = (*entries)[missing.at(at)];
+            try {
+                readCounts((co_await batch[size_t(at - start)]).toObject(), entry);
+                if (entry.plays >= 0) {
+                    m_counts.insert(keyOf(entry), {entry.plays, entry.listenedMs, now});
+                }
+            } catch (const StatsFmError &error) {
+                // the rest stay without counts rather than the page failing
+                busy = busy || error.kind() == StatsFmError::Kind::RateLimited;
+            }
+        }
+        if (busy) {
+            co_return;
+        }
+    }
+}
+
+void StatsFmClient::readCounts(const QJsonObject &stats, StatEntry &entry)
+{
+    if (!stats.value(QStringLiteral("count")).isDouble()) {
+        return;
+    }
+    entry.plays = stats.value(QStringLiteral("count")).toInt();
+    entry.listenedMs = stats.value(QStringLiteral("durationMs")).toInteger();
+}
+
+void StatsFmClient::weighGenres(QList<StatEntry> &genres, const QList<StatEntry> &artists)
+{
+    bool weighed = false;
+    for (StatEntry &genre : genres) {
+        if (genre.plays >= 0) {
+            continue;
+        }
+        int plays = 0;
+        qint64 listened = 0;
+        for (const StatEntry &artist : artists) {
+            if (artist.plays > 0 && artist.genres.contains(genre.name, Qt::CaseInsensitive)) {
+                plays += artist.plays;
+                listened += artist.listenedMs;
+            }
+        }
+        genre.plays = plays;
+        genre.listenedMs = listened;
+        weighed = true;
+    }
+    if (weighed) {
+        std::stable_sort(genres.begin(), genres.end(),
+                         [](const StatEntry &a, const StatEntry &b) { return a.plays > b.plays; });
+    }
 }
 
 Song StatsFmClient::song(const QJsonObject &track)
@@ -247,12 +364,16 @@ StatEntry StatsFmClient::track(const QJsonObject &entry)
     stat.name = stat.song.name;
     stat.subtitle = stat.song.artists;
     stat.artworkUrl = stat.song.artworkUrl;
-    stat.plays = entry.value(QStringLiteral("streams")).toInt();
+    const QJsonObject object = entry.value(QStringLiteral("track")).toObject();
+    stat.statsFmId = object.value(QStringLiteral("id")).toInteger();
+    stat.statsFmAlbumId = object.value(QStringLiteral("albums")).toArray().first().toObject()
+                              .value(QStringLiteral("id")).toInteger();
+    stat.plays = countOf(entry);
     // the time heard comes with plus; otherwise it is about the song's
     // length once for each play
-    stat.listenedMs = entry.contains(QStringLiteral("playedMs"))
+    stat.listenedMs = entry.value(QStringLiteral("playedMs")).isDouble()
         ? entry.value(QStringLiteral("playedMs")).toInteger()
-        : qint64(stat.song.durationMs) * stat.plays;
+        : qint64(stat.song.durationMs) * std::max(0, stat.plays);
     return stat;
 }
 
@@ -272,7 +393,9 @@ StatEntry StatsFmClient::artist(const QJsonObject &entry)
         genres.append(value.toString());
     }
     stat.subtitle = genres.mid(0, 2).join(QStringLiteral(", "));
-    stat.plays = entry.value(QStringLiteral("streams")).toInt();
+    stat.genres = genres;
+    stat.statsFmId = object.value(QStringLiteral("id")).toInteger();
+    stat.plays = countOf(entry);
     stat.listenedMs = entry.value(QStringLiteral("playedMs")).toInteger();
     return stat;
 }
@@ -295,7 +418,8 @@ StatEntry StatsFmClient::album(const QJsonObject &entry)
     stat.name = stat.album.name;
     stat.subtitle = stat.album.artists;
     stat.artworkUrl = stat.album.artworkUrl;
-    stat.plays = entry.value(QStringLiteral("streams")).toInt();
+    stat.statsFmId = object.value(QStringLiteral("id")).toInteger();
+    stat.plays = countOf(entry);
     stat.listenedMs = entry.value(QStringLiteral("playedMs")).toInteger();
     return stat;
 }
@@ -305,7 +429,7 @@ StatEntry StatsFmClient::genre(const QJsonObject &entry)
     StatEntry stat;
     stat.name = entry.value(QStringLiteral("genre")).toObject().value(QStringLiteral("tag")).toString();
     stat.key = stat.name;
-    stat.plays = entry.value(QStringLiteral("streams")).toInt();
+    stat.plays = countOf(entry);
     stat.listenedMs = entry.value(QStringLiteral("playedMs")).toInteger();
     return stat;
 }
@@ -378,11 +502,16 @@ QList<StatEntry> StatsFmClient::albumsFromTracks(const QList<StatEntry> &tracks)
             entry.album.name = song.albumName;
             entry.album.artists = entry.subtitle;
             entry.album.artworkUrl = song.artworkUrl;
+            entry.statsFmId = track.statsFmAlbumId;
+            // unknown until a song of it brings a count, or its own stats do
+            entry.plays = -1;
             found = albums.insert(key, entry);
             order.append(key);
         }
-        found->plays += track.plays;
-        found->listenedMs += track.listenedMs;
+        if (track.plays >= 0) {
+            found->plays = std::max(0, found->plays) + track.plays;
+            found->listenedMs += track.listenedMs;
+        }
     }
     QList<StatEntry> list;
     for (const QString &key : std::as_const(order)) {

@@ -7,6 +7,7 @@
 #include <QList>
 #include <QMap>
 #include <QString>
+#include <QStringList>
 #include <QUrl>
 
 #include <array>
@@ -32,8 +33,15 @@ struct StatEntry {
     QString name;
     QString subtitle;
     QUrl artworkUrl;
+    /// -1 when the source does not say: stats.fm leaves the counts of its top
+    /// lists out for accounts without plus, until they are asked for one by one
     int plays = 0;
     qint64 listenedMs = 0;
+    /// stats.fm's own id for it (and a song's album), to ask for its counts
+    qint64 statsFmId = 0;
+    qint64 statsFmAlbumId = 0;
+    /// an artist's genres, where the source gives them
+    QStringList genres;
     /// when it played, for the recent ones
     QDateTime playedAt;
     Song song;

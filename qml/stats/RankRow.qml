@@ -118,21 +118,25 @@ ItemDelegate {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 1
 
-            readonly property string playsText: root.plays === 1 ? "1 play" : root.plays.toLocaleString(Qt.locale(), "f", 0) + " plays"
+            // a count the source left out (-1) shows as nothing, not as none
+            readonly property string playsText: root.plays < 0 ? ""
+                : root.plays === 1 ? "1 play" : root.plays.toLocaleString(Qt.locale(), "f", 0) + " plays"
             readonly property string timeText: Format.totalDuration(root.listenedMs)
+            readonly property string first: root.timeFirst && timeText.length > 0 ? timeText
+                                          : playsText.length > 0 ? playsText : timeText
 
             StyledText {
                 anchors.right: parent.right
                 text: root.detail.length > 0 ? root.detail
-                    : root.timeFirst && figures.timeText.length > 0 ? figures.timeText : figures.playsText
+                    : figures.first
                 font.pixelSize: Appearance.fontSize.smallie
                 font.weight: Font.DemiBold
                 color: Appearance.colors.onSurface
             }
             StyledText {
                 anchors.right: parent.right
-                readonly property string other: root.timeFirst ? figures.playsText : figures.timeText
-                visible: root.detail.length === 0 && other.length > 0 && root.plays > 0
+                readonly property string other: figures.first === figures.timeText ? figures.playsText : figures.timeText
+                visible: root.detail.length === 0 && other.length > 0 && other !== figures.first
                 text: other
                 font.pixelSize: Appearance.fontSize.smallest
                 color: Appearance.colors.outline

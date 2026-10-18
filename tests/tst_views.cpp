@@ -321,6 +321,51 @@ private slots:
         QTRY_COMPARE(player->property("panel").toString(), QStringLiteral("audio"));
     }
 
+    /// in a short window the settings rail scrolls to its last destinations,
+    /// and shows its scroll bar only then
+    void theSettingsRailScrollsInShortWindows()
+    {
+        Rig rig;
+        QQmlComponent component(&rig.engine);
+        // a plain window's overlay has no size, so the dialog sits in a host
+        // the size of the window it would cover
+        component.setData("import QtQuick\nimport Swiftify\nItem { id: host; width: 1280; height: 780\n"
+                          "    property alias dialog: settings\n"
+                          "    SettingsDialog { id: settings; parent: host } }",
+                          QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        qobject_cast<QQuickItem *>(object.get())->setParentItem(rig.window->contentItem());
+        auto *dialog = object->property("dialog").value<QObject *>();
+        QVERIFY(dialog);
+        QVERIFY(QMetaObject::invokeMethod(dialog, "open"));
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        auto *rail = object->findChild<QQuickItem *>(QStringLiteral("settingsRail"));
+        QVERIFY(rail);
+        auto *bar = QQmlProperty(rail, QStringLiteral("ScrollBar.vertical"), qmlContext(rail)).read().value<QQuickItem *>();
+        QVERIFY(bar);
+
+        // everything fits in the usual window: nothing scrolls or shows
+        Rig::settle();
+        rig.render();
+        QVERIFY(!rail->property("interactive").toBool());
+        QVERIFY(!bar->isVisible());
+
+        qobject_cast<QQuickItem *>(object.get())->setSize(QSizeF(526, 410));
+        Rig::settle();
+        rig.render();
+        QVERIFY(rail->property("interactive").toBool());
+        QVERIFY(bar->isVisible());
+        const qreal bottom = rail->property("contentHeight").toReal() - rail->height();
+        rail->setProperty("contentY", bottom);
+        Rig::settle();
+        rig.render();
+        // About, the last destination, sits just above the rail's bottom edge
+        QTest::mouseClick(rig.window.get(), Qt::LeftButton, Qt::NoModifier,
+                          rail->mapToScene(QPointF(rail->width() / 2, rail->height() - 48)).toPoint());
+        QTRY_COMPARE(dialog->property("page").toInt(), 7);
+    }
+
     void longSongTitlesScrollInImmersivePlayer()
     {
         Rig rig;

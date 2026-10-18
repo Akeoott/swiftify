@@ -353,6 +353,130 @@ QByteArray jpeg(const Design &design, const QString &title)
     return encodeJpeg(render(design, title), 86);
 }
 
+QImage fallback(const QString &key, bool dark, int edge)
+{
+    if (edge <= 0) {
+        return {};
+    }
+    // FNV-1a, specified over UTF-8 rather than qHash's per-process seed.
+    quint32 seed = 2166136261u;
+    for (const char byte : key.toUtf8()) {
+        seed = (seed ^ quint8(byte)) * 16777619u;
+    }
+    struct Sleeve {
+        const char *darkGround;
+        const char *lightGround;
+        const char *shape;
+        const char *ribbon;
+        const char *accent;
+    };
+    static constexpr Sleeve sleeves[] = {
+        {"#42313e", "#f0dfdf", "#dc9988", "#f4ddae", "#a6bcaa"},
+        {"#293f39", "#e2e8d8", "#b3c9a0", "#e8b28f", "#f4e7c6"},
+        {"#553c32", "#f2e2ce", "#e7ae76", "#a6bdc9", "#f4dec1"},
+        {"#303e54", "#e1e7ef", "#b1badb", "#ead69a", "#d69583"},
+        {"#49432e", "#eee7d5", "#d8c27c", "#c9a1aa", "#f4e4c2"},
+        {"#453849", "#eae0eb", "#c3acd1", "#a6c7b8", "#eed29d"},
+    };
+    const auto &sleeve = sleeves[seed % 6];
+    const int composition = int((seed >> 8) % 6);
+    const QColor base(dark ? sleeve.darkGround : sleeve.lightGround);
+    const QColor shape(sleeve.shape);
+    const QColor ribbon(sleeve.ribbon);
+    const QColor accent(sleeve.accent);
+    QImage image(edge, edge, QImage::Format_ARGB32_Premultiplied);
+    image.fill(base);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.scale(edge / 256.0, edge / 256.0);
+
+    // The very slight ink wash is deliberately not a glowing/neon gradient.
+    QLinearGradient wash(0, 0, 256, 256);
+    wash.setColorAt(0, base.lighter(dark ? 108 : 102));
+    wash.setColorAt(1, base);
+    painter.fillRect(QRectF(0, 0, 256, 256), wash);
+    painter.setPen(Qt::NoPen);
+
+    const QPointF centres[] = {{170, 102}, {89, 173}, {180, 177}, {83, 90}, {172, 136}, {113, 170}};
+    const QPointF centre = centres[composition];
+    const qreal phase = qreal((seed >> 16) % 360) * M_PI / 180;
+    QPainterPath bloom;
+    if (composition == 2 || composition == 4) {
+        bloom.addEllipse(centre, 119, 119);
+    } else {
+        const int petals = composition == 1 ? 8 : 10;
+        for (int step = 0; step <= 360; ++step) {
+            const qreal angle = step * M_PI / 180;
+            const qreal radius = 108 + 10 * std::cos(petals * angle + phase);
+            const QPointF point = centre + QPointF(std::cos(angle), std::sin(angle)) * radius;
+            if (step == 0) {
+                bloom.moveTo(point);
+            } else {
+                bloom.lineTo(point);
+            }
+        }
+        bloom.closeSubpath();
+    }
+    // Offset registration, like two layers of thick printed paper.
+    painter.save();
+    painter.translate(0, 3);
+    painter.fillPath(bloom, withAlpha(QColor("#16121b"), dark ? 0.16 : 0.08));
+    painter.restore();
+    painter.fillPath(bloom, shape);
+
+    QPainterPath curve;
+    switch (composition) {
+    case 0:
+        curve.moveTo(-30, 173); curve.cubicTo(67, 61, 128, 292, 285, 160);
+        break;
+    case 1:
+        curve.moveTo(49, -30); curve.cubicTo(236, 22, 17, 152, 277, 189);
+        break;
+    case 2:
+        curve.moveTo(-28, 77); curve.cubicTo(151, -3, 16, 266, 286, 191);
+        break;
+    case 3:
+        curve.moveTo(-28, 199); curve.cubicTo(200, 258, 78, -32, 277, 66);
+        break;
+    case 4:
+        curve.addEllipse(QPointF(172, 136), 76, 76);
+        break;
+    case 5:
+        curve.moveTo(-26, 118); curve.cubicTo(88, 231, 154, -26, 285, 78);
+        break;
+    }
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ribbon, composition == 4 ? 29 : 37, Qt::SolidLine, Qt::RoundCap));
+    painter.drawPath(curve);
+    if (composition == 2 || composition == 4) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(base);
+        painter.drawEllipse(centre, composition == 4 ? 30 : 17, composition == 4 ? 30 : 17);
+    }
+    const QPointF accents[] = {{39, 45}, {210, 47}, {42, 210}, {211, 212}, {39, 49}, {211, 211}};
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(accent);
+    painter.drawEllipse(accents[composition], 7, 7);
+    painter.end();
+
+    // Barely perceptible paper grain, not confetti. Fixed in sleeve space so
+    // a thumbnail and a hero are samples of the same design; no idle work.
+    for (int y = 0; y < edge; ++y) {
+        auto *line = reinterpret_cast<QRgb *>(image.scanLine(y));
+        for (int x = 0; x < edge; ++x) {
+            quint32 grain = quint32(x * 256 / edge) * 374761393u
+                + quint32(y * 256 / edge) * 668265263u + seed;
+            grain = (grain ^ (grain >> 13)) * 1274126177u;
+            const int delta = int((grain >> 24) % 5) - 2;
+            const QRgb pixel = line[x];
+            line[x] = qRgb(std::clamp(qRed(pixel) + delta, 0, 255),
+                           std::clamp(qGreen(pixel) + delta, 0, 255),
+                           std::clamp(qBlue(pixel) + delta, 0, 255));
+        }
+    }
+    return image;
+}
+
 QByteArray squareJpeg(const QImage &image, QRectF crop, int maximumBytes)
 {
     if (crop.isEmpty()) {

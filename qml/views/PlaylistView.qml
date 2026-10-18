@@ -45,6 +45,7 @@ Item {
 
         hero: CollectionHero {
             artworkUrl: root.playlist.artworkUrl
+            fallbackKey: root.playlist.id.length > 0 ? root.playlist.id : root.playlist.name
             kind: root.playlist.isLocal ? "LOCAL PLAYLIST" : "PLAYLIST"
             title: root.playlist.name
             description: root.playlist.description

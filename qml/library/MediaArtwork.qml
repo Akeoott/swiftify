@@ -9,6 +9,7 @@ Item {
 
     property url source
     property string placeholderSymbol: "music_note"
+    property string fallbackKey: source.toString().length > 0 ? source.toString() : placeholderSymbol
     property real radius: Appearance.sizes.artworkRadius
     property bool circular: false
     property string badgeSymbol: "arrow_forward"
@@ -39,6 +40,7 @@ Item {
         anchors.fill: parent
         source: root.source
         placeholderSymbol: root.placeholderSymbol
+        fallbackKey: root.fallbackKey
         circular: root.circular
         radius: root.radius
         scale: root.hovered ? 1.015 : 1

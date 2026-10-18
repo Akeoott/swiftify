@@ -251,6 +251,7 @@ Flickable {
                 delegate: MediaCard {
                     required property playlist playlist
                     artworkUrl: playlist.artworkUrl
+                    fallbackKey: playlist.id.length > 0 ? playlist.id : playlist.name
                     title: playlist.name
                     subtitle: playlist.ownerDisplayName
                     onClicked: Library.selectPlaylist(playlist)

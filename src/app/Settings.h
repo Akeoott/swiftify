@@ -20,6 +20,9 @@ class Settings : public QObject {
     QML_SINGLETON
 
     Q_PROPERTY(bool visualizersEnabled READ visualizersEnabled WRITE setVisualizersEnabled NOTIFY visualizersEnabledChanged FINAL)
+    Q_PROPERTY(bool playerBarVisualizer READ playerBarVisualizer WRITE setPlayerBarVisualizer NOTIFY playerBarVisualizerChanged FINAL)
+    Q_PROPERTY(bool trackListVisualizer READ trackListVisualizer WRITE setTrackListVisualizer NOTIFY trackListVisualizerChanged FINAL)
+    Q_PROPERTY(bool immersiveVisualizer READ immersiveVisualizer WRITE setImmersiveVisualizer NOTIFY immersiveVisualizerChanged FINAL)
     Q_PROPERTY(bool circularVisualizer READ circularVisualizer WRITE setCircularVisualizer NOTIFY circularVisualizerChanged FINAL)
     /// the players' covers round, with their squiggle edge, while visualizers
     /// are off; with them on, the circular style rounds them
@@ -78,6 +81,16 @@ public:
     /// every audio visualizer in the app
     bool visualizersEnabled() const { return m_visualizersEnabled; }
     void setVisualizersEnabled(bool value);
+    bool playerBarVisualizer() const { return m_playerBarVisualizer; }
+    void setPlayerBarVisualizer(bool value);
+    bool trackListVisualizer() const { return m_trackListVisualizer; }
+    void setTrackListVisualizer(bool value);
+    bool immersiveVisualizer() const { return m_immersiveVisualizer; }
+    void setImmersiveVisualizer(bool value);
+    bool anyVisualizerEnabled() const
+    {
+        return m_visualizersEnabled && (m_playerBarVisualizer || m_trackListVisualizer || m_immersiveVisualizer);
+    }
     /// ring around round artwork instead of a band of bars
     bool circularVisualizer() const { return m_circularVisualizer; }
     void setCircularVisualizer(bool value);
@@ -147,6 +160,9 @@ public:
 
 signals:
     void visualizersEnabledChanged();
+    void playerBarVisualizerChanged();
+    void trackListVisualizerChanged();
+    void immersiveVisualizerChanged();
     void circularVisualizerChanged();
     void roundArtworkChanged();
     void visualizerShapeChanged();
@@ -181,6 +197,9 @@ private:
     QSettings m_store;
 
     bool m_visualizersEnabled = true;
+    bool m_playerBarVisualizer = true;
+    bool m_trackListVisualizer = true;
+    bool m_immersiveVisualizer = true;
     bool m_circularVisualizer = false;
     bool m_roundArtwork = false;
     QString m_visualizerShape = QStringLiteral("bars");

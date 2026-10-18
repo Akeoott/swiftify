@@ -77,9 +77,27 @@ Item {
                     checked: Settings.visualizersEnabled
                     onToggledTo: (checked) => Settings.visualizersEnabled = checked
                 }
+                ConfigSwitch {
+                    text: "Player bar"
+                    enabled: Settings.visualizersEnabled
+                    checked: Settings.playerBarVisualizer
+                    onToggledTo: (checked) => Settings.playerBarVisualizer = checked
+                }
+                ConfigSwitch {
+                    text: "Track list"
+                    enabled: Settings.visualizersEnabled
+                    checked: Settings.trackListVisualizer
+                    onToggledTo: (checked) => Settings.trackListVisualizer = checked
+                }
+                ConfigSwitch {
+                    text: "Now playing screen"
+                    enabled: Settings.visualizersEnabled
+                    checked: Settings.immersiveVisualizer
+                    onToggledTo: (checked) => Settings.immersiveVisualizer = checked
+                }
                 ConfigSelection {
                     text: "Style"
-                    enabled: Settings.visualizersEnabled
+                    enabled: Settings.visualizersEnabled && Settings.immersiveVisualizer
                     currentIndex: Settings.circularVisualizer ? 1 : 0
                     segments: [
                         Segment { text: "Normal" },
@@ -89,7 +107,7 @@ Item {
                 }
                 ConfigSelection {
                     text: "Shape"
-                    enabled: Settings.visualizersEnabled
+                    enabled: Settings.visualizersEnabled && Settings.immersiveVisualizer
                     currentIndex: Settings.visualizerShape === "wave" ? 1 : 0
                     segments: [
                         Segment { text: "Bars" },
@@ -101,13 +119,13 @@ Item {
                     text: "Round artwork"
                     // with visualizers on, the circular style rounds the
                     // cover inside its ring
-                    enabled: !Settings.visualizersEnabled
-                    checked: Settings.roundArtwork || (Settings.visualizersEnabled && Settings.circularVisualizer)
+                    enabled: !Settings.visualizersEnabled || !Settings.immersiveVisualizer
+                    checked: Settings.roundArtwork || (Settings.visualizersEnabled && Settings.immersiveVisualizer && Settings.circularVisualizer)
                     onToggledTo: (checked) => Settings.roundArtwork = checked
                 }
                 ConfigSlider {
                     text: "Sensitivity"
-                    enabled: Settings.visualizersEnabled
+                    enabled: Settings.visualizersEnabled && (Settings.playerBarVisualizer || Settings.trackListVisualizer || Settings.immersiveVisualizer)
                     from: 0.6
                     to: 1.8
                     stepSize: 0.05

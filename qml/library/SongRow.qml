@@ -141,13 +141,13 @@ T.AbstractButton {
                     delayed: true
                 }
                 anchors.fill: parent
-                active: (root.isCurrent && Settings.visualizersEnabled) || showing
+                active: (root.isCurrent && Settings.visualizersEnabled && Settings.trackListVisualizer) || showing
                 sourceComponent: Rectangle {
                     id: shade
 
                     property bool arrived: false
 
-                    Reveal.shown: arrived && root.isCurrent && Settings.visualizersEnabled
+                    Reveal.shown: arrived && root.isCurrent && Settings.visualizersEnabled && Settings.trackListVisualizer
                     radius: 6
                     color: Qt.rgba(0, 0, 0, 0.34)
                     Component.onCompleted: Qt.callLater(() => {

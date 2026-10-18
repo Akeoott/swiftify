@@ -31,7 +31,7 @@ FocusScope {
     property bool layoutMoving: false
 
     readonly property bool usesPanelLayout: panel.length > 0
-    readonly property bool showsSpectrum: Settings.visualizersEnabled && !Settings.circularVisualizer
+    readonly property bool showsSpectrum: Settings.visualizersEnabled && Settings.immersiveVisualizer && !Settings.circularVisualizer
 
     readonly property real metadataWidth: Math.max(300, Math.min(400, width * 0.32))
     readonly property real horizontalPadding: Math.max(28, Math.min(64, width * 0.05))
@@ -203,7 +203,7 @@ FocusScope {
         windowHeight: root.height - (topBar.height - immersiveLayout.topBarHeight)
         showsSpectrum: root.showsSpectrum
         showsPanel: root.sideBySide
-        circular: Settings.visualizersEnabled && Settings.circularVisualizer
+        circular: Settings.visualizersEnabled && Settings.immersiveVisualizer && Settings.circularVisualizer
     }
 
     LiquidBackdrop {

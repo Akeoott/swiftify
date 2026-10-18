@@ -63,12 +63,16 @@ PlaybackController::PlaybackController(PlaybackCore *core, SpotifySession *sessi
     } catch (const SpotifyError &) {
     }
 
-    m_visualizersEnabled = m_settings->visualizersEnabled();
-    connect(m_settings, &Settings::crossfadeEnabledChanged, this, [this] { preloadNextTrack(); });
-    connect(m_settings, &Settings::visualizersEnabledChanged, this, [this] {
-        m_visualizersEnabled = m_settings->visualizersEnabled();
+    const auto updateVisualizers = [this] {
+        m_visualizersEnabled = m_settings->anyVisualizerEnabled();
         updatePlaybackWorkers();
-    });
+    };
+    m_visualizersEnabled = m_settings->anyVisualizerEnabled();
+    connect(m_settings, &Settings::crossfadeEnabledChanged, this, [this] { preloadNextTrack(); });
+    connect(m_settings, &Settings::visualizersEnabledChanged, this, updateVisualizers);
+    connect(m_settings, &Settings::playerBarVisualizerChanged, this, updateVisualizers);
+    connect(m_settings, &Settings::trackListVisualizerChanged, this, updateVisualizers);
+    connect(m_settings, &Settings::immersiveVisualizerChanged, this, updateVisualizers);
     connect(m_session, &SpotifySession::playbackConnected, this, [this] {
         try {
             m_core->setVolume(float(m_volume));

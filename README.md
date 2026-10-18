@@ -44,6 +44,33 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   add `http://127.0.0.1:8898/login` as a redirect uri, and paste the apps client id
   into swiftify. you dont need the client secret.
 
+### "spotify could not load this track" (soloist)
+
+spotify refuses librespot the keys to decrypt songs on newer accounts (librespot's
+logs say `error audio key 0 1`), so every song fails. on linux swiftify can play
+spotify's songs through [spotify soloist](https://developer.spotify.com/documentation/soloist)
+instead, spotify's own connect client, which isnt affected.
+
+1. install soloist from its [getting started guide](https://developer.spotify.com/documentation/soloist/tutorials/getting-started)
+   (`~/.local/bin/soloist` is fine)
+2. make a soloist api key in the [developer dashboard](https://developer.spotify.com/dashboard/soloist)
+   and put it in `~/.config/soloist/api-key` (or `SOLOIST_API_KEY`)
+3. start swiftify. it starts soloist itself, as a connect device called "Swiftify".
+   the first time, pick "Swiftify" once in the devices list of the spotify desktop app on
+   the same computer (or the phone app), so soloist is signed in
+4. press play in swiftify
+
+with soloist, swiftify makes a sink called "Swiftify (Soloist)" for soloist to play into,
+and plays that on through its own output, so the equalizer and the visualizers still work.
+this needs pipewire, under pulseaudio alone soloist plays straight to the speakers.
+`SWIFTIFY_SOLOIST_ROUTE=off` does that on purpose. tempo and pitch only work on your own
+music files, and crossfade waits for each song to end. soloist builds expire after 90 days,
+download a new one when it says so.
+`SWIFTIFY_PLAYBACK=librespot swiftify` goes back to librespot alone.
+
+if spotify on your phone doesnt list "Swiftify" for step 3, a firewall (ufw) is probably
+dropping the pairing connection; pair from the spotify desktop app on the same computer.
+
 ## Building from source
 
 ### Interface language
@@ -58,7 +85,7 @@ entries contain three forms (one, few, many).
 
 ### Build requirements
 
-- Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools
+- Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools, and on linux Qt WebSockets (for soloist)
 - QtKeychain and QCoro 0.10 or newer, both built for Qt 6
 - CMake 3.24 or newer, Ninja, and a C++20 compiler
 - Rust (stable, from [rustup](https://rustup.rs))
@@ -103,7 +130,7 @@ or use cmake:
 
 ```sh
 # replace with your package manager if not on arch
-sudo pacman -S --needed git qt6-base qt6-declarative qt6-shadertools qt6-wayland qtkeychain-qt6 qcoro libpulse alsa-lib openssl cmake ninja rust pkgconf
+sudo pacman -S --needed git qt6-base qt6-declarative qt6-shadertools qt6-wayland qt6-websockets qtkeychain-qt6 qcoro libpulse alsa-lib openssl cmake ninja rust pkgconf
 
 git clone https://github.com/shredos67/swiftify.git
 cd swiftify
@@ -117,7 +144,7 @@ compatibility patches automatically:
 
 ```sh
 sudo apt-get install git qt6-base-dev qt6-declarative-dev qt6-shader-baker \
-    qt6-shadertools-dev qt6-wayland qtkeychain-qt6-dev qcoro-qt6-dev \
+    qt6-shadertools-dev qt6-wayland qt6-websockets-dev qtkeychain-qt6-dev qcoro-qt6-dev \
     libpulse-dev libasound2-dev libssl-dev cmake ninja-build pkg-config
 # install rust from https://rustup.rs if you dont have it
 
@@ -175,6 +202,20 @@ for a different Qt kit, toolchain location or install directory, pass overrides:
 
 adjust the example paths to your installed versions, MinGW must match your Qt
 kit, not just the example folder name. 
+
+**the toolchain decides one feature:** the Windows media controls (the media overlay,
+lock screen and media keys showing what's playing) need `SystemMediaTransportControls`
+in the compiler's Windows headers.
+
+| toolchain | media controls |
+|---|---|
+| MSVC 2022 | yes |
+| Qt's MinGW 13.1 (`mingw1310_64`, mingw-w64 runtime v11) | no, everything else works |
+| a newer mingw-w64 (tested: GCC 16.1, runtime v14) | yes |
+
+when they're left out, cmake warns `building without the Windows media controls`.
+for every feature, build with MSVC. a newer MinGW works too, but it isn't the one
+your Qt kit was built with, so the script warns about the mismatch.
 
 quit a running installed copy through its tray menu before updating it.
 

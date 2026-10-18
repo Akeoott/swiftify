@@ -99,6 +99,9 @@ void Settings::sync()
 void Settings::load()
 {
     m_visualizersEnabled = stored<bool>(m_store, "visualizersEnabled", m_visualizersEnabled);
+    m_playerBarVisualizer = stored<bool>(m_store, "playerBarVisualizer", m_playerBarVisualizer);
+    m_trackListVisualizer = stored<bool>(m_store, "trackListVisualizer", m_trackListVisualizer);
+    m_immersiveVisualizer = stored<bool>(m_store, "immersiveVisualizer", m_immersiveVisualizer);
     m_circularVisualizer = stored<bool>(m_store, "circularVisualizer", m_circularVisualizer);
     m_roundArtwork = stored<bool>(m_store, "roundArtwork", m_roundArtwork);
     {
@@ -174,6 +177,36 @@ void Settings::setVisualizersEnabled(bool value)
     m_visualizersEnabled = value;
     m_store.setValue(QStringLiteral("visualizersEnabled"), value);
     emit visualizersEnabledChanged();
+}
+
+void Settings::setPlayerBarVisualizer(bool value)
+{
+    if (m_playerBarVisualizer == value) {
+        return;
+    }
+    m_playerBarVisualizer = value;
+    m_store.setValue(QStringLiteral("playerBarVisualizer"), value);
+    emit playerBarVisualizerChanged();
+}
+
+void Settings::setTrackListVisualizer(bool value)
+{
+    if (m_trackListVisualizer == value) {
+        return;
+    }
+    m_trackListVisualizer = value;
+    m_store.setValue(QStringLiteral("trackListVisualizer"), value);
+    emit trackListVisualizerChanged();
+}
+
+void Settings::setImmersiveVisualizer(bool value)
+{
+    if (m_immersiveVisualizer == value) {
+        return;
+    }
+    m_immersiveVisualizer = value;
+    m_store.setValue(QStringLiteral("immersiveVisualizer"), value);
+    emit immersiveVisualizerChanged();
 }
 
 void Settings::setCircularVisualizer(bool value)

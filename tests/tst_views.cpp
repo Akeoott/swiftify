@@ -770,7 +770,7 @@ private slots:
         }
         rig.window->setColor(Qt::transparent);
         // a round cover `size` across with its top left at (20, 20), drawn
-        struct Drawn { QImage frame; qreal centre; qreal waves; qreal thickness; qreal amplitude; };
+        struct Drawn { QImage frame; qreal centre; qreal waves; qreal thickness; qreal amplitude; bool ready; };
         const auto draw = [&](bool squiggly, int size) {
             QQmlComponent component(&rig.engine);
             component.setData(QStringLiteral("import QtQuick\nimport Swiftify\n"
@@ -779,10 +779,20 @@ private slots:
                                   .arg(squiggly ? QStringLiteral("true") : QStringLiteral("false")).arg(size).toUtf8(), QUrl());
             std::unique_ptr<QObject> object(component.create());
             qobject_cast<QQuickItem *>(object.get())->setParentItem(rig.window->contentItem());
+            // Unlike the old solid rectangle, fallback sleeves are decoded
+            // asynchronously through the artwork provider. Test the cut only
+            // after its texture exists, not the transparent loading frame.
+            const bool ready = QTest::qWaitFor([&] {
+                for (QObject *child : object->findChildren<QObject *>()) {
+                    if (child->property("source").toUrl().toString().contains(QStringLiteral("swiftify-cover"))
+                        && child->property("status").toInt() == 1) return true; // Image.Ready
+                }
+                return false;
+            }, 2000);
             Rig::settle();
             rig.render();
             return Drawn { rig.render(), 20 + size / 2.0, object->property("squiggleWaves").toReal(),
-                           object->property("squiggleThickness").toReal(), object->property("squiggleAmplitude").toReal() };
+                           object->property("squiggleThickness").toReal(), object->property("squiggleAmplitude").toReal(), ready };
         };
         const auto at = [](const Drawn &drawn, qreal angle, qreal radius) {
             return drawn.frame.pixel(qFloor(drawn.centre + radius * std::sin(angle)),
@@ -800,6 +810,7 @@ private slots:
 
         const Drawn plain = draw(false, 120);
         const Drawn squiggly = draw(true, 120);
+        QVERIFY(plain.ready && squiggly.ready);
         // just inside the plain cover's edge it is solid all the way round;
         // the squiggly one's edge comes and goes across that circle, as its
         // wave does, and nothing of it is outside the cover's own square
@@ -820,6 +831,7 @@ private slots:
         // colour, a gap that shows what is behind, then the cover
         for (const int size : {120, 400}) {
             const Drawn drawn = draw(true, size);
+            QVERIFY(drawn.ready);
             const qreal t = drawn.thickness;
             const qreal middle = size / 2.0 - drawn.amplitude - t / 2 - 0.75;
             // the proportions hold, so a big cover's waves do not bunch up
@@ -2775,6 +2787,210 @@ private slots:
         Rig::settle();
         QCOMPARE(switchItem->isEnabled(), true);
         QCOMPARE(switchItem->opacity(), 1.0);
+    }
+
+    void clickingSelectedSortOptionReversesOrder()
+    {
+        Rig rig;
+        Song song1;
+        song1.name = QStringLiteral("Zebra");
+        song1.artists = QStringLiteral("Artist B");
+        song1.albumName = QStringLiteral("Album C");
+        song1.durationMs = 120000;
+        song1.uri = QStringLiteral("file:///song1.flac");
+
+        Song song2;
+        song2.name = QStringLiteral("Apple");
+        song2.artists = QStringLiteral("Artist A");
+        song2.albumName = QStringLiteral("Album B");
+        song2.durationMs = 240000;
+        song2.uri = QStringLiteral("file:///song2.flac");
+
+        Song song3;
+        song3.name = QStringLiteral("Mango");
+        song3.artists = QStringLiteral("Artist C");
+        song3.albumName = QStringLiteral("Album A");
+        song3.durationMs = 180000;
+        song3.uri = QStringLiteral("file:///song3.flac");
+
+        const Playlist playlist = rig.localFiles.createPlaylist(QStringLiteral("Test Playlist"), {}, {}, {song1, song2, song3});
+        rig.library.selectPlaylist(playlist);
+        rig.library.setPlaylistSongsForTesting({song1, song2, song3});
+
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->count(), 3);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).name, QStringLiteral("Zebra"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(1).name, QStringLiteral("Apple"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(2).name, QStringLiteral("Mango"));
+        QVERIFY(rig.library.canReorderPlaylist());
+
+        // Reverse playlist order
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortReversed(), true);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).name, QStringLiteral("Mango"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(1).name, QStringLiteral("Apple"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(2).name, QStringLiteral("Zebra"));
+        QVERIFY(!rig.library.canReorderPlaylist());
+
+        // Toggle back to forward playlist order
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).name, QStringLiteral("Zebra"));
+        QVERIFY(rig.library.canReorderPlaylist());
+
+        // Sort by Title (first click: ascending, reversed is false)
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).name, QStringLiteral("Apple"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(1).name, QStringLiteral("Mango"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(2).name, QStringLiteral("Zebra"));
+
+        // Sort by Title again (second click: descending, reversed is true)
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortReversed(), true);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).name, QStringLiteral("Zebra"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(1).name, QStringLiteral("Mango"));
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(2).name, QStringLiteral("Apple"));
+
+        // Switch to Duration (first click: ascending, reversed resets to false)
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Duration);
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Duration);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).durationMs, 120000);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(1).durationMs, 180000);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(2).durationMs, 240000);
+
+        // Click Duration again (reverses to descending)
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Duration);
+        QCOMPARE(rig.library.playlistSortReversed(), true);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(0).durationMs, 240000);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(1).durationMs, 180000);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->at(2).durationMs, 120000);
+
+        // Selecting a playlist resets sort to Playlist order and reversed to false
+        rig.library.selectPlaylist(playlist);
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+    }
+
+    void topBarSortMenuTogglesReverseAndArrow()
+    {
+        Rig rig;
+        const Playlist playlist = rig.localFiles.createPlaylist(QStringLiteral("Mine"), {}, {}, {});
+        rig.library.selectPlaylist(playlist);
+        QQmlComponent component(&rig.engine);
+        component.setData("import QtQuick\nimport Swiftify\n"
+                          "Item { width: 1280; height: 160\n"
+                          "Window { id: host; visible: false }\n"
+                          "Rectangle { id: page; anchors.fill: parent }\n"
+                          "TopBar { id: bar; objectName: 'bar'; width: parent.width; window: host; backdropSource: page } }", QUrl());
+        std::unique_ptr<QObject> object(component.create());
+        QVERIFY2(object, qPrintable(component.errorString()));
+        auto *holder = qobject_cast<QQuickItem *>(object.get());
+        holder->setParentItem(rig.window->contentItem());
+        Rig::settle();
+        rig.render();
+
+        auto *sortButton = holder->findChild<QQuickItem *>(QStringLiteral("sortButton"));
+        QVERIFY(sortButton);
+        auto *sortMenuLoader = holder->findChild<QObject *>(QStringLiteral("sortMenu"));
+        QVERIFY(sortMenuLoader);
+        QVERIFY(QMetaObject::invokeMethod(sortMenuLoader, "popupAt", Q_ARG(QQuickItem *, sortButton), Q_ARG(qreal, 0), Q_ARG(qreal, sortButton->height())));
+        Rig::settle();
+        rig.render();
+
+        auto *menu = sortMenuLoader->property("item").value<QObject *>();
+        QVERIFY(menu);
+
+        QQuickItem *titleItem = nullptr;
+        const int count = menu->property("count").toInt();
+        for (int i = 0; i < count; ++i) {
+            QQuickItem *item = nullptr;
+            QMetaObject::invokeMethod(menu, "itemAt", Q_RETURN_ARG(QQuickItem *, item), Q_ARG(int, i));
+            if (item && item->property("text").toString() == QStringLiteral("Title")) {
+                titleItem = item;
+                break;
+            }
+        }
+        QVERIFY(titleItem);
+        QCOMPARE(titleItem->property("checked").toBool(), false);
+        QCOMPARE(titleItem->property("trailingSymbol").toString(), QString());
+
+        // First click: selects Title (ascending)
+        QVERIFY(QMetaObject::invokeMethod(titleItem, "triggered") || QMetaObject::invokeMethod(titleItem, "trigger"));
+        Rig::settle();
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+        QCOMPARE(titleItem->property("checked").toBool(), true);
+        QCOMPARE(titleItem->property("trailingSymbol").toString(), QStringLiteral("arrow_upward"));
+
+        // Second click: reverses order (descending)
+        QVERIFY(QMetaObject::invokeMethod(titleItem, "triggered") || QMetaObject::invokeMethod(titleItem, "trigger"));
+        Rig::settle();
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortReversed(), true);
+        QCOMPARE(titleItem->property("checked").toBool(), true);
+        QCOMPARE(titleItem->property("trailingSymbol").toString(), QStringLiteral("arrow_downward"));
+
+        // Third click: toggles back to ascending
+        QVERIFY(QMetaObject::invokeMethod(titleItem, "triggered") || QMetaObject::invokeMethod(titleItem, "trigger"));
+        Rig::settle();
+        QCOMPARE(rig.library.playlistSortOrder(), LibraryStore::SortOrder::Title);
+        QCOMPARE(rig.library.playlistSortReversed(), false);
+        QCOMPARE(titleItem->property("checked").toBool(), true);
+        QCOMPARE(titleItem->property("trailingSymbol").toString(), QStringLiteral("arrow_upward"));
+    }
+
+    void playlistPlayButtonPlaysReversedOrder()
+    {
+        Rig rig;
+        Song song1;
+        song1.name = QStringLiteral("Zebra");
+        song1.artists = QStringLiteral("Artist B");
+        song1.albumName = QStringLiteral("Album C");
+        song1.durationMs = 120000;
+        song1.uri = QStringLiteral("file:///music/song1.flac");
+
+        Song song2;
+        song2.name = QStringLiteral("Apple");
+        song2.artists = QStringLiteral("Artist A");
+        song2.albumName = QStringLiteral("Album B");
+        song2.durationMs = 240000;
+        song2.uri = QStringLiteral("file:///music/song2.flac");
+
+        Playlist playlist;
+        playlist.id = QStringLiteral("test_playlist_1");
+        playlist.name = QStringLiteral("Reversed Playlist");
+        playlist.songCount = 2;
+
+        rig.library.selectPlaylist(playlist);
+        rig.library.setPlaylistSongsForTesting({song1, song2});
+
+        // Reverse the playlist order
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortReversed(), true);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->count(), 2);
+
+        const auto page = rig.show(QStringLiteral("PlaylistView"));
+        QVERIFY(page);
+
+        auto *playButton = page->findChild<QQuickItem *>(QStringLiteral("playButton"));
+        QVERIFY(playButton);
+        QCOMPARE(playButton->isEnabled(), true);
+
+        QVERIFY(QMetaObject::invokeMethod(playButton, "clicked"));
+        Rig::settle();
+
+        // Queue should match the reversed displayed order: song2 (Apple), then song1 (Zebra)
+        const auto &queue = rig.player.activeQueue();
+        QCOMPARE(queue.size(), 2);
+        QCOMPARE(queue.at(0).name, QStringLiteral("Apple"));
+        QCOMPARE(queue.at(1).name, QStringLiteral("Zebra"));
+        QCOMPARE(rig.player.currentSong().name, QStringLiteral("Apple"));
     }
 
     void views_data()

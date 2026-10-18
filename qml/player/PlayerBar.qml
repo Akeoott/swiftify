@@ -18,7 +18,7 @@ Item {
     readonly property real buttonSize: tiny ? 26 : (compact ? 28 : 32)
     readonly property real innerGap: tiny ? 6 : (compact ? 8 : 14)
     readonly property bool titleFits: nowPlaying.width - artwork.width - 8 >= 48
-    readonly property bool showsMeter: !compact && Settings.visualizersEnabled && Player.hasSong
+    readonly property bool showsMeter: !compact && Settings.visualizersEnabled && Settings.playerBarVisualizer && Player.hasSong
     property bool progressExpanded: seek.expanded
 
     implicitHeight: tiny ? 56 : 64

@@ -45,6 +45,7 @@ Item {
 
         hero: CollectionHero {
             artworkUrl: root.playlist.artworkUrl
+            fallbackKey: root.playlist.id.length > 0 ? root.playlist.id : root.playlist.name
             kind: root.playlist.isLocal ? "LOCAL PLAYLIST" : "PLAYLIST"
             title: root.playlist.name
             description: root.playlist.description
@@ -53,6 +54,7 @@ Item {
             actions: [
                 TextButton {
                     id: playButton
+                    objectName: "playButton"
                     // a little wider than its words, and as wide as shuffle
                     // beside it, whose words are longer
                     width: iconOnly ? compactSize : Math.max(naturalWidth + 28, shuffleButton.naturalWidth)
@@ -63,12 +65,13 @@ Item {
                     symbol: "play_arrow"
                     burst: "play"
                     text: qsTr("Play")
-                    enabled: Library.playlistSongs.count > 0
-                    onClicked: Player.playFromModel(Library.playlistSongs, 0)
+                    enabled: Library.displayedPlaylistSongs.count > 0
+                    onClicked: Player.playFromModel(Library.displayedPlaylistSongs, 0)
                 },
                 // play's twin in the primary's softer tone
                 TextButton {
                     id: shuffleButton
+                    objectName: "shuffleButton"
                     width: playButton.width
                     iconOnly: parent ? parent.compactActions : false
                     compactSize: parent ? parent.actionSize : 48
@@ -81,8 +84,8 @@ Item {
                     colBackgroundHover: shuffleButton.scheme.primaryContainerHover
                     colRipple: shuffleButton.scheme.primaryContainerActive
                     labelColor: shuffleButton.scheme.onPrimaryContainer
-                    enabled: Library.playlistSongs.count > 0
-                    onClicked: Player.shufflePlay(Library.playlistSongs)
+                    enabled: Library.displayedPlaylistSongs.count > 0
+                    onClicked: Player.shufflePlay(Library.displayedPlaylistSongs)
                 },
                 // a playlist made here takes tracks from anywhere: copies,
                 // so the originals can move or go

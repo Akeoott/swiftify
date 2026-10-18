@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(Swiftify
-    VERSION 0.7.0
+    VERSION 0.11
     DESCRIPTION "A native Spotify client"
     LANGUAGES C CXX)
 
@@ -39,6 +39,9 @@ endif()
 # the wayland, d-bus and pipewire pieces. off elsewhere so the portable parts
 # can be built and tested on a development machine without them.
 option(SWIFTIFY_DESKTOP_INTEGRATION "Build the Linux desktop integration" ${SWIFTIFY_IS_LINUX})
+# spotify soloist plays spotify's songs for accounts spotify no longer gives
+# librespot the keys for. it is only built for linux.
+option(SWIFTIFY_SOLOIST "Play Spotify songs through Spotify Soloist when it is installed" ${SWIFTIFY_IS_LINUX})
 
 find_package(Qt6 6.9 REQUIRED COMPONENTS
     Core Gui Network Concurrent Qml Quick QuickControls2 ShaderTools)
@@ -53,6 +56,9 @@ endif()
 if(SWIFTIFY_DESKTOP_INTEGRATION)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(PULSE REQUIRED IMPORTED_TARGET libpulse)
+endif()
+if(SWIFTIFY_SOLOIST)
+    find_package(Qt6 6.9 REQUIRED COMPONENTS WebSockets)
 endif()
 find_package(Qt6Keychain REQUIRED)
 if(WIN32)
@@ -185,6 +191,12 @@ endif()
 if(NOT TARGET Qt6::DBus)
     list(FILTER SWIFTIFY_SOURCES EXCLUDE REGEX "^src/system/dbus/")
 endif()
+if(NOT SWIFTIFY_SOLOIST)
+    list(FILTER SWIFTIFY_SOURCES EXCLUDE REGEX "^src/soloist/")
+elseif(NOT SWIFTIFY_DESKTOP_INTEGRATION)
+    # routing soloist through swiftify records it with libpulse
+    list(FILTER SWIFTIFY_SOURCES EXCLUDE REGEX "^src/soloist/SoloistAudioRoute")
+endif()
 
 file(GLOB_RECURSE SWIFTIFY_QML CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     qml/*.qml)
@@ -266,8 +278,13 @@ target_compile_definitions(swiftify_app PUBLIC
     $<$<TARGET_EXISTS:Qt6::DBus>:SWIFTIFY_HAS_DBUS>)
 target_compile_definitions(swiftify_app PRIVATE
     SWIFTIFY_BUILD_FONT_DIRECTORY="${SWIFTIFY_FONT_DIRECTORY}")
+# main.cpp picks the core, and is built outside swiftify_app
+target_compile_definitions(swiftify_app PUBLIC $<$<BOOL:${SWIFTIFY_SOLOIST}>:SWIFTIFY_HAS_SOLOIST>)
 if(TARGET Qt6::DBus)
     target_link_libraries(swiftify_app PUBLIC Qt6::DBus)
+endif()
+if(SWIFTIFY_SOLOIST)
+    target_link_libraries(swiftify_app PUBLIC Qt6::WebSockets)
 endif()
 if(SWIFTIFY_DESKTOP_INTEGRATION)
     target_link_libraries(swiftify_app PUBLIC PkgConfig::PULSE)
@@ -287,6 +304,40 @@ target_link_libraries(swiftify_app PUBLIC
 
 if(WIN32)
     target_link_libraries(swiftify_app PUBLIC Qt6::Widgets comctl32 dwmapi ole32 shell32 uuid runtimeobject)
+
+    # older mingw-w64 headers (qt's bundled mingw 13.1, say) have no
+    # SystemMediaTransportControls in windows.media.h; the media controls are
+    # left out there, and the taskbar and window styling still build
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_LIBRARIES runtimeobject)
+    check_cxx_source_compiles([=[
+        #ifdef __MINGW32__
+        #define ____FIReference_1_boolean_INTERFACE_DEFINED__
+        #endif
+        #include <windows.h>
+        #include <roapi.h>
+        #include <windows.media.h>
+        #include <systemmediatransportcontrolsinterop.h>
+        using Handler = ABI::Windows::Foundation::ITypedEventHandler<
+            ABI::Windows::Media::SystemMediaTransportControls *,
+            ABI::Windows::Media::SystemMediaTransportControlsButtonPressedEventArgs *>;
+        int main()
+        {
+            ABI::Windows::Media::ISystemMediaTransportControls *controls = nullptr;
+            ABI::Windows::Media::IMusicDisplayProperties2 *music = nullptr;
+            ISystemMediaTransportControlsInterop *interop = nullptr;
+            Handler *handler = nullptr;
+            return __uuidof(Handler).Data1 != 0 && !controls && !music && !interop && !handler ? 0 : 1;
+        }
+    ]=] SWIFTIFY_HAVE_SMTC)
+    unset(CMAKE_REQUIRED_LIBRARIES)
+    if(SWIFTIFY_HAVE_SMTC)
+        target_compile_definitions(swiftify_app PRIVATE SWIFTIFY_HAVE_SMTC)
+    else()
+        message(WARNING "This toolchain's windows.media.h has no SystemMediaTransportControls, so Swiftify is "
+            "building without the Windows media controls (media overlay, lock screen, media keys). "
+            "Build with MSVC, or a newer mingw-w64, for them; see the Windows section of README.md.")
+    endif()
 endif()
 
 qt_add_executable(swiftify src/main.cpp)

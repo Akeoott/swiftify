@@ -16,9 +16,9 @@ Item {
     property bool animateLayout: false
     property MaterialScheme scheme: PlayerStyle.darkScheme
 
-    readonly property bool showsRing: Settings.visualizersEnabled && Settings.circularVisualizer
+    readonly property bool showsRing: Settings.visualizersEnabled && Settings.immersiveVisualizer && Settings.circularVisualizer
     /// round inside the ring, or round on its own with visualizers off
-    readonly property bool roundCover: showsRing || (!Settings.visualizersEnabled && Settings.roundArtwork)
+    readonly property bool roundCover: showsRing || ((!Settings.visualizersEnabled || !Settings.immersiveVisualizer) && Settings.roundArtwork)
     readonly property bool compactHorizontal: layout.contentHeight < 460
     property real artworkSize: compactHorizontal ? Math.min(240, Math.max(0, layout.contentHeight - 16), width * 0.36)
                                                  : layout.artworkSize

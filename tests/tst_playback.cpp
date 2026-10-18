@@ -4,6 +4,7 @@
 #include "app/Settings.h"
 #include "playback/InteractionState.h"
 #include "playback/PlaybackController.h"
+#include "playback/PlaybackState.h"
 #include "spotify/CredentialStore.h"
 #include "spotify/SpotifySession.h"
 #if defined(SWIFTIFY_HAS_DBUS) && defined(Q_OS_LINUX)
@@ -11,6 +12,8 @@
 #endif
 
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QNetworkAccessManager>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -60,6 +63,11 @@ private:
         SpotifySession session {&core, &credentials, &network, &errors};
         PlaybackController player {&core, &session, &settings, &errors};
 
+        explicit Rig(const QString &path = {})
+            : settings(path.isEmpty() ? directory.filePath(QStringLiteral("swiftify.conf")) : path)
+        {
+        }
+
         /// lets the song the player asked for finish loading
         void finishLoading()
         {
@@ -80,6 +88,135 @@ private:
     };
 
 private slots:
+    void lastTrackQueueAndPositionSurviveRestartWithoutStartingSound()
+    {
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("settings.ini"));
+        auto songs = makeQueue(3);
+        songs[1].uri = songs[0].uri; // same URI, different occurrence and name
+        {
+            Rig rig(path);
+            rig.player.play(songs[1], songs);
+            rig.finishLoading();
+            rig.core.duration = 200000;
+            rig.player.seek(42000);
+            QTRY_VERIFY(rig.settings.contains(QStringLiteral("lastPlaybackState")));
+            QTRY_COMPARE(playbackstate::decode(rig.settings.value(QStringLiteral("lastPlaybackState")).toByteArray())->positionMs, 42000u);
+            QVERIFY(rig.player.isPlaying());
+        }
+        {
+            Rig rig(path);
+            QVERIFY(rig.player.hasSong());
+            QVERIFY(!rig.player.isPlaying());
+            QVERIFY(!rig.player.isLoading());
+            QVERIFY(!rig.core.sounding);
+            QVERIFY(rig.core.pending.isEmpty());
+            QCOMPARE(rig.player.currentSong().name, songs[1].name);
+            QCOMPARE(rig.player.positionMs(), 42000);
+            QCOMPARE(rig.player.durationMs(), 200000);
+            QCOMPARE(rig.player.currentQueueIndex(), 1);
+            QCOMPARE(rig.player.activeQueue().size(), 3);
+            QCOMPARE(rig.player.upNextSongs().first().uri, songs[2].uri);
+            // Seeking a restored track changes the parked position, not the
+            // empty audio core. The seek is applied only after explicit Play.
+            rig.player.seek(60000);
+            QCOMPARE(rig.player.positionMs(), 60000);
+            QCOMPARE(rig.core.position, 0u);
+            QVERIFY(rig.core.pending.isEmpty());
+            rig.player.resume();
+            rig.finishLoading();
+            QVERIFY(rig.player.isPlaying());
+            QCOMPARE(rig.core.position, 60000u);
+            QVERIFY(rig.core.log.contains(QStringLiteral("seek 60000")));
+        }
+    }
+
+    void restoredQueueRetainsShuffleOrderAndRepeat()
+    {
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("settings.ini"));
+        QStringList shuffled;
+        QString currentName;
+        {
+            Rig rig(path);
+            const auto songs = makeQueue(8);
+            rig.player.play(songs[3], songs);
+            rig.finishLoading();
+            rig.player.toggleShuffle();
+            rig.player.cycleRepeatMode();
+            rig.player.skipForward();
+            rig.finishLoading();
+            currentName = rig.player.currentSong().name;
+            for (const auto &song : rig.player.activeQueue()) shuffled.append(song.uri);
+        }
+        {
+            Rig rig(path);
+            QVERIFY(!rig.player.isPlaying());
+            QVERIFY(rig.player.isShuffleEnabled());
+            QCOMPARE(rig.player.repeatMode(), PlaybackController::RepeatMode::All);
+            QStringList restored;
+            for (const auto &song : rig.player.activeQueue()) restored.append(song.uri);
+            QCOMPARE(restored, shuffled);
+            QVERIFY(rig.player.precedingSong());
+            QVERIFY(rig.player.activeQueue().contains(*rig.player.precedingSong()));
+            rig.player.toggleShuffle();
+            QCOMPARE(rig.player.activeQueue().at(0).name, QStringLiteral("song0"));
+            QCOMPARE(rig.player.currentSong().name, currentName);
+        }
+    }
+
+    void pauseStillWinsOverRestoredPlaybackAndLogoutForgetsIt()
+    {
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("settings.ini"));
+        {
+            Rig rig(path);
+            const auto songs = makeQueue(2);
+            rig.player.play(songs[0], songs);
+            rig.finishLoading();
+            rig.player.seek(30000);
+        }
+        {
+            Rig rig(path);
+            rig.player.resume();
+            rig.player.pause();
+            rig.finishLoading();
+            QVERIFY(!rig.player.isPlaying());
+            QVERIFY(!rig.core.sounding);
+            rig.player.resume();
+            rig.finishLoading();
+            QCOMPARE(rig.core.position, 30000u);
+            QVERIFY(QMetaObject::invokeMethod(&rig.session, "loggedOut"));
+            QVERIFY(!rig.player.hasSong());
+            QVERIFY(!rig.settings.contains(QStringLiteral("lastPlaybackState")));
+        }
+        Rig next(path);
+        QVERIFY(!next.player.hasSong());
+        QVERIFY(next.core.pending.isEmpty());
+    }
+
+    void playbackSnapshotsRejectCorruptionAndKeepTheCurrentTrackInLargeQueues()
+    {
+        QVERIFY(!playbackstate::decode(QByteArrayLiteral("bad JSON")));
+        QVERIFY(!playbackstate::decode(QByteArrayLiteral("{\"version\":99}")));
+        const auto songs = makeQueue(2600);
+        const auto bytes = playbackstate::encode(songs, {}, {}, songs[2400], 900000, 200000, false, 0);
+        const auto snapshot = playbackstate::decode(bytes);
+        QVERIFY(snapshot);
+        QVERIFY(snapshot->queue.size() <= playbackstate::maximumQueue);
+        QCOMPARE(snapshot->queue.at(snapshot->currentIndex).name, songs[2400].name);
+        QCOMPARE(snapshot->positionMs, 200000u);
+        auto object = QJsonDocument::fromJson(bytes).object();
+        object.insert(QStringLiteral("currentIndex"), 9000);
+        QVERIFY(!playbackstate::decode(QJsonDocument(object).toJson()));
+        object.insert(QStringLiteral("currentIndex"), snapshot->currentIndex);
+        object.insert(QStringLiteral("shuffledOrder"), QJsonArray {0, 0});
+        QVERIFY(!playbackstate::decode(QJsonDocument(object).toJson()));
+        Song debug;
+        debug.uri = QString::fromLatin1(PlaybackController::kLoadingTestUri);
+        QVERIFY(playbackstate::encode({debug}, {}, {}, debug, 0, 0, false, 0).isEmpty());
+    }
+
     void playingASongLoadsItAndStartsIt()
     {
         Rig rig;

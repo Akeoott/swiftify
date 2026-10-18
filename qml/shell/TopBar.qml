@@ -138,6 +138,7 @@ Item {
             }
             ToolbarButton {
                 id: sort
+                objectName: "sortButton"
                 effect: ToolbarButton.Pop
                 size: root.buttonSize
                 iconSize: root.compact ? 19 : 26
@@ -311,6 +312,7 @@ Item {
 
     MenuLoader {
         id: sortMenu
+        objectName: "sortMenu"
         sourceComponent: StyledMenu {
             Repeater {
                 model: [
@@ -341,7 +343,8 @@ Item {
                     text: modelData.label
                     checkmark: true
                     checked: Library.playlistSortOrder === modelData.order
-                    onTriggered: Library.playlistSortOrder = modelData.order
+                    trailingSymbol: checked ? (Library.playlistSortReversed ? "arrow_downward" : "arrow_upward") : ""
+                    onTriggered: Library.togglePlaylistSortOrder(modelData.order)
                 }
             }
         }

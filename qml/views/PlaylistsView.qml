@@ -91,6 +91,7 @@ GridView {
             visible: !cell.isNewTile && !cell.isTracksTile
             artworkSize: root.tile
             artworkUrl: cell.playlist.artworkUrl
+            fallbackKey: cell.playlist.id.length > 0 ? cell.playlist.id : cell.playlist.name
             placeholderSymbol: "queue_music"
             title: cell.playlist.name
             subtitle: Format.songCount(cell.playlist.songCount)

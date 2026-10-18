@@ -322,24 +322,52 @@ void LibraryStore::refreshDisplayedSongs()
             return collator.compare(field(left), field(right)) < 0;
         };
     };
+    const auto byTextDesc = [&collator](auto field) {
+        return [&collator, field](const Song &left, const Song &right) {
+            return collator.compare(field(left), field(right)) > 0;
+        };
+    };
     switch (m_sortOrder) {
     case SortOrder::Playlist:
+        if (m_sortReversed) {
+            std::reverse(shown.begin(), shown.end());
+        }
         break;
     case SortOrder::Title:
-        std::stable_sort(shown.begin(), shown.end(), byText([](const Song &song) { return song.name; }));
+        if (m_sortReversed) {
+            std::stable_sort(shown.begin(), shown.end(), byTextDesc([](const Song &song) { return song.name; }));
+        } else {
+            std::stable_sort(shown.begin(), shown.end(), byText([](const Song &song) { return song.name; }));
+        }
         break;
     case SortOrder::Artist:
-        std::stable_sort(shown.begin(), shown.end(), byText([](const Song &song) { return song.artists; }));
+        if (m_sortReversed) {
+            std::stable_sort(shown.begin(), shown.end(), byTextDesc([](const Song &song) { return song.artists; }));
+        } else {
+            std::stable_sort(shown.begin(), shown.end(), byText([](const Song &song) { return song.artists; }));
+        }
         break;
     case SortOrder::Album:
-        std::stable_sort(shown.begin(), shown.end(), byText([](const Song &song) { return song.albumName; }));
+        if (m_sortReversed) {
+            std::stable_sort(shown.begin(), shown.end(), byTextDesc([](const Song &song) { return song.albumName; }));
+        } else {
+            std::stable_sort(shown.begin(), shown.end(), byText([](const Song &song) { return song.albumName; }));
+        }
         break;
     case SortOrder::Duration:
-        std::stable_sort(shown.begin(), shown.end(), [](const Song &left, const Song &right) {
-            const int a = left.durationMs > 0 ? left.durationMs : std::numeric_limits<int>::max();
-            const int b = right.durationMs > 0 ? right.durationMs : std::numeric_limits<int>::max();
-            return a < b;
-        });
+        if (m_sortReversed) {
+            std::stable_sort(shown.begin(), shown.end(), [](const Song &left, const Song &right) {
+                const int a = left.durationMs > 0 ? left.durationMs : -1;
+                const int b = right.durationMs > 0 ? right.durationMs : -1;
+                return a > b;
+            });
+        } else {
+            std::stable_sort(shown.begin(), shown.end(), [](const Song &left, const Song &right) {
+                const int a = left.durationMs > 0 ? left.durationMs : std::numeric_limits<int>::max();
+                const int b = right.durationMs > 0 ? right.durationMs : std::numeric_limits<int>::max();
+                return a < b;
+            });
+        }
         break;
     }
     m_displayedPlaylistSongs->setSongs(shown);
@@ -361,6 +389,36 @@ void LibraryStore::setPlaylistSortOrder(SortOrder order)
         return;
     }
     m_sortOrder = order;
+    m_sortReversed = false;
+    refreshDisplayedSongs();
+    emit playlistViewChanged();
+}
+
+void LibraryStore::setPlaylistSortReversed(bool reversed)
+{
+    if (m_sortReversed == reversed) {
+        return;
+    }
+    m_sortReversed = reversed;
+    refreshDisplayedSongs();
+    emit playlistViewChanged();
+}
+
+void LibraryStore::togglePlaylistSortOrder(SortOrder order)
+{
+    if (m_sortOrder == order) {
+        m_sortReversed = !m_sortReversed;
+    } else {
+        m_sortOrder = order;
+        m_sortReversed = false;
+    }
+    refreshDisplayedSongs();
+    emit playlistViewChanged();
+}
+
+void LibraryStore::togglePlaylistSortOrder()
+{
+    m_sortReversed = !m_sortReversed;
     refreshDisplayedSongs();
     emit playlistViewChanged();
 }
@@ -369,7 +427,7 @@ bool LibraryStore::canReorderPlaylist() const
 {
     // dragging is offered only where it means something: on a playlist this
     // account may edit, showing every song, in the playlist's own order.
-    return isSelectedPlaylistEditable() && m_sortOrder == SortOrder::Playlist && m_playlistFilterQuery.trimmed().isEmpty();
+    return isSelectedPlaylistEditable() && m_sortOrder == SortOrder::Playlist && !m_sortReversed && m_playlistFilterQuery.trimmed().isEmpty();
 }
 
 void LibraryStore::refreshRecommendations()
@@ -545,6 +603,7 @@ void LibraryStore::selectPlaylist(const Playlist &playlist)
     cancelDetailLoads();
     m_playlistFilterQuery.clear();
     m_sortOrder = SortOrder::Playlist;
+    m_sortReversed = false;
     m_errors->clear();
     // shown at once when it is already known, and refreshed underneath: a
     // playlist can be edited from anywhere.
@@ -1579,6 +1638,7 @@ void LibraryStore::reset()
     m_searchQuery.clear();
     m_playlistFilterQuery.clear();
     m_sortOrder = SortOrder::Playlist;
+    m_sortReversed = false;
 
     m_loadingPlaylists = m_loadingSongs = m_loadingHome = m_loadingSavedSongs = false;
     m_searching = m_loadingArtist = m_savingPlaylist = false;

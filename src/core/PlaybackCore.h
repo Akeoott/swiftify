@@ -45,6 +45,9 @@ public:
     /// items page. the web api only gives the songs of the person's own and
     /// collaborative playlists
     virtual QCoro::Task<QString> playlistJson(QString playlistUri) = 0;
+    /// an artist's top songs read through the session, shaped like the web
+    /// api's top tracks response, which spotify took away
+    virtual QCoro::Task<QString> artistTopTracksJson(QString artistUri) = 0;
 
     virtual void play() = 0;
     virtual void pause() = 0;

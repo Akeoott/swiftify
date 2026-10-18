@@ -845,6 +845,11 @@ QCoro::Task<QString> SoloistCore::playlistJson(QString playlistUri)
     co_return co_await m_fallback->playlistJson(playlistUri);
 }
 
+QCoro::Task<QString> SoloistCore::artistTopTracksJson(QString artistUri)
+{
+    co_return co_await m_fallback->artistTopTracksJson(artistUri);
+}
+
 void SoloistCore::setStreamQuality(int kbps)
 {
     m_fallback->setStreamQuality(kbps);

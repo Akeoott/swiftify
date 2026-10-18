@@ -82,6 +82,9 @@ private:
     QString m_systemSchemePath;
     std::optional<MaterialScheme::Roles> m_systemRoles;
     QStringList m_schemeDirectories;
+    /// shells' scheme files that exist, watched themselves rather than their
+    /// folders, which the shells fill with other things all the time
+    QStringList m_schemeFiles;
 };
 
 } // namespace swiftify

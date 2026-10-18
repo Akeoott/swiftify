@@ -46,19 +46,6 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
 
 ## Building from source
 
-### Continue after restarting
-
-Swiftify remembers the current track, its position, queue, shuffle order, and
-repeat mode. After restarting, the track is shown **paused**; only pressing Play
-loads it into the audio core and resumes from the saved position. Startup never
-starts music automatically. A restored position can also be changed before Play.
-
-State is kept locally alongside preferences, checkpointed during playback and
-flushed on orderly quit. Logging out clears it. Missing local files and unavailable
-Spotify tracks are not silently replaced with another song; Play reports the usual
-loading error. Invalid snapshots are ignored. Extremely large queues keep up to
-2,000 entries around the current occurrence and up to 100 history entries.
-
 ### Build requirements
 
 - Qt 6.9 or newer: Qt Base, Qt Declarative and Qt Shader Tools

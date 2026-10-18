@@ -3,7 +3,7 @@ import QtQuick
 import Swiftify
 
 // cover art: decoded at about the size shown, clipped by a shader rather
-// than a layer, over a gradient placeholder until it arrives. with
+// than a layer, over a procedural record sleeve until it arrives. with
 // `crossfade` a new cover blends over the old one, as the swift player's
 // artwork does. resized, it keeps showing what it has while the new size
 // decodes, rather than dropping back to the placeholder.
@@ -24,6 +24,9 @@ Item {
     property int revealDuration: 0
     property double sourceChangedAt: 0
     property string placeholderSymbol: "music_note"
+    /// Shared across a card, its hero and navigation thumbnail. Genuine art
+    /// always wins; this identity only chooses the missing/loading sleeve.
+    property string fallbackKey: source.toString().length > 0 ? source.toString() : placeholderSymbol
     /// a cover is shared with everything else showing it at the same size,
     /// and its decoded pixels are let go of once it is on the gpu
     /// (QSG_TRANSIENT_IMAGES). another window cannot draw from what is gone,
@@ -144,36 +147,22 @@ Item {
 
         // under a squiggly cover the placeholder goes through the same cut,
         // so the squiggle is its edge too
-        Rectangle {
+        Image {
             id: placeholder
             anchors.fill: parent
-            radius: root.effectiveRadius
-            visible: (!root.ready || frontLayer.opacity < 1) && !backLayer.visible
-            gradient: Gradient {
-                GradientStop { position: 0; color: Appearance.colors.primaryContainer }
-                GradientStop { position: 1; color: Appearance.colors.tertiaryContainer }
-            }
-
-            MaterialSymbol {
-                anchors.centerIn: parent
-                text: root.placeholderSymbol
-                iconSize: Math.max(12, Math.min(parent.width, parent.height) * 0.38)
-                color: Appearance.colors.onPrimaryContainer
-                opacity: 0.75
-            }
-        }
-
-        ShaderEffectSource {
-            id: placeholderTexture
             visible: false
-            sourceItem: root.showsSquiggle ? placeholder : null
-            hideSource: true
+            asynchronous: true
+            source: root.artworkUrl("swiftify-cover:/" + (Theme.dark ? "dark" : "light")
+                                    + "?key=" + encodeURIComponent(root.fallbackKey))
+            sourceSize: Qt.size(root.pixelSize, root.pixelSize)
         }
 
         Layer {
-            image: placeholderTexture
+            image: placeholder
             radius: root.effectiveRadius
-            visible: root.showsSquiggle && placeholder.visible
+            borderWidth: root.borderWidth
+            borderColor: root.borderColor
+            visible: (!root.ready || frontLayer.opacity < 1) && !backLayer.visible
         }
 
         // the cover last shown, at the size it was shown: what stands in

@@ -1,6 +1,7 @@
 #include "artwork/ArtworkCache.h"
 
 #include "app/Paths.h"
+#include "artwork/PlaylistCovers.h"
 
 #include <QBuffer>
 #include <QFile>
@@ -11,6 +12,7 @@
 #include <QNetworkReply>
 #include <QPointer>
 #include <QThreadPool>
+#include <QUrlQuery>
 #include <QtConcurrent>
 
 #include <algorithm>
@@ -175,6 +177,20 @@ void ArtworkCache::image(const QUrl &url, int pixels, ImageCallback callback)
         return;
     }
     m_decodes.insert(key, {std::move(callback)});
+
+    if (url.scheme() == QStringLiteral("swiftify-cover")) {
+        const QString identity = QUrlQuery(url).queryItemValue(QStringLiteral("key"), QUrl::FullyDecoded);
+        const bool dark = url.path() == QStringLiteral("/dark");
+        QtConcurrent::run(QThreadPool::globalInstance(), covers::fallback, identity, dark, size)
+            .then(this, [this, key](const QImage &image) {
+                m_decoded.insert(key, new QImage(image), int(image.sizeInBytes()));
+                const QList<ImageCallback> callbacks = m_decodes.take(key);
+                for (const ImageCallback &callback : callbacks) {
+                    callback(image);
+                }
+            });
+        return;
+    }
 
     bytes(url, [this, key, size](const QByteArray &data) {
         if (data.isEmpty()) {

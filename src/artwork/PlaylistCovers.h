@@ -46,6 +46,11 @@ void paint(QPainter &painter, const Design &design, const QString &title, qreal 
 QImage render(const Design &design, const QString &title, int edge = kEdge);
 QByteArray jpeg(const Design &design, const QString &title);
 
+/// Quiet, text-free record sleeves for missing/loading artwork. The key is
+/// a stable media id (or title), never a process-seeded hash. No theme object
+/// is accessed, so this can be rasterized on an image worker thread.
+QImage fallback(const QString &key, bool dark, int edge = kEdge);
+
 /// part of a photo as a square jpeg under `maximumBytes`, stepping the
 /// quality down rather than failing outright
 QByteArray squareJpeg(const QImage &image, QRectF crop, int maximumBytes);

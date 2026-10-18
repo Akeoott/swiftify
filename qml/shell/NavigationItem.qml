@@ -12,6 +12,7 @@ T.AbstractButton {
 
     property string symbol
     property url artworkUrl
+    property string fallbackKey: text
     property bool selected: false
     property bool showArtwork: false
     /// the shape the icon sits on while selected
@@ -131,6 +132,7 @@ T.AbstractButton {
                 height: 24
                 radius: 5
                 source: root.artworkUrl
+                fallbackKey: root.fallbackKey
             }
 
             StyledText {

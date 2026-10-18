@@ -253,6 +253,7 @@ Item {
         text: playlist.name
         showArtwork: true
         artworkUrl: playlist.artworkUrl
+        fallbackKey: playlist.id.length > 0 ? playlist.id : playlist.name
         indent: 12
         selected: Library.page === Library.Page.Playlist && Library.selectedPlaylistId === playlist.id
         onClicked: Library.selectPlaylist(item.playlist)

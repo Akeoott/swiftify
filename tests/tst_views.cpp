@@ -744,7 +744,7 @@ private slots:
         }
         rig.window->setColor(Qt::transparent);
         // a round cover `size` across with its top left at (20, 20), drawn
-        struct Drawn { QImage frame; qreal centre; qreal waves; qreal thickness; qreal amplitude; };
+        struct Drawn { QImage frame; qreal centre; qreal waves; qreal thickness; qreal amplitude; bool ready; };
         const auto draw = [&](bool squiggly, int size) {
             QQmlComponent component(&rig.engine);
             component.setData(QStringLiteral("import QtQuick\nimport Swiftify\n"
@@ -753,10 +753,20 @@ private slots:
                                   .arg(squiggly ? QStringLiteral("true") : QStringLiteral("false")).arg(size).toUtf8(), QUrl());
             std::unique_ptr<QObject> object(component.create());
             qobject_cast<QQuickItem *>(object.get())->setParentItem(rig.window->contentItem());
+            // Unlike the old solid rectangle, fallback sleeves are decoded
+            // asynchronously through the artwork provider. Test the cut only
+            // after its texture exists, not the transparent loading frame.
+            const bool ready = QTest::qWaitFor([&] {
+                for (QObject *child : object->findChildren<QObject *>()) {
+                    if (child->property("source").toUrl().toString().contains(QStringLiteral("swiftify-cover"))
+                        && child->property("status").toInt() == 1) return true; // Image.Ready
+                }
+                return false;
+            }, 2000);
             Rig::settle();
             rig.render();
             return Drawn { rig.render(), 20 + size / 2.0, object->property("squiggleWaves").toReal(),
-                           object->property("squiggleThickness").toReal(), object->property("squiggleAmplitude").toReal() };
+                           object->property("squiggleThickness").toReal(), object->property("squiggleAmplitude").toReal(), ready };
         };
         const auto at = [](const Drawn &drawn, qreal angle, qreal radius) {
             return drawn.frame.pixel(qFloor(drawn.centre + radius * std::sin(angle)),
@@ -774,6 +784,7 @@ private slots:
 
         const Drawn plain = draw(false, 120);
         const Drawn squiggly = draw(true, 120);
+        QVERIFY(plain.ready && squiggly.ready);
         // just inside the plain cover's edge it is solid all the way round;
         // the squiggly one's edge comes and goes across that circle, as its
         // wave does, and nothing of it is outside the cover's own square
@@ -794,6 +805,7 @@ private slots:
         // colour, a gap that shows what is behind, then the cover
         for (const int size : {120, 400}) {
             const Drawn drawn = draw(true, size);
+            QVERIFY(drawn.ready);
             const qreal t = drawn.thickness;
             const qreal middle = size / 2.0 - drawn.amplitude - t / 2 - 0.75;
             // the proportions hold, so a big cover's waves do not bunch up

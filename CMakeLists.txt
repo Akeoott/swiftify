@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(Swiftify
-    VERSION 0.9.0
+    VERSION 0.9.1
     DESCRIPTION "A native Spotify client"
     LANGUAGES C CXX)
 
@@ -313,7 +313,9 @@ if(WIN32)
     if(SWIFTIFY_HAVE_SMTC)
         target_compile_definitions(swiftify_app PRIVATE SWIFTIFY_HAVE_SMTC)
     else()
-        message(STATUS "windows.media.h has no SystemMediaTransportControls; building without media controls")
+        message(WARNING "This toolchain's windows.media.h has no SystemMediaTransportControls, so Swiftify is "
+            "building without the Windows media controls (media overlay, lock screen, media keys). "
+            "Build with MSVC, or a newer mingw-w64, for them; see the Windows section of README.md.")
     endif()
 endif()
 

@@ -166,6 +166,20 @@ for a different Qt kit, toolchain location or install directory, pass overrides:
 adjust the example paths to your installed versions, MinGW must match your Qt
 kit, not just the example folder name. 
 
+**the toolchain decides one feature:** the Windows media controls (the media overlay,
+lock screen and media keys showing what's playing) need `SystemMediaTransportControls`
+in the compiler's Windows headers.
+
+| toolchain | media controls |
+|---|---|
+| MSVC 2022 | yes |
+| Qt's MinGW 13.1 (`mingw1310_64`, mingw-w64 runtime v11) | no, everything else works |
+| a newer mingw-w64 (tested: GCC 16.1, runtime v14) | yes |
+
+when they're left out, cmake warns `building without the Windows media controls`.
+for every feature, build with MSVC. a newer MinGW works too, but it isn't the one
+your Qt kit was built with, so the script warns about the mismatch.
+
 quit a running installed copy through its tray menu before updating it.
 
 if PowerShell blocks the script, review it first, then run

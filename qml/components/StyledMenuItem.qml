@@ -7,6 +7,7 @@ T.MenuItem {
     id: root
 
     property string symbol
+    property string trailingSymbol
     property bool destructive: false
     /// a tick while checked, without the item toggling itself: for a choice
     /// the owner keeps, so the tick always follows the owner's binding
@@ -18,7 +19,7 @@ T.MenuItem {
                             implicitContentWidth + leftPadding + rightPadding)
     implicitHeight: 40
     leftPadding: 12
-    rightPadding: subMenu ? 36 : 16
+    rightPadding: subMenu !== null || trailingSymbol.length > 0 ? 36 : 16
     spacing: 12
     hoverEnabled: true
     opacity: enabled ? 1 : 0.38
@@ -55,8 +56,8 @@ T.MenuItem {
     arrow: MaterialSymbol {
         x: root.width - width - 10
         y: (root.height - height) / 2
-        visible: root.subMenu !== null
-        text: "chevron_right"
+        visible: root.subMenu !== null || root.trailingSymbol.length > 0
+        text: root.subMenu !== null ? "chevron_right" : root.trailingSymbol
         iconSize: 20
         color: root.scheme.onSurfaceVariant
     }

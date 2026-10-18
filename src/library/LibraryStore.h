@@ -103,6 +103,7 @@ class LibraryStore : public QObject {
     Q_PROPERTY(swiftify::SongListModel *displayedPlaylistSongs READ displayedPlaylistSongs CONSTANT FINAL)
     Q_PROPERTY(QString playlistFilterQuery READ playlistFilterQuery WRITE setPlaylistFilterQuery NOTIFY playlistViewChanged FINAL)
     Q_PROPERTY(SortOrder playlistSortOrder READ playlistSortOrder WRITE setPlaylistSortOrder NOTIFY playlistViewChanged FINAL)
+    Q_PROPERTY(bool playlistSortReversed READ playlistSortReversed WRITE setPlaylistSortReversed NOTIFY playlistViewChanged FINAL)
     Q_PROPERTY(bool canReorderPlaylist READ canReorderPlaylist NOTIFY playlistViewChanged FINAL)
 
     Q_PROPERTY(swiftify::SongListModel *savedSongs READ savedSongs CONSTANT FINAL)
@@ -178,7 +179,12 @@ public:
     void setPlaylistFilterQuery(const QString &query);
     SortOrder playlistSortOrder() const { return m_sortOrder; }
     void setPlaylistSortOrder(SortOrder order);
+    bool playlistSortReversed() const { return m_sortReversed; }
+    void setPlaylistSortReversed(bool reversed);
+    Q_INVOKABLE void togglePlaylistSortOrder(SortOrder order);
+    Q_INVOKABLE void togglePlaylistSortOrder();
     bool canReorderPlaylist() const;
+    void setPlaylistSongsForTesting(const QList<Song> &songs) { setSongs(songs); }
 
     SongListModel *savedSongs() const { return m_savedSongs; }
     SongListModel *recentlyPlayed() const { return m_recentlyPlayed; }
@@ -355,6 +361,7 @@ private:
     SongListModel *m_displayedPlaylistSongs;
     QString m_playlistFilterQuery;
     SortOrder m_sortOrder = SortOrder::Playlist;
+    bool m_sortReversed = false;
 
     SongListModel *m_savedSongs;
     SongListModel *m_recentlyPlayed;

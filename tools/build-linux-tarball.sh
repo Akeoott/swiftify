@@ -8,8 +8,8 @@
 #
 # needs cmake, ninja, git, curl, a c++20 compiler (CC and CXX are used when
 # set), rust from rustup, and the dev packages for libpulse, alsa, openssl and
-# libsecret. the tarball still needs alsa and libsecret on the machine it
-# runs on, every desktop has them
+# libsecret. the tarball still needs alsa, libsecret, libpulse, glib, dbus and
+# systemd's libraries on the machine it runs on, every desktop has them
 
 set -euo pipefail
 
@@ -129,6 +129,23 @@ PATH="$WORK/tools:$PATH" "$WORK/tools/linuxdeploy-x86_64.AppImage" \
 [[ -f "$APPDIR/usr/bin/qt.conf" ]] || fail "linuxdeploy wrote no qt.conf"
 [[ -f "$APPDIR/usr/plugins/platforms/libqwayland.so" ]] || fail "the wayland platform plugin is missing"
 [[ -f "$APPDIR/usr/plugins/tls/libqopensslbackend.so" ]] || fail "the openssl tls plugin is missing"
+
+# what the desktop itself is built on comes from the machine, never the
+# build's ubuntu. an old libsystemd or glib in lib/ is found first by the
+# machine's own libraries too: libsecret then fails to load and no login is
+# kept, and two copies of a library in one process can corrupt its heap
+system_libraries=(
+    'libsystemd.so*' 'libglib-2.0.so*' 'libgthread-2.0.so*' 'libgio-2.0.so*' 'libgobject-2.0.so*'
+    'libdbus-1.so*' 'libgcrypt.so*' 'libapparmor.so*' 'libcap.so*' 'libffi.so*' 'libpcre.so*'
+    'liblz4.so*' 'liblzma.so*' 'libzstd.so*' 'libbsd.so*' 'libmd.so*' 'libpng16.so*' 'libbrotli*.so*'
+    'libpulse*.so*' 'libasyncns.so*' 'libsndfile.so*' 'libFLAC.so*' 'libogg.so*' 'libopus.so*' 'libvorbis*.so*'
+    'libgssapi_krb5.so*' 'libkrb5*.so*' 'libk5crypto.so*' 'libkeyutils.so*'
+    'libwayland-*.so*' 'libxkbcommon*.so*' 'libXau.so*' 'libXdmcp.so*'
+)
+for pattern in "${system_libraries[@]}"; do
+    find "$APPDIR/usr/lib" -maxdepth 1 -name "$pattern" -delete
+done
+
 rm -rf "${WORK:?}/${NAME:?}"
 cp -a "$APPDIR/usr" "$WORK/$NAME"
 

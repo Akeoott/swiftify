@@ -272,6 +272,55 @@ private slots:
         QVERIFY(panel->x() >= 0);
     }
 
+    void longSongTitlesScrollInImmersivePlayer()
+    {
+        Rig rig;
+        QList<Song> queue;
+        Song longSong;
+        longSong.name = QStringLiteral("This Is An Incredibly Long Song Title That Far Exceeds Normal Metadata Width whoever reads this pls save yourself this file is way too long");
+        longSong.artists = QStringLiteral("Artist");
+        longSong.albumName = QStringLiteral("Album");
+        longSong.uri = QUrl::fromLocalFile(QStringLiteral("/music/longsong.flac")).toString();
+        longSong.durationMs = 200'000;
+        queue.append(longSong);
+
+        rig.player.play(queue[0], queue);
+        Rig::settle();
+        const auto call = rig.core.take(QStringLiteral("playFile"));
+        QVERIFY(call);
+        call->succeed();
+        Rig::settle();
+
+        const auto player = rig.show(QStringLiteral("ImmersivePlayer"));
+        QVERIFY(player);
+        auto *titleItem = player->findChild<QQuickItem *>(QStringLiteral("immersiveTitle"));
+        QVERIFY(titleItem);
+        QCOMPARE(titleItem->property("text").toString(), longSong.name);
+        QVERIFY(titleItem->property("overflows").toBool());
+        QVERIFY(titleItem->property("shouldScroll").toBool());
+        // when standing still at the start, the left side has no fade so the first character is not cut off or faded
+        QCOMPARE(titleItem->property("leftEdge").toReal(), 0.0);
+        QVERIFY(titleItem->property("rightEdge").toReal() > 0.0);
+
+        Song shortSong;
+        shortSong.name = QStringLiteral("Hi");
+        shortSong.artists = QStringLiteral("Artist");
+        shortSong.albumName = QStringLiteral("Album");
+        shortSong.uri = QUrl::fromLocalFile(QStringLiteral("/music/shortsong.flac")).toString();
+        shortSong.durationMs = 200'000;
+        queue[0] = shortSong;
+        rig.player.play(queue[0], queue);
+        Rig::settle();
+        const auto call2 = rig.core.take(QStringLiteral("playFile"));
+        QVERIFY(call2);
+        call2->succeed();
+        Rig::settle();
+
+        QCOMPARE(titleItem->property("text").toString(), shortSong.name);
+        QVERIFY(!titleItem->property("overflows").toBool());
+        QVERIFY(!titleItem->property("shouldScroll").toBool());
+    }
+
     void multilineLyricsStayInsideTheirHighlight_data()
     {
         QTest::addColumn<QString>("words");
@@ -3121,7 +3170,7 @@ private slots:
                                  "StyledSwitch", "RollingText", "PlayerBar", "LyricsPanel", "QueuePanel", "Sidebar",
                                  "PageHost", "HomeView", "SearchView", "ArtistView", "AlbumView", "PlaylistView", "PlaylistsView", "SavedSongsView", "LocalFilesView", "LocalTracksView", "StartupView",
                                  "SetupView", "CompactMeter", "MaterialShape", "ShapeIcon", "SquiggleRing", "WavyLine",
-                                 "LoadingSpinner", "ShapeButton", "WavyPill", "ToolbarButton", "PlayButton"}) {
+                                 "LoadingSpinner", "ShapeButton", "WavyPill", "ToolbarButton", "PlayButton", "ScrollingText"}) {
             QTest::newRow(type) << QString::fromLatin1(type);
         }
     }

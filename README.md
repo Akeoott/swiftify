@@ -56,8 +56,8 @@ instead, spotify's own connect client, which isnt affected.
 2. make a soloist api key in the [developer dashboard](https://developer.spotify.com/dashboard/soloist)
    and put it in `~/.config/soloist/api-key` (or `SOLOIST_API_KEY`)
 3. start swiftify. it starts soloist itself, as a connect device called "Swiftify".
-   the first time, pick "Swiftify" once in the devices list of spotify on your phone or
-   computer, so soloist is signed in
+   the first time, pick "Swiftify" once in the devices list of the spotify desktop app on
+   the same computer (or the phone app), so soloist is signed in
 4. press play in swiftify
 
 with soloist, swiftify makes a sink called "Swiftify (Soloist)" for soloist to play into,

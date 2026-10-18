@@ -44,8 +44,8 @@ constexpr qint64 kNearEndMs = 3'000;
 constexpr qsizetype kOutputTail = 4000;
 
 const QString kPairingMessage = QStringLiteral(
-    "Soloist isn't paired with your Spotify account yet. Open Spotify on your phone or computer, "
-    "pick “%1” in the devices list once, then press play here again.");
+    "Soloist isn't paired with your Spotify account yet. Open the Spotify desktop app on this computer "
+    "(or the phone app), pick “%1” in the devices list once, then press play here again.");
 
 qint64 nowMs()
 {

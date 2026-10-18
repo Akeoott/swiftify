@@ -35,9 +35,11 @@ jobs:
           fi
           echo "name=swiftify-$version-windows-x86_64" >> "$GITHUB_OUTPUT"
 
+      # as ctest runs it. the test runs a failing command on purpose, which a
+      # plain pwsh step would report as its own exit code
       - name: test the build script
         shell: pwsh
-        run: ./tests/check_windows_build.ps1
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./tests/check_windows_build.ps1
 
       # qt 6.11 and newer split the windows repository by compiler, which aqt
       # 3.3 cannot read yet. 6.10 is the newest it can

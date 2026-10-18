@@ -27,6 +27,8 @@ T.AbstractButton {
     implicitWidth: Appearance.sizes.cardSize
     implicitHeight: 112
     hoverEnabled: true
+    // click focus would let other mouse buttons grab and press it
+    focusPolicy: Qt.TabFocus
     scale: down ? 0.95 : (hovered ? 1.03 : 1)
 
     Behavior on scale {

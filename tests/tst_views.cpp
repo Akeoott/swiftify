@@ -272,6 +272,55 @@ private slots:
         QVERIFY(panel->x() >= 0);
     }
 
+    /// lyrics scrolled up past the panel are faded out of sight, and the
+    /// buttons over them take the click, not the lines
+    void scrolledLyricsLeaveTheTopBarClickable()
+    {
+        Rig rig;
+        rig.settings.setPerformanceMode(true);
+        QFile lyrics(rig.directory.filePath(QStringLiteral("sung.lrc")));
+        QVERIFY(lyrics.open(QIODevice::WriteOnly));
+        for (int line = 0; line < 40; ++line) {
+            lyrics.write(QStringLiteral("[%1:%2.00]line %3\n")
+                             .arg(line * 5 / 60, 2, 10, QLatin1Char('0'))
+                             .arg(line * 5 % 60, 2, 10, QLatin1Char('0'))
+                             .arg(line)
+                             .toUtf8());
+        }
+        lyrics.close();
+        Song song;
+        song.uri = QUrl::fromLocalFile(rig.directory.filePath(QStringLiteral("sung.flac"))).toString();
+        song.durationMs = 200'000;
+        rig.player.play(song, {song});
+        Rig::settle();
+        QVERIFY(rig.player.lyricsSynchronized());
+        rig.settings.setImmersivePlayerPanel(QStringLiteral("lyrics"));
+        const auto player = rig.show(QStringLiteral("ImmersivePlayer"));
+        QVERIFY(player);
+        // the smallest window shows the lyrics alone, right under the top bar
+        player->setSize(QSize(526, 410));
+        Rig::settle();
+        QVERIFY(player->property("panelOnly").toBool());
+        auto *list = player->findChild<QQuickItem *>(QStringLiteral("immersiveLyricsList"));
+        auto *close = player->findChild<QQuickItem *>(QStringLiteral("immersiveCloseButton"));
+        auto *switcher = player->findChild<QQuickItem *>(QStringLiteral("immersiveSwitcher"));
+        QVERIFY(list && close && switcher);
+        list->setProperty("contentY", 600.0);
+        Rig::settle();
+        rig.render();
+
+        const auto click = [&](QPointF point) {
+            QTest::mouseClick(rig.window.get(), Qt::LeftButton, Qt::NoModifier, point.toPoint());
+            Rig::settle();
+        };
+        QSignalSpy closing(player.get(), SIGNAL(closeRequested()));
+        click(close->mapToScene(QPointF(close->width() / 2, close->height() / 2)));
+        QCOMPARE(closing.count(), 1);
+        // the switcher's last segment, Sound, on the right of the bar
+        click(switcher->mapToScene(QPointF(switcher->width() - 14, switcher->height() / 2)));
+        QTRY_COMPARE(player->property("panel").toString(), QStringLiteral("audio"));
+    }
+
     void longSongTitlesScrollInImmersivePlayer()
     {
         Rig rig;

@@ -212,8 +212,9 @@ signals:
 private:
     void beginPlayback(const Song &song, const QList<Song> &queue, bool fromSearch);
     void startPlayback(const Song &song, bool recordHistory = true, bool fromSearch = false,
-                       quint32 crossfadeDurationMs = 0);
-    QCoro::Task<> runStartPlayback(Song song, CancelToken token, bool fromSearch, quint32 crossfadeDurationMs);
+                       quint32 crossfadeDurationMs = 0, quint32 initialPositionMs = 0);
+    QCoro::Task<> runStartPlayback(Song song, CancelToken token, bool fromSearch, quint32 crossfadeDurationMs,
+                                   quint32 initialPositionMs);
     QCoro::Task<> runResume(CancelToken token);
     QCoro::Task<> restartAudioOutput(CancelToken token);
     QCoro::Task<> runLoadLyrics(Song song, CancelToken token);
@@ -235,6 +236,9 @@ private:
     void preloadNextTrack();
     void syncMediaSession();
     void reset();
+    void restorePlaybackState();
+    void savePlaybackState();
+    void schedulePlaybackSave();
     bool isCurrent(const Song &song) const { return m_currentSong && m_currentSong->isSameInstance(song); }
     void setCurrentSong(const std::optional<Song> &song, quint32 crossfadeMs = 0);
     void setPlaying(bool playing);
@@ -260,6 +264,8 @@ private:
     /// resume, an output rebuild. empty once it finished or was withdrawn.
     TaskSlot m_playbackRequest;
     bool m_playbackNeedsLoad = false;
+    bool m_restoredPlayback = false;
+    quint32 m_resumePositionMs = 0;
     bool m_audioOutputNeedsRestart = false;
     bool m_playing = false;
     bool m_loading = false;
@@ -272,6 +278,8 @@ private:
     quint32 m_crossfadeMs = 0;
     QDeadlineTimer m_crossfadeDeadline;
     QTimer m_pollTimer;
+    QTimer m_checkpointTimer;
+    QTimer m_saveTimer;
 
     double m_volume = 0.75;
     double m_volumeBeforeMute = 0.75;

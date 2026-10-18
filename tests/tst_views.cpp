@@ -2919,6 +2919,54 @@ private slots:
         QCOMPARE(titleItem->property("trailingSymbol").toString(), QStringLiteral("arrow_upward"));
     }
 
+    void playlistPlayButtonPlaysReversedOrder()
+    {
+        Rig rig;
+        Song song1;
+        song1.name = QStringLiteral("Zebra");
+        song1.artists = QStringLiteral("Artist B");
+        song1.albumName = QStringLiteral("Album C");
+        song1.durationMs = 120000;
+        song1.uri = QStringLiteral("file:///music/song1.flac");
+
+        Song song2;
+        song2.name = QStringLiteral("Apple");
+        song2.artists = QStringLiteral("Artist A");
+        song2.albumName = QStringLiteral("Album B");
+        song2.durationMs = 240000;
+        song2.uri = QStringLiteral("file:///music/song2.flac");
+
+        Playlist playlist;
+        playlist.id = QStringLiteral("test_playlist_1");
+        playlist.name = QStringLiteral("Reversed Playlist");
+        playlist.songCount = 2;
+
+        rig.library.selectPlaylist(playlist);
+        rig.library.setPlaylistSongsForTesting({song1, song2});
+
+        // Reverse the playlist order
+        rig.library.togglePlaylistSortOrder(LibraryStore::SortOrder::Playlist);
+        QCOMPARE(rig.library.playlistSortReversed(), true);
+        QCOMPARE(rig.library.displayedPlaylistSongs()->count(), 2);
+
+        const auto page = rig.show(QStringLiteral("PlaylistView"));
+        QVERIFY(page);
+
+        auto *playButton = page->findChild<QQuickItem *>(QStringLiteral("playButton"));
+        QVERIFY(playButton);
+        QCOMPARE(playButton->isEnabled(), true);
+
+        QVERIFY(QMetaObject::invokeMethod(playButton, "clicked"));
+        Rig::settle();
+
+        // Queue should match the reversed displayed order: song2 (Apple), then song1 (Zebra)
+        const auto &queue = rig.player.activeQueue();
+        QCOMPARE(queue.size(), 2);
+        QCOMPARE(queue.at(0).name, QStringLiteral("Apple"));
+        QCOMPARE(queue.at(1).name, QStringLiteral("Zebra"));
+        QCOMPARE(rig.player.currentSong().name, QStringLiteral("Apple"));
+    }
+
     void views_data()
     {
         QTest::addColumn<QString>("type");

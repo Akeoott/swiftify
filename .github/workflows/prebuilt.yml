@@ -1,6 +1,7 @@
-# prebuilt windows and linux x86_64 builds. a v tag (v0.10.0) builds both and
-# puts them on a draft release to publish by hand. it also runs from the
-# actions tab, and on pull requests that change how the builds are made
+# prebuilt windows and linux x86_64 builds and a macos arm64 dmg. a v tag
+# (v0.10.0) builds all three and puts them on a draft release to publish by
+# hand. it also runs from the actions tab, and on pull requests that change how
+# the builds are made
 name: prebuilt
 
 on:
@@ -12,6 +13,7 @@ on:
       - .github/workflows/prebuilt.yml
       - tools/build-windows.ps1
       - tools/build-linux-tarball.sh
+      - tools/build-macos-dmg.sh
 
 permissions:
   contents: read
@@ -170,9 +172,44 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+  macos:
+    # apple silicon, with xcode 26, whose actool compiles the icon composer icon
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: version
+        run: |
+          version="$(sed -n '/^project(Swiftify/,/VERSION/s/^ *VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "the tag $GITHUB_REF_NAME does not match the version $version in CMakeLists.txt" >&2
+            exit 1
+          fi
+
+      - name: packages
+        run: brew install ninja
+
+      - uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4.4.1
+        with:
+          version: 6.12.0
+          host: mac
+          target: desktop
+          arch: clang_64
+          modules: qtshadertools
+          cache: true
+
+      - name: build
+        run: ./tools/build-macos-dmg.sh --qt "$QT_ROOT_DIR" --out dist
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
   release:
     if: github.ref_type == 'tag'
-    needs: [windows, linux]
+    needs: [windows, linux, macos]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

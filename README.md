@@ -89,11 +89,15 @@ For more verbose logging run swiftify with `QT_LOGGING_RULES="swiftify.discord.d
 
 ## Prebuilt builds
 
-[releases](https://github.com/shredos67/swiftify/releases) have windows and linux x86_64 builds.
+[releases](https://github.com/shredos67/swiftify/releases) have windows and linux x86_64 builds,
+and a macos dmg for apple silicon.
 
 - **windows.** unzip it anywhere and run `bin\swiftify.exe`.
 - **linux.** unpack it anywhere and run `bin/swiftify`. it brings its own Qt, but needs
   alsa and libsecret, which pretty much every desktop already has.
+- **macos.** needs macos 14.4 or newer. open the dmg and drag swiftify into applications.
+  its signed ad hoc, so the first launch gets blocked, open it anyway from system settings ›
+  privacy & security, or run `xattr -dr com.apple.quarantine /Applications/Swiftify.app`.
 
 ## Building from source
 

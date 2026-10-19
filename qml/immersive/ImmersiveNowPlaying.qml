@@ -225,14 +225,14 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 5
 
-                    StyledText {
+                    ScrollingText {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.min(implicitWidth, metadata.width - more.width - 5)
+                        width: Math.min(implicitWidth + 1, metadata.width - more.width - 5)
                         text: root.shownSong.artists
-                        elide: Text.ElideRight
                         font.pixelSize: Appearance.fontSize.larger
                         font.weight: Font.Medium
                         color: Qt.rgba(1, 1, 1, 0.62)
+                        animateChange: !metadataFade.running
                     }
                     IconButton {
                         id: more
@@ -248,14 +248,14 @@ Item {
                     }
                 }
 
-                StyledText {
+                ScrollingText {
                     width: parent.width
                     visible: root.shownSong.albumName.length > 0
                     text: root.shownSong.albumName
                     horizontalAlignment: Text.AlignHCenter
-                    elide: Text.ElideRight
                     font.pixelSize: Appearance.fontSize.smallie
                     color: Qt.rgba(1, 1, 1, 0.4)
+                    animateChange: !metadataFade.running
                 }
             }
 

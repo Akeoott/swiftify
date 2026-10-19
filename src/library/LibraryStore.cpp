@@ -61,7 +61,7 @@ bool sameSongs(const QList<Song> &left, const QList<Song> &right)
 {
     return std::equal(left.begin(), left.end(), right.begin(), right.end(), [](const Song &a, const Song &b) {
         return a.uri == b.uri && a.name == b.name && a.artists == b.artists && a.albumName == b.albumName
-            && a.artworkUrl == b.artworkUrl && a.durationMs == b.durationMs;
+            && a.artworkUrl == b.artworkUrl && a.durationMs == b.durationMs && a.isPlayable == b.isPlayable;
     });
 }
 

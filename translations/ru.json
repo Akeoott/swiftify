@@ -1,4 +1,8 @@
 {
+  "Player bar visualizer": "Визуализация в нижнем плеере",
+  "Track list visualizer": "Визуализация в списке треков",
+  "Full-screen player visualizer": "Визуализация в полноэкранном плеере",
+  "Audio visualizers are disabled in Settings.": "Звуковая визуализация отключена в настройках.",
   "Language": "Язык",
   "Enter your Discord Application ID to connect.": "Введите Application ID Discord для подключения.",
   "No reachable Discord IPC socket. Start Discord and enable its RPC integration.": "IPC-сокет Discord недоступен. Запустите Discord и включите интеграцию RPC.",

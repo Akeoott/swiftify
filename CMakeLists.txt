@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(Swiftify
-    VERSION 0.15.11
+    VERSION 0.15.12
     DESCRIPTION "A native Spotify client"
     LANGUAGES C CXX)
 

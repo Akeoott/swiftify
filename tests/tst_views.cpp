@@ -2382,12 +2382,13 @@ private slots:
             QSKIP("counting frames needs the offscreen gpu rig");
         }
         rig.playSomething();
+        // counted from before the meter, which still draws as it goes away
+        int drawn = 0;
         const auto meter = rig.show(QStringLiteral("CompactMeter"));
         QVERIFY(meter);
         meter->setProperty("active", true);
         const QList<float> steady(48, 0.5f);
         rig.spectrum.publish(steady.constData(), 48);
-        int drawn = 0;
         QObject::connect(rig.control.get(), &QQuickRenderControl::sceneChanged, meter.get(), [&] { ++drawn; });
         const auto frames = [&](int count) {
             drawn = 0;

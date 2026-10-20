@@ -346,6 +346,36 @@ QCoro::Task<QList<Album>> WebApi::artistAlbums(Artist artist, QString accessToke
     co_return result;
 }
 
+QCoro::Task<QHash<QString, QStringList>> WebApi::artistGenres(QStringList artistIds, QString accessToken,
+                                                              QHash<QString, QUrl> *artwork)
+{
+    QHash<QString, QStringList> result;
+    // fifty at a time is as many as spotify takes
+    for (qsizetype start = 0; start < artistIds.size(); start += 50) {
+        const QUrlQuery query {{QStringLiteral("ids"), artistIds.mid(start, 50).join(u',')}};
+        const QJsonDocument document = co_await requestJson(apiUrl(QStringLiteral("/v1/artists"), query), "GET", accessToken);
+        for (const QJsonValue &value : document.object().value(QStringLiteral("artists")).toArray()) {
+            const QJsonObject object = value.toObject();
+            const QString id = object.value(QStringLiteral("id")).toString();
+            if (id.isEmpty()) {
+                continue;
+            }
+            QStringList genres;
+            for (const QJsonValue &genre : object.value(QStringLiteral("genres")).toArray()) {
+                genres.append(genre.toString());
+            }
+            result.insert(id, genres);
+            if (artwork) {
+                const QUrl image = json::preferredArtworkUrl(object.value(QStringLiteral("images")).toArray(), 320);
+                if (image.isValid()) {
+                    artwork->insert(id, image);
+                }
+            }
+        }
+    }
+    co_return result;
+}
+
 QCoro::Task<Playlist> WebApi::createPlaylist(QString name, QString description, bool isPublic, QString accessToken)
 {
     const QByteArray requestBody = jsonBody({{QStringLiteral("name"), name}, {QStringLiteral("description"), description}, {QStringLiteral("public"), isPublic}});

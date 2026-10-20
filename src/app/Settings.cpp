@@ -163,6 +163,12 @@ void Settings::load()
     }
     m_showWindowControls = stored<bool>(m_store, "showWindowControls", m_showWindowControls);
     m_windowControlsOnRight = stored<bool>(m_store, "windowControlsOnRight", m_windowControlsOnRight);
+    if (const QString source = stored<QString>(m_store, "statsSource", m_statsSource);
+        source == QLatin1StringView("statsfm") || source == QLatin1StringView("local")) {
+        m_statsSource = source;
+    }
+    m_statsFmUsername = stored<QString>(m_store, "statsFmUsername", m_statsFmUsername).trimmed();
+    m_trackListening = stored<bool>(m_store, "trackListening", m_trackListening);
     m_nativeTitleBar = stored<bool>(m_store, "nativeTitleBar", m_nativeTitleBar);
     m_trayIcon = stored<bool>(m_store, "trayIcon", m_trayIcon);
     m_zoom = std::clamp(stored<double>(m_store, "zoom", m_zoom), 0.5, 2.0);
@@ -476,6 +482,37 @@ void Settings::setWindowControlsOnRight(bool value)
     m_windowControlsOnRight = value;
     m_store.setValue(QStringLiteral("windowControlsOnRight"), value);
     emit windowControlsOnRightChanged();
+}
+
+void Settings::setStatsSource(const QString &value)
+{
+    if (m_statsSource == value || (value != QLatin1StringView("statsfm") && value != QLatin1StringView("local"))) {
+        return;
+    }
+    m_statsSource = value;
+    m_store.setValue(QStringLiteral("statsSource"), value);
+    emit statsSourceChanged();
+}
+
+void Settings::setStatsFmUsername(const QString &value)
+{
+    const QString trimmed = value.trimmed();
+    if (m_statsFmUsername == trimmed) {
+        return;
+    }
+    m_statsFmUsername = trimmed;
+    m_store.setValue(QStringLiteral("statsFmUsername"), trimmed);
+    emit statsFmUsernameChanged();
+}
+
+void Settings::setTrackListening(bool value)
+{
+    if (m_trackListening == value) {
+        return;
+    }
+    m_trackListening = value;
+    m_store.setValue(QStringLiteral("trackListening"), value);
+    emit trackListeningChanged();
 }
 
 void Settings::setNativeTitleBar(bool value)

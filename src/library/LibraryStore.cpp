@@ -508,6 +508,7 @@ void LibraryStore::goBack()
     case Page::PinnedPlaylists: showPinnedPlaylists(); break;
     case Page::LocalFiles: showLocalFiles(); break;
     case Page::LocalTracks: showLocalTracks(); break;
+    case Page::Stats: showStats(); break;
     case Page::Playlist: {
         if (isLocalId(destination.playlistId)) {
             const Playlist local = m_localFiles ? m_localFiles->playlist(destination.playlistId) : Playlist {};
@@ -592,6 +593,12 @@ void LibraryStore::showLocalTracks()
 {
     cancelDetailLoads();
     navigate({Page::LocalTracks});
+}
+
+void LibraryStore::showStats()
+{
+    cancelDetailLoads();
+    navigate({Page::Stats});
 }
 
 void LibraryStore::selectPlaylistById(const QString &id)

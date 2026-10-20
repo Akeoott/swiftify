@@ -717,6 +717,64 @@ Item {
             }
 
             ContentSection {
+                title: qsTr("Listening Stats")
+                symbol: "insights"
+
+                ConfigSelection {
+                    text: qsTr("Stats from")
+                    currentIndex: Stats.source === "statsfm" ? 0 : 1
+                    segments: [
+                        Segment { text: "stats.fm" },
+                        Segment { text: qsTr("This computer") }
+                    ]
+                    onActivated: (index) => Stats.source = index === 0 ? "statsfm" : "local"
+                }
+                OutlinedTextField {
+                    id: statsFmUsername
+                    x: 8
+                    width: Math.min(460, parent.width - 16)
+                    placeholder: qsTr("stats.fm username")
+                    text: Stats.username
+                    onAccepted: Stats.username = text
+
+                    // kept on leaving the field too, not on every key
+                    Connections {
+                        target: statsFmUsername.inputItem
+                        function onActiveFocusChanged() {
+                            if (!statsFmUsername.inputItem.activeFocus) {
+                                Stats.username = statsFmUsername.text
+                            }
+                        }
+                    }
+                }
+                ConfigSwitch {
+                    text: qsTr("Keep track of what I listen to")
+                    checked: Stats.tracking
+                    onToggledTo: (checked) => Stats.tracking = checked
+                }
+                Flow {
+                    x: 8
+                    width: parent.width - 16
+                    spacing: 8
+                    topPadding: 4
+
+                    TextButton {
+                        variant: TextButton.Tonal
+                        symbol: "download"
+                        text: qsTr("Export History")
+                        enabled: Stats.historyCount > 0
+                        onClicked: {
+                            const path = Stats.exportHistory()
+                            UiState.toastRequested(path.length > 0 ? qsTr("Saved to %1").arg(path) : qsTr("Could not export the history"))
+                        }
+                    }
+                }
+                NoteText {
+                    text: qsTr("stats.fm reads a public profile by its username, nothing else. the stats from this computer count songs heard for 30 seconds or more (%1 so far), kept only on this computer; their genres come from your Spotify library login.").arg(Stats.historyCount)
+                }
+            }
+
+            ContentSection {
                 title: qsTr("Playback")
                 symbol: "play_circle"
 

@@ -34,6 +34,7 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   - [macOS](#macos)
   - [Linux](#linux)
   - [Windows](#windows)
+- [Stats](#stats)
 - [Command line](#command-line)
 
 ## Before you start
@@ -250,6 +251,23 @@ start the installed app with:
 font downloads are hash-checked on every configure; on Windows, a failed CMake
 download is retried with `curl.exe` using the system certificate store.
 
+
+## Stats
+
+the Stats page (in the sidebar, or `swiftify --stats`) shows what you've been listening to,
+like the [listening-stats](https://github.com/HeadshotInteractive/listening-stats) spicetify app:
+listening time, plays, top songs, artists, albums and genres, when in the day and the week you
+listen, a calendar of the last year, and your recent plays. pick a period (today, 4 weeks,
+6 months, all time) and rank by plays or by time.
+
+it reads from either:
+
+- **stats.fm**, by username. your profile's stats have to be public; nothing else is needed.
+- **this computer**: every song you listen to for 30 seconds or more (or half of a shorter one)
+  gets kept in `listening-history.jsonl` in swiftify's data folder, and never leaves it. genres
+  come from spotify through your library login. you can export the history as csv, or turn
+  tracking off, under Settings → Listening Stats.
+
 ## Command line
 
 only one swiftify runs at a time. launching it again just passes the command to the one
@@ -261,6 +279,7 @@ that's already running, so these work great as keybinds:
 | `--play-pause` | play or pause |
 | `--next` | next song |
 | `--previous` | previous song |
+| `--stats` | open the stats page |
 
 on hyprland for example:
 

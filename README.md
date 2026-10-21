@@ -24,9 +24,6 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
   </tr>
 </table>
 
-> ### Note
-> i will probably not be maintaining it, if you are interested in taking over this project you can send me an email
-
 - [Before you start](#before-you-start)
 - [Prebuilt builds](#prebuilt-builds)
 - [Building from source](#building-from-source)

@@ -501,6 +501,18 @@ void PlaybackController::shufflePlay(SongListModel *model)
     beginPlayback(model->songs().at(index), model->songs(), false);
 }
 
+void PlaybackController::playInOrder(SongListModel *model)
+{
+    if (!model || model->count() == 0) {
+        return;
+    }
+    if (m_shuffle) {
+        m_shuffle = false;
+        emit shuffleChanged();
+    }
+    beginPlayback(model->songs().at(0), model->songs(), false);
+}
+
 void PlaybackController::playSong(const Song &song)
 {
     beginPlayback(song, {song}, false);

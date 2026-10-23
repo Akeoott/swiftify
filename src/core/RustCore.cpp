@@ -90,6 +90,9 @@ void RustCore::open()
     if (m_streamKbps > 0) {
         swiftify_string_free(swiftify_core_set_stream_quality(m_core, uint32_t(m_streamKbps)));
     }
+    if (m_normalizeVolume) {
+        swiftify_string_free(swiftify_core_set_volume_normalization(m_core, true));
+    }
     if (!m_cachePath.isEmpty()) {
         swiftify_string_free(swiftify_core_set_audio_cache(m_core, m_cachePath.toUtf8().constData(),
                                                            quint64(std::max<qint64>(0, m_cacheBytes))));
@@ -238,6 +241,12 @@ void RustCore::setStreamQuality(int kbps)
 {
     m_streamKbps = kbps;
     throwIfError(swiftify_core_set_stream_quality(m_core, uint32_t(kbps)));
+}
+
+void RustCore::setVolumeNormalization(bool enabled)
+{
+    m_normalizeVolume = enabled;
+    throwIfError(swiftify_core_set_volume_normalization(m_core, enabled));
 }
 
 void RustCore::setAudioCache(const QString &path, qint64 limitBytes)

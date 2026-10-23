@@ -568,6 +568,7 @@ fallible_call!(swiftify_core_pause() => |core| core.pause());
 fallible_call!(swiftify_core_seek(position_ms: u32) => |core| core.seek(position_ms));
 fallible_call!(swiftify_core_set_volume(volume: f32) => |core| core.set_volume(volume));
 fallible_call!(swiftify_core_set_stream_quality(kbps: u32) => |core| core.set_stream_quality(kbps));
+fallible_call!(swiftify_core_set_volume_normalization(enabled: bool) => |core| core.set_volume_normalization(enabled));
 /// keeps streamed songs in `path`, up to `limit_bytes`; an empty path keeps
 /// none. applies the next time playback connects. returns null on success, or
 /// an error message to free.

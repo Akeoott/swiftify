@@ -291,11 +291,13 @@ int main(int argc, char *argv[])
     // what it streams is kept so a song played again needs no download
     const auto applyStreaming = [&] {
         core.setStreamQuality(settings.streamingQuality());
+        core.setVolumeNormalization(settings.normalizeVolume());
         core.setAudioCache(paths::cacheDirectory() + QStringLiteral("/songs"),
                            qint64(settings.songCacheMegabytes()) * 1000 * 1000);
     };
     applyStreaming();
     QObject::connect(&settings, &Settings::streamingQualityChanged, &core, applyStreaming);
+    QObject::connect(&settings, &Settings::normalizeVolumeChanged, &core, applyStreaming);
     QObject::connect(&settings, &Settings::songCacheMegabytesChanged, &core, applyStreaming);
     KeychainCredentialStore credentials;
     SpotifySession session(&core, &credentials, &network, &errors);

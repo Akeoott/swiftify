@@ -282,6 +282,37 @@ pub fn measure_duration_ms(path: &Path) -> Option<u64> {
     Some(duration_ms(probed.format.as_mut())).filter(|duration| *duration > 0)
 }
 
+/// the linear gain a file's replaygain tags ask for, capped at its peak so
+/// nothing clips, or 1.0 when the file says nothing
+pub fn replay_gain(path: &Path) -> f32 {
+    let Ok(file) = Probe::open(path).and_then(|probe| probe.read()) else {
+        return 1.0;
+    };
+    let find = |key: ItemKey| {
+        file.tags()
+            .iter()
+            .find_map(|tag| tag.get_string(key.clone()))
+            .and_then(parse_replay_gain_value)
+    };
+    let Some(gain_db) = find(ItemKey::ReplayGainTrackGain)
+        .or_else(|| find(ItemKey::ReplayGainAlbumGain))
+    else {
+        return 1.0;
+    };
+    let peak = find(ItemKey::ReplayGainTrackPeak)
+        .or_else(|| find(ItemKey::ReplayGainAlbumPeak))
+        .filter(|peak| *peak > 0.0)
+        .unwrap_or(1.0);
+    (10f32.powf(gain_db / 20.0)).min(1.0 / peak).clamp(0.0, 4.0)
+}
+
+fn parse_replay_gain_value(text: &str) -> Option<f32> {
+    let trimmed = text
+        .trim()
+        .trim_end_matches(|character: char| character.is_ascii_alphabetic() || character.is_whitespace());
+    trimmed.parse::<f32>().ok().filter(|value| value.is_finite())
+}
+
 fn apply(tags: &mut LocalTags, revision: &MetadataRevision, cover: &mut Option<Visual>) {
     for tag in revision.tags() {
         let text = text_of(&tag.value);
@@ -604,5 +635,13 @@ mod tests {
         fs::write(&path, b"this is not an mp3").unwrap();
         assert!(read_tags(&path, None).is_err());
         fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn replay_gain_values_are_parsed_with_or_without_db_suffix() {
+        assert_eq!(parse_replay_gain_value("-6.5 dB"), Some(-6.5));
+        assert_eq!(parse_replay_gain_value("+2.10 dB"), Some(2.1));
+        assert_eq!(parse_replay_gain_value("0.988553"), Some(0.988553));
+        assert_eq!(parse_replay_gain_value("not a gain"), None);
     }
 }

@@ -42,6 +42,7 @@ mod ffi {
         fn is_playing_local(&self) -> bool;
 
         fn set_stream_quality(&self, kbps: u32) -> Result<(), String>;
+        fn set_volume_normalization(&self, enabled: bool) -> Result<(), String>;
 
         fn set_volume(&self, volume: f32) -> Result<(), String>;
         fn volume(&self) -> f32;

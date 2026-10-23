@@ -802,7 +802,7 @@ Item {
                     }
                 }
                 NoteText {
-                    text: qsTr("stats.fm reads a public profile by its username, nothing else. the stats from this computer count songs heard for 30 seconds or more (%1 so far), kept only on this computer; their genres come from your Spotify library login.").arg(Stats.historyCount)
+                    text: qsTr("stats.fm only needs a public username. songs count here after 30 seconds (%1 so far) and are local only").arg(Stats.historyCount)
                 }
             }
         }

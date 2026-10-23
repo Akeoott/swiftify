@@ -67,6 +67,7 @@ public:
     void setVolume(float volume) override;
     float volume() const override { return m_volume; }
     void setStreamQuality(int kbps) override;
+    void setVolumeNormalization(bool enabled) override;
     void setAudioCache(const QString &path, qint64 limitBytes) override;
     void setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch) override;
     void setEqualizer(const QList<float> &gainsDb) override;

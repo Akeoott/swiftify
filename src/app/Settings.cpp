@@ -120,6 +120,7 @@ void Settings::load()
         const int cache = stored<int>(m_store, "songCacheMegabytes", m_songCacheMegabytes);
         m_songCacheMegabytes = cache == 500 || cache == 2000 ? cache : 1000;
     }
+    m_normalizeVolume = stored<bool>(m_store, "normalizeVolume", m_normalizeVolume);
     m_crossfadeEnabled = stored<bool>(m_store, "crossfadeEnabled", m_crossfadeEnabled);
     m_crossfadeDurationSeconds = std::clamp(
         stored<int>(m_store, "crossfadeDurationSeconds", m_crossfadeDurationSeconds), 1, 12);
@@ -283,6 +284,16 @@ void Settings::setStreamingQuality(int raw)
     m_streamingQuality = value;
     m_store.setValue(QStringLiteral("streamingQuality"), value);
     emit streamingQualityChanged();
+}
+
+void Settings::setNormalizeVolume(bool value)
+{
+    if (m_normalizeVolume == value) {
+        return;
+    }
+    m_normalizeVolume = value;
+    m_store.setValue(QStringLiteral("normalizeVolume"), value);
+    emit normalizeVolumeChanged();
 }
 
 void Settings::setSongCacheMegabytes(int megabytes)

@@ -38,6 +38,8 @@ pub(crate) struct LocalPlayback {
     pub(crate) channels: u32,
     /// sample rate of the decoded stream.
     pub(crate) sample_rate: u32,
+    /// linear gain from the file's replaygain tags (1.0 when untagged).
+    pub(crate) replay_gain: f32,
     /// signals an in-flight decode to stop (on a seek/track change).
     pub(crate) cancel: Arc<AtomicBool>,
 }
@@ -62,6 +64,8 @@ pub(crate) struct LocalTrackSource {
     spectrum: SharedSpectrum,
     pushed_frames: Arc<AtomicU64>,
     cancel: Arc<AtomicBool>,
+    replay_gain: f32,
+    normalise: Arc<AtomicBool>,
     analysis_samples: [f32; ANALYSIS_SAMPLE_COUNT],
     analysis_index: usize,
     analysis_enabled: bool,
@@ -78,12 +82,16 @@ impl LocalTrackSource {
         pushed_frames: Arc<AtomicU64>,
         cancel: Arc<AtomicBool>,
         dsp: SharedDsp,
+        replay_gain: f32,
+        normalise: Arc<AtomicBool>,
     ) -> Self {
         Self {
             inner: decoder,
             spectrum,
             pushed_frames,
             cancel,
+            replay_gain,
+            normalise,
             analysis_samples: [0.0; ANALYSIS_SAMPLE_COUNT],
             analysis_index: 0,
             analysis_enabled: false,
@@ -113,6 +121,11 @@ impl LocalTrackSource {
             }
             self.pushed_frames
                 .fetch_add(block.len() as u64, Ordering::Relaxed);
+            if self.normalise.load(Ordering::Relaxed) && (self.replay_gain - 1.0).abs() > 1e-4 {
+                for sample in &mut block {
+                    *sample *= self.replay_gain;
+                }
+            }
             self.processed.extend(self.dsp.process(block));
         }
     }
@@ -209,6 +222,7 @@ mod tests {
             base_position_ms: 30_000,
             channels: 2,
             sample_rate: 44_100,
+            replay_gain: 1.0,
             cancel: Arc::new(AtomicBool::new(false)),
         };
         assert_eq!(playback.position_ms(), 31_000);

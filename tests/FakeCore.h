@@ -140,6 +140,7 @@ public:
     void setVolume(float volume) override { volumeValue = volume; }
     float volume() const override { return volumeValue; }
     void setStreamQuality(int) override {}
+    void setVolumeNormalization(bool) override {}
     void setAudioCache(const QString &, qint64) override {}
     void setPlaybackShaping(float, float, bool) override {}
     void setEqualizer(const QList<float> &) override {}

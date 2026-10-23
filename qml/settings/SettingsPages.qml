@@ -254,6 +254,11 @@ Item {
                     ]
                     onActivated: (index) => Settings.songCacheMegabytes = root.cacheSizes[index]
                 }
+                ConfigSwitch {
+                    text: qsTr("Normalize volume")
+                    checked: Settings.normalizeVolume
+                    onToggledTo: (checked) => Settings.normalizeVolume = checked
+                }
                 NoteText {
                     text: qsTr("both cache and quality apply the next time playback connects")
                 }

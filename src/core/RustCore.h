@@ -44,6 +44,7 @@ public:
     void setVolume(float volume) override;
     float volume() const override;
     void setStreamQuality(int kbps) override;
+    void setVolumeNormalization(bool enabled) override;
     void setAudioCache(const QString &path, qint64 limitBytes) override;
     void setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch) override;
     void setEqualizer(const QList<float> &gainsDb) override;
@@ -76,6 +77,7 @@ private:
     quint64 m_generation = 0;
     /// given again to each core opened (a reset makes a fresh one)
     int m_streamKbps = 0;
+    bool m_normalizeVolume = false;
     QString m_cachePath;
     qint64 m_cacheBytes = 0;
 };

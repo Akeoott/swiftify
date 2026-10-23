@@ -855,6 +855,11 @@ void SoloistCore::setStreamQuality(int kbps)
     m_fallback->setStreamQuality(kbps);
 }
 
+void SoloistCore::setVolumeNormalization(bool enabled)
+{
+    m_fallback->setVolumeNormalization(enabled);
+}
+
 void SoloistCore::setAudioCache(const QString &path, qint64 limitBytes)
 {
     m_fallback->setAudioCache(path, limitBytes);

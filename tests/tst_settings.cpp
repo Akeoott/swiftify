@@ -66,6 +66,7 @@ private slots:
         QCOMPARE(settings.visualizerShape(), QStringLiteral("bars"));
         QCOMPARE(settings.visualizerSensitivity(), 1.0);
         QCOMPARE(settings.streamingQuality(), 160);
+        QCOMPARE(settings.normalizeVolume(), false);
         QCOMPARE(settings.songCacheMegabytes(), 1000);
         QCOMPARE(settings.livingBackdrop(), true);
         QCOMPARE(settings.backdropBlur(), 16.0);
@@ -171,6 +172,10 @@ private slots:
             settings.setContinuousVisualizer(true);
             QCOMPARE(continuousSpy.count(), 1);
             settings.setStreamingQuality(96);
+            QSignalSpy normalizeSpy(&settings, &Settings::normalizeVolumeChanged);
+            settings.setNormalizeVolume(true);
+            settings.setNormalizeVolume(true);
+            QCOMPARE(normalizeSpy.count(), 1);
             settings.setSongCacheMegabytes(2000);
             settings.setPerformanceMode(true);
             settings.setNoShapes(true);
@@ -189,6 +194,7 @@ private slots:
         QCOMPARE(reopened.immersiveVisualizer(), false);
         QCOMPARE(reopened.continuousVisualizer(), true);
         QCOMPARE(reopened.streamingQuality(), 96);
+        QCOMPARE(reopened.normalizeVolume(), true);
         QCOMPARE(reopened.songCacheMegabytes(), 2000);
         QVERIFY(reopened.performanceMode());
         QVERIFY(reopened.noShapes());

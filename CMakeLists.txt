@@ -345,8 +345,14 @@ target_link_libraries(swiftify PRIVATE swiftify_app swiftify_appplugin)
 if(SWIFTIFY_IS_LINUX)
     target_link_libraries(swiftify PRIVATE Qt6::Widgets)
 endif()
-# a windowed app on windows, with no console window of its own
+# a windowed app on windows, with no console window of its own, and the icon
+# in its resources so explorer and a pinned taskbar button show it
 set_target_properties(swiftify PROPERTIES WIN32_EXECUTABLE ON)
+if(WIN32)
+    set_source_files_properties(packaging/icons/swiftify.rc
+        PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/packaging/icons/swiftify.ico)
+    target_sources(swiftify PRIVATE packaging/icons/swiftify.rc)
+endif()
 if(MINGW)
     # qt's WinMain shim reads msvcrt's __argc, which a mingw on ucrt (as
     # homebrew's is) lacks; mingw's own start-up calls main() just as well

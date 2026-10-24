@@ -32,6 +32,9 @@ public:
     QCoro::Task<QList<Song>> recentlyPlayed(QString accessToken);
     QCoro::Task<SearchResults> search(QString query, QString accessToken);
     QCoro::Task<Song> song(QString trackId, QString accessToken);
+    QCoro::Task<Album> album(QString albumId, QString accessToken);
+    QCoro::Task<Playlist> playlist(QString playlistId, QString accessToken);
+    QCoro::Task<Artist> artist(QString artistId, QString accessToken);
     QCoro::Task<QList<Song>> albumSongs(Album album, QString accessToken);
     QCoro::Task<QList<Album>> artistAlbums(Artist artist, QString accessToken);
     /// the genres spotify gives each artist, by id, and their pictures; an

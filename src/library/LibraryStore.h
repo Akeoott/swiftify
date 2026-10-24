@@ -5,6 +5,7 @@
 #include "library/CollectionModels.h"
 #include "library/SongListCache.h"
 #include "library/SongListModel.h"
+#include "spotify/SpotifyLink.h"
 #include "spotify/SpotifyTypes.h"
 
 #include <QHash>
@@ -334,6 +335,7 @@ private:
     QCoro::Task<> runSearch(QString query, CancelToken token);
     QCoro::Task<> runToggleSaved(Song song, bool shouldSave, quint64 generation);
     QCoro::Task<> runSongNavigation(Song song, bool toAlbum);
+    QCoro::Task<> runLinkNavigation(SpotifyLink link, CancelToken token);
     QCoro::Task<> runAdd(Song song, Playlist playlist);
     QCoro::Task<> runRemove(Song song, Playlist playlist);
     QCoro::Task<> runMove(Playlist playlist, int from, int count, int to, QList<Song> previous, QList<Song> reordered);

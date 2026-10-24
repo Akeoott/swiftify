@@ -6,6 +6,7 @@
 #include "library/LocalLibrary.h"
 #include "playback/PlaybackController.h"
 #include "spotify/SpotifyJson.h"
+#include "spotify/SpotifyLink.h"
 #include "spotify/SpotifySession.h"
 
 #include <QCollator>
@@ -827,6 +828,59 @@ QCoro::Task<> LibraryStore::runSongNavigation(Song song, bool toAlbum)
     }
 }
 
+QCoro::Task<> LibraryStore::runLinkNavigation(SpotifyLink link, CancelToken token)
+{
+    try {
+        switch (link.kind) {
+        case SpotifyLink::Kind::Track: {
+            const Song song = co_await m_session->withLibraryAccessToken<Song>(
+                [this, id = link.id](QString accessToken) { return m_session->webApi().song(id, accessToken); });
+            throwIfCancelled(token);
+            const Album album = song.albumDestination();
+            if (!album.isValid()) {
+                throw SpotifyError::invalidData(QStringLiteral("Spotify did not return an album for this track."));
+            }
+            setLoading(m_searching, false);
+            selectAlbum(album);
+            break;
+        }
+        case SpotifyLink::Kind::Album: {
+            const Album album = co_await m_session->withLibraryAccessToken<Album>(
+                [this, id = link.id](QString accessToken) { return m_session->webApi().album(id, accessToken); });
+            throwIfCancelled(token);
+            setLoading(m_searching, false);
+            selectAlbum(album);
+            break;
+        }
+        case SpotifyLink::Kind::Playlist: {
+            const Playlist playlist = co_await m_session->withLibraryAccessToken<Playlist>(
+                [this, id = link.id](QString accessToken) { return m_session->webApi().playlist(id, accessToken); });
+            throwIfCancelled(token);
+            setLoading(m_searching, false);
+            selectPlaylist(playlist);
+            break;
+        }
+        case SpotifyLink::Kind::Artist: {
+            const Artist artist = co_await m_session->withLibraryAccessToken<Artist>(
+                [this, id = link.id](QString accessToken) { return m_session->webApi().artist(id, accessToken); });
+            throwIfCancelled(token);
+            setLoading(m_searching, false);
+            selectArtist(artist);
+            break;
+        }
+        }
+        m_search.finish(token);
+        setSearchQuery(QString());
+    } catch (const Cancelled &) {
+    } catch (const SpotifyError &error) {
+        if (!isCancelled(token)) {
+            setLoading(m_searching, false);
+            reportError(QStringLiteral("Opening Spotify link %1").arg(link.id), error.message());
+        }
+    }
+    m_search.finish(token);
+}
+
 // --- search ------------------------------------------------------------------------
 
 bool LibraryStore::searchIsCatchphrase() const
@@ -860,6 +914,10 @@ void LibraryStore::setSearchQuery(const QString &query)
         clearResults();
     } else if (!m_session->hasLibraryToken()) {
         m_errors->show(QStringLiteral("Connect your Spotify library to search the catalog."));
+    } else if (const auto link = parseSpotifyLink(trimmed)) {
+        clearResults();
+        setLoading(m_searching, true);
+        detach(runLinkNavigation(*link, m_search.renew()));
     } else {
         setLoading(m_searching, true);
         detach(runSearch(trimmed, m_search.renew()));

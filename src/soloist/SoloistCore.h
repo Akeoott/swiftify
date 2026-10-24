@@ -128,6 +128,9 @@ private:
 #ifdef SWIFTIFY_DESKTOP_INTEGRATION
     std::unique_ptr<SoloistAudioRoute> m_route;
 #endif
+#ifdef Q_OS_WIN
+    void *m_job = nullptr;
+#endif
     /// soloist plays into m_route's sink
     bool m_routed = false;
     QProcess m_process;

@@ -40,8 +40,8 @@ endif()
 # can be built and tested on a development machine without them.
 option(SWIFTIFY_DESKTOP_INTEGRATION "Build the Linux desktop integration" ${SWIFTIFY_IS_LINUX})
 # spotify soloist plays spotify's songs for accounts spotify no longer gives
-# librespot the keys for. it is only built for linux.
-option(SWIFTIFY_SOLOIST "Play Spotify songs through Spotify Soloist when it is installed" ${SWIFTIFY_IS_LINUX})
+# librespot the keys for.
+option(SWIFTIFY_SOLOIST "Play Spotify songs through Spotify Soloist when it is installed" ON)
 
 find_package(Qt6 6.10 REQUIRED COMPONENTS
     Core Gui Network Concurrent Qml Quick QuickControls2 ShaderTools)

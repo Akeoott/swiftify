@@ -367,7 +367,11 @@ Item {
                     segments: [
                         Segment { text: qsTr("System") },
                         Segment { text: "English" },
-                        Segment { text: "Русский" }
+                        Segment {
+                            text: "Русский"
+                            enabled: Settings.russianEnabled
+                            tooltip: Settings.russianEnabled ? "" : Settings.disabledLanguageMessage
+                        }
                     ]
                     onActivated: (index) => Settings.language = ["system", "en", "ru"][index]
                 }

@@ -288,7 +288,7 @@ void SoloistCore::handleMessage(const QString &text)
         m_loggedIn = message.value(QStringLiteral("logged_in")).toBool();
         m_active = message.value(QStringLiteral("is_active")).toBool();
         qCInfo(lcSoloist) << "Logged in:" << m_loggedIn << "active:" << m_active;
-        if (m_loggedIn && !wasLoggedIn) {
+        if (m_loggedIn && !wasLoggedIn && !m_routed) {
             // the volume set while soloist waited for its login
             send(QStringLiteral("set_volume"), {{QStringLiteral("volume"), soloistVolume()}});
         }
@@ -610,7 +610,6 @@ QCoro::Task<> SoloistCore::playTrack(QString spotifyUri)
     // swiftify's output takes soloist's sink over again: after a file, the
     // file output played that instead
     playRouted();
-    send(QStringLiteral("set_volume"), {{QStringLiteral("volume"), soloistVolume()}});
     send(QStringLiteral("play"), {{QStringLiteral("uri"), spotifyUri}});
     const quint64 sentAt = m_messages;
     bool replayed = false;

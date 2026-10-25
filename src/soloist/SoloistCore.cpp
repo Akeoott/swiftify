@@ -302,6 +302,27 @@ void SoloistCore::handleMessage(const QString &text)
         applyPosition(message.value(QStringLiteral("position")).toObject());
     } else if (type == QLatin1StringView("device_changed")) {
         m_active = message.value(QStringLiteral("is_active")).toBool();
+        if (message.contains(QStringLiteral("volume"))) {
+            const int vol = message.value(QStringLiteral("volume")).toInt(-1);
+            if (vol >= 0 && vol <= 100) {
+                const float newVol = float(vol) / 100.0f;
+                if (std::abs(newVol - m_volume) >= 0.005f) {
+                    m_volume = newVol;
+                    emit remoteVolumeChanged(m_volume);
+                }
+            }
+        }
+    } else if (type == QLatin1StringView("volume_changed")) {
+        if (message.contains(QStringLiteral("volume"))) {
+            const int vol = message.value(QStringLiteral("volume")).toInt(-1);
+            if (vol >= 0 && vol <= 100) {
+                const float newVol = float(vol) / 100.0f;
+                if (std::abs(newVol - m_volume) >= 0.005f) {
+                    m_volume = newVol;
+                    emit remoteVolumeChanged(m_volume);
+                }
+            }
+        }
     } else if (type == QLatin1StringView("options_changed")) {
         m_repeat = message.value(QStringLiteral("options")).toObject().value(QStringLiteral("repeat")).toString();
     } else if (type == QLatin1StringView("error")) {
@@ -337,6 +358,10 @@ void SoloistCore::followRemote()
             } catch (const SpotifyError &) {
             }
             m_localActive = false;
+            try {
+                m_fallback->setVolume(m_routed ? 1.0f : m_volume);
+            } catch (const SpotifyError &) {
+            }
         }
         playRouted();
         gate(false);
@@ -424,6 +449,16 @@ void SoloistCore::applyPlaybackState(const QJsonObject &state)
     if (state.contains(QStringLiteral("options"))) {
         m_repeat = state.value(QStringLiteral("options")).toObject().value(QStringLiteral("repeat")).toString();
     }
+    if (state.contains(QStringLiteral("volume"))) {
+        const int vol = state.value(QStringLiteral("volume")).toInt(-1);
+        if (vol >= 0 && vol <= 100) {
+            const float newVol = float(vol) / 100.0f;
+            if (std::abs(newVol - m_volume) >= 0.005f) {
+                m_volume = newVol;
+                emit remoteVolumeChanged(m_volume);
+            }
+        }
+    }
 }
 
 void SoloistCore::applyItem(const QJsonObject &item)
@@ -508,7 +543,7 @@ void SoloistCore::gate(bool closed)
     m_gated = closed;
     m_gatedAtMs = nowMs();
     try {
-        m_fallback->setVolume(closed ? 0.0f : m_volume);
+        m_fallback->setVolume(closed ? 0.0f : (m_localActive ? m_volume : 1.0f));
     } catch (const SpotifyError &) {
     }
 }
@@ -556,7 +591,7 @@ QCoro::Task<> SoloistCore::ensureReady(quint64 resets)
 
 int SoloistCore::soloistVolume() const
 {
-    return m_routed ? 100 : int(std::lround(std::clamp(m_volume, 0.0f, 1.0f) * 100));
+    return int(std::lround(std::clamp(m_volume, 0.0f, 1.0f) * 100));
 }
 
 void SoloistCore::playRouted()
@@ -594,6 +629,10 @@ QCoro::Task<> SoloistCore::playTrack(QString spotifyUri)
         } catch (const SpotifyError &) {
         }
         m_localActive = false;
+        try {
+            m_fallback->setVolume(m_routed ? 1.0f : m_volume);
+        } catch (const SpotifyError &) {
+        }
     }
     m_expectedUri = spotifyUri;
     m_expectedStarted = false;
@@ -610,7 +649,6 @@ QCoro::Task<> SoloistCore::playTrack(QString spotifyUri)
     // swiftify's output takes soloist's sink over again: after a file, the
     // file output played that instead
     playRouted();
-    send(QStringLiteral("set_volume"), {{QStringLiteral("volume"), soloistVolume()}});
     send(QStringLiteral("play"), {{QStringLiteral("uri"), spotifyUri}});
     const quint64 sentAt = m_messages;
     bool replayed = false;
@@ -686,6 +724,10 @@ QCoro::Task<> SoloistCore::playFile(QString path)
     m_remote = false;
     gate(false);
     m_localActive = true;
+    try {
+        m_fallback->setVolume(m_volume);
+    } catch (const SpotifyError &) {
+    }
     co_await m_fallback->playFile(path);
 }
 
@@ -740,13 +782,11 @@ void SoloistCore::setVolume(float volume)
 {
     m_volume = std::clamp(volume, 0.0f, 1.0f);
     try {
-        // held at nothing while the gap between songs is gated
-        m_fallback->setVolume(m_gated ? 0.0f : m_volume);
+        // held at nothing while the gap between songs is gated; otherwise unity gain for routed soloist
+        m_fallback->setVolume(m_gated ? 0.0f : (m_routed && !m_localActive ? 1.0f : m_volume));
     } catch (const SpotifyError &) {
     }
-    if (!m_routed) {
-        send(QStringLiteral("set_volume"), {{QStringLiteral("volume"), soloistVolume()}});
-    }
+    send(QStringLiteral("set_volume"), {{QStringLiteral("volume"), soloistVolume()}});
 }
 
 bool SoloistCore::audioOutputStalled() const

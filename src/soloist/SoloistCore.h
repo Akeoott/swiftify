@@ -117,8 +117,7 @@ private:
     void followRemote();
     /// the song soloist is playing, from what it says of it
     Song songFromItem() const;
-    /// soloist's own volume: all the way up when swiftify plays it on, and
-    /// sets the volume itself
+    /// soloist's volume as 0-100 integer
     int soloistVolume() const;
     /// hands what soloist plays to the rust core, if it is routed through it
     void playRouted();

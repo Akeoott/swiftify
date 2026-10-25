@@ -417,6 +417,28 @@ private slots:
         QVERIFY(m_fallback->log.contains(QStringLiteral("pause")));
     }
 
+    void settingVolumeSendsSetVolumeToSoloist()
+    {
+        QCoro::waitFor(m_core->playTrack(QStringLiteral("spotify:track:a")));
+        m_soloist->commands.clear();
+        m_core->setVolume(0.42f);
+        QTRY_VERIFY(m_soloist->commandNames().contains(QStringLiteral("set_volume")));
+        QCOMPARE(m_soloist->commands.last().value(QStringLiteral("volume")).toInt(), 42);
+
+        m_core->setVolume(0.85f);
+        QTRY_COMPARE(m_soloist->commands.last().value(QStringLiteral("volume")).toInt(), 85);
+    }
+
+    void remoteVolumeChangeUpdatesCoreVolume()
+    {
+        QCoro::waitFor(m_core->playTrack(QStringLiteral("spotify:track:a")));
+        QSignalSpy spy(m_core.get(), &PlaybackCore::remoteVolumeChanged);
+        m_soloist->send({{QStringLiteral("type"), QStringLiteral("volume_changed")},
+                         {QStringLiteral("volume"), 63}});
+        QTRY_COMPARE(spy.count(), 1);
+        QCOMPARE(m_core->volume(), 0.63f);
+    }
+
 private:
     std::unique_ptr<QTemporaryDir> m_dir;
     QString m_program;

@@ -263,6 +263,8 @@ private:
     void adoptRemoteSong(const Song &song);
     /// play or pause pressed elsewhere
     void followRemotePlaying(bool playing);
+    /// volume changed elsewhere (e.g. on a phone via Spotify Connect)
+    void followRemoteVolume(float volume);
 
     PlaybackCore *m_core;
     SpotifySession *m_session;

@@ -102,6 +102,7 @@ PlaybackController::PlaybackController(PlaybackCore *core, SpotifySession *sessi
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &PlaybackController::savePlaybackState);
     connect(m_core, &PlaybackCore::remoteTrackStarted, this, &PlaybackController::adoptRemoteSong);
     connect(m_core, &PlaybackCore::remotePlayingChanged, this, &PlaybackController::followRemotePlaying);
+    connect(m_core, &PlaybackCore::remoteVolumeChanged, this, &PlaybackController::followRemoteVolume);
 }
 
 PlaybackController::~PlaybackController()
@@ -215,6 +216,21 @@ void PlaybackController::followRemotePlaying(bool playing)
     setStatus(playing ? QStringLiteral("Playing") : QStringLiteral("Paused"));
     setPlaying(playing);
     syncMediaSession();
+}
+
+void PlaybackController::followRemoteVolume(float volume)
+{
+    const double clamped = std::clamp(double(volume), 0.0, 1.0);
+    if (std::abs(clamped - m_volume) < 0.005) {
+        return;
+    }
+    m_volume = clamped;
+    m_settings->setValue(kVolumeKey, clamped);
+    if (clamped > 0.01) {
+        m_volumeBeforeMute = clamped;
+        m_settings->setValue(kVolumeBeforeMuteKey, clamped);
+    }
+    emit volumeChanged();
 }
 
 // --- state ---------------------------------------------------------------------------

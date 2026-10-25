@@ -93,6 +93,8 @@ signals:
     void remoteTrackStarted(const swiftify::Song &song);
     /// playback here was paused or resumed from elsewhere
     void remotePlayingChanged(bool playing);
+    /// volume was changed from elsewhere (e.g. Spotify Connect or system mixer)
+    void remoteVolumeChanged(float volume);
 };
 
 } // namespace swiftify

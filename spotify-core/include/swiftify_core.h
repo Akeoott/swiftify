@@ -108,6 +108,7 @@ char *swiftify_core_set_audio_cache(const SwiftifyCore *core, const char *path,
                                     uint64_t limit_bytes);
 char *swiftify_core_set_playback_shaping(const SwiftifyCore *core, float tempo,
                                          float pitch_semitones, bool preserves_pitch);
+char *swiftify_core_set_preamp_gain(const SwiftifyCore *core, float gain_db);
 char *swiftify_core_set_equalizer(const SwiftifyCore *core, const float *gains_db, size_t count);
 
 bool swiftify_core_session_is_valid(const SwiftifyCore *core);

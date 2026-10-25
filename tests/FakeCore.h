@@ -56,6 +56,7 @@ public:
     quint32 position = 0;
     quint32 duration = 0;
     float volumeValue = 0.75f;
+    float preamp = 0.0f;
     bool spectrumEnabled = false;
     /// levels that move as music's would, for measuring what moving bars
     /// cost; still by default
@@ -143,6 +144,7 @@ public:
     void setVolumeNormalization(bool) override {}
     void setAudioCache(const QString &, qint64) override {}
     void setPlaybackShaping(float, float, bool) override {}
+    void setPreampGain(float gain) override { preamp = gain; }
     void setEqualizer(const QList<float> &) override {}
 
     bool sessionIsValid() const override { return sessionValid; }

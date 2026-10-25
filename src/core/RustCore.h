@@ -47,6 +47,7 @@ public:
     void setVolumeNormalization(bool enabled) override;
     void setAudioCache(const QString &path, qint64 limitBytes) override;
     void setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch) override;
+    void setPreampGain(float gainDb) override;
     void setEqualizer(const QList<float> &gainsDb) override;
 
     bool sessionIsValid() const override;

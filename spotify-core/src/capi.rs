@@ -593,6 +593,7 @@ pub unsafe extern "C" fn swiftify_core_set_audio_cache(
 }
 fallible_call!(swiftify_core_set_playback_shaping(tempo: f32, pitch_semitones: f32, preserves_pitch: bool)
     => |core| core.set_playback_shaping(tempo, pitch_semitones, preserves_pitch));
+fallible_call!(swiftify_core_set_preamp_gain(gain_db: f32) => |core| core.set_preamp_gain(gain_db));
 
 /// returns null on success, or an error message to free.
 ///

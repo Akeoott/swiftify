@@ -655,6 +655,26 @@ private slots:
         QCOMPARE(titleItem->property("text").toString(), shortSong.name);
         QVERIFY(!titleItem->property("overflows").toBool());
         QVERIFY(!titleItem->property("shouldScroll").toBool());
+
+        auto *artistItem = player->findChild<QQuickItem *>(QStringLiteral("immersiveArtist"));
+        QVERIFY(artistItem);
+        const qreal oldArtistWidth = artistItem->implicitWidth();
+        QVERIFY(oldArtistWidth > 0);
+
+        Song longArtistSong = shortSong;
+        longArtistSong.artists = QStringLiteral("A Vastly Longer Ensemble Orchestra Featuring Multiple Artists");
+        queue[0] = longArtistSong;
+        rig.player.play(queue[0], queue);
+        Rig::settle();
+        const auto call3 = rig.core.take(QStringLiteral("playFile"));
+        QVERIFY(call3);
+        call3->succeed();
+        Rig::settle();
+
+        // While the change animation is beginning and before the text has changed,
+        // the implicit width remains at the old artist's width so it does not center early
+        QCOMPARE(artistItem->implicitWidth(), oldArtistWidth);
+        QTRY_VERIFY(artistItem->implicitWidth() > oldArtistWidth);
     }
 
     void multilineLyricsStayInsideTheirHighlight_data()

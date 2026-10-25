@@ -60,6 +60,7 @@ public:
     /// next time playback connects
     virtual void setAudioCache(const QString &path, qint64 limitBytes) = 0;
     virtual void setPlaybackShaping(float tempo, float pitchSemitones, bool preservesPitch) = 0;
+    virtual void setPreampGain(float gainDb) = 0;
     virtual void setEqualizer(const QList<float> &gainsDb) = 0;
 
     virtual bool sessionIsValid() const = 0;

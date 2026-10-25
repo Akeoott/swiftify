@@ -261,6 +261,11 @@ void RustCore::setPlaybackShaping(float tempo, float pitchSemitones, bool preser
     throwIfError(swiftify_core_set_playback_shaping(m_core, tempo, pitchSemitones, preservesPitch));
 }
 
+void RustCore::setPreampGain(float gainDb)
+{
+    throwIfError(swiftify_core_set_preamp_gain(m_core, gainDb));
+}
+
 void RustCore::setEqualizer(const QList<float> &gainsDb)
 {
     throwIfError(swiftify_core_set_equalizer(m_core, gainsDb.constData(), size_t(gainsDb.size())));

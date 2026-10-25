@@ -982,6 +982,11 @@ void SoloistCore::setPlaybackShaping(float tempo, float pitchSemitones, bool pre
     m_fallback->setPlaybackShaping(tempo, pitchSemitones, preservesPitch);
 }
 
+void SoloistCore::setPreampGain(float gainDb)
+{
+    m_fallback->setPreampGain(gainDb);
+}
+
 void SoloistCore::setEqualizer(const QList<float> &gainsDb)
 {
     m_fallback->setEqualizer(gainsDb);

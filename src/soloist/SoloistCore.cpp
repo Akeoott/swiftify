@@ -9,6 +9,7 @@
 #include <swiftify_core.h>
 
 #include <QCoroSignal>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -25,6 +26,11 @@
 #ifdef Q_OS_LINUX
 #include <csignal>
 #include <sys/prctl.h>
+#elif defined(Q_OS_MACOS)
+#include <csignal>
+#include <libproc.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
 #endif
 
 Q_LOGGING_CATEGORY(lcSoloist, "swiftify.soloist")
@@ -72,6 +78,25 @@ SoloistCore::SoloistCore(PlaybackCore *fallback, SoloistConfig config, QObject *
     // soloist goes with a swiftify that crashes or is killed too. one left
     // behind holds the data directory, and the next soloist will not start
     m_process.setChildProcessModifier([] { ::prctl(PR_SET_PDEATHSIG, SIGTERM); });
+#elif defined(Q_OS_WIN)
+    m_process.setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments *args) {
+        args->flags |= CREATE_NO_WINDOW;
+    });
+    m_job = ::CreateJobObjectW(nullptr, nullptr);
+    if (m_job) {
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION info{};
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        ::SetInformationJobObject(m_job, JobObjectExtendedLimitInformation, &info, sizeof(info));
+    }
+    connect(&m_process, &QProcess::started, this, [this] {
+        if (!m_job) {
+            return;
+        }
+        if (HANDLE child = ::OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, FALSE, DWORD(m_process.processId()))) {
+            ::AssignProcessToJobObject(m_job, child);
+            ::CloseHandle(child);
+        }
+    });
 #endif
     connect(&m_process, &QProcess::readyRead, this, [this] {
         const QString output = QString::fromUtf8(m_process.readAll());
@@ -144,12 +169,22 @@ SoloistCore::~SoloistCore()
     m_socket.abort();
     if (m_process.state() != QProcess::NotRunning) {
         m_process.disconnect(this);
+#ifdef Q_OS_WIN
+        m_process.kill();
+        m_process.waitForFinished(1000);
+#else
         m_process.terminate();
         if (!m_process.waitForFinished(2000)) {
             m_process.kill();
             m_process.waitForFinished(1000);
         }
+#endif
     }
+#ifdef Q_OS_WIN
+    if (m_job) {
+        ::CloseHandle(m_job);
+    }
+#endif
 }
 
 std::optional<SoloistConfig> SoloistCore::detect()
@@ -165,9 +200,19 @@ std::optional<SoloistConfig> SoloistCore::detect()
     }
     if (config.program.isEmpty()) {
         // a launcher's PATH often leaves out ~/.local/bin, where soloist's
-        // guide installs it without sudo
-        config.program = QStandardPaths::findExecutable(QStringLiteral("soloist"),
-                                                        {QDir::homePath() + QStringLiteral("/.local/bin")});
+        // guide installs it without sudo, and homebrew's bin on macos
+        const QStringList extraPaths{
+            QCoreApplication::applicationDirPath(),
+            QDir::homePath() + QStringLiteral("/.local/bin"),
+#ifdef Q_OS_MACOS
+            QStringLiteral("/opt/homebrew/bin"),
+            QStringLiteral("/usr/local/bin"),
+#elif defined(Q_OS_WIN)
+            QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/soloist"),
+            QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/Programs/soloist"),
+#endif
+        };
+        config.program = QStandardPaths::findExecutable(QStringLiteral("soloist"), extraPaths);
     }
     if (config.program.isEmpty()) {
         qCInfo(lcSoloist) << "Soloist not found; playing through librespot";
@@ -176,10 +221,24 @@ std::optional<SoloistConfig> SoloistCore::detect()
 
     config.apiKey = qEnvironmentVariable("SOLOIST_API_KEY").trimmed();
     if (config.apiKey.isEmpty()) {
-        QFile file(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-                   + QStringLiteral("/soloist/api-key"));
-        if (file.open(QIODevice::ReadOnly)) {
-            config.apiKey = QString::fromUtf8(file.readAll()).trimmed();
+        const QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+        const QString dotConfig = QDir::homePath() + QStringLiteral("/.config");
+        const QStringList candidates{
+            configDir + QStringLiteral("/soloist/api-key"),
+            dotConfig + QStringLiteral("/soloist/api-key"),
+#ifdef Q_OS_WIN
+            configDir + QStringLiteral("/soloist/api-key.txt"),
+            dotConfig + QStringLiteral("/soloist/api-key.txt"),
+#endif
+        };
+        for (const QString &path : candidates) {
+            QFile file(path);
+            if (file.open(QIODevice::ReadOnly)) {
+                config.apiKey = QString::fromUtf8(file.readAll()).trimmed();
+                if (!config.apiKey.isEmpty()) {
+                    break;
+                }
+            }
         }
     }
     if (config.apiKey.isEmpty()) {
@@ -202,6 +261,19 @@ void SoloistCore::startDaemon()
     m_failure.clear();
     m_processOutput.clear();
     QDir().mkpath(m_config.dataDirectory);
+#ifdef Q_OS_MACOS
+    // macos has no PR_SET_PDEATHSIG; a soloist left behind by a killed
+    // swiftify holds the data directory until it is stopped
+    if (QFile pidFile(m_config.dataDirectory + QStringLiteral("/soloist.pid")); pidFile.open(QIODevice::ReadOnly)) {
+        bool ok = false;
+        const pid_t pid = pidFile.readAll().trimmed().toInt(&ok);
+        char path[PROC_PIDPATHINFO_MAXSIZE]{};
+        if (ok && pid > 1 && ::proc_pidpath(pid, path, sizeof(path)) > 0
+            && QString::fromUtf8(path).endsWith(QLatin1StringView("/soloist"))) {
+            ::kill(pid, SIGTERM);
+        }
+    }
+#endif
 #ifdef SWIFTIFY_DESKTOP_INTEGRATION
     if (!m_route && qEnvironmentVariable("SWIFTIFY_SOLOIST_ROUTE") != QLatin1StringView("off")) {
         // recorded at the rate swiftify's output plays at, so it is played

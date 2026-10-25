@@ -171,6 +171,24 @@ private slots:
         QVERIFY(m_dir->isValid());
         // stands in for the soloist binary: writes the port the fake listens
         // on where soloist would, and waits to be stopped
+#ifdef Q_OS_WIN
+        m_program = m_dir->filePath(QStringLiteral("soloist.cmd"));
+        QFile script(m_program);
+        QVERIFY(script.open(QIODevice::WriteOnly));
+        script.write("@echo off\r\n"
+                     ":loop\r\n"
+                     "if \"%~1\"==\"\" goto done\r\n"
+                     "if \"%~1\"==\"--data-dir\" (\r\n"
+                     "  set \"d=%~2\"\r\n"
+                     "  shift\r\n"
+                     ")\r\n"
+                     "shift\r\n"
+                     "goto loop\r\n"
+                     ":done\r\n"
+                     "<nul set /p=\"%FAKE_SOLOIST_PORT%\" > \"%d%\\ws.port\"\r\n"
+                     "ping -n 600 127.0.0.1 >nul\r\n");
+        script.close();
+#else
         m_program = m_dir->filePath(QStringLiteral("soloist"));
         QFile script(m_program);
         QVERIFY(script.open(QIODevice::WriteOnly));
@@ -180,6 +198,7 @@ private slots:
                      "exec sleep 600\n");
         script.close();
         script.setPermissions(script.permissions() | QFile::ExeOwner);
+#endif
         m_soloist = std::make_unique<FakeSoloist>();
         qputenv("FAKE_SOLOIST_PORT", QByteArray::number(m_soloist->port()));
         // no sink in the real sound server for a test
@@ -415,6 +434,22 @@ private slots:
         QCOMPARE(m_core->playbackDurationMs(), 1234u);
         m_core->pause();
         QVERIFY(m_fallback->log.contains(QStringLiteral("pause")));
+    }
+
+    void detectsSoloistAndApiKey()
+    {
+        qputenv("SWIFTIFY_SOLOIST", m_program.toUtf8());
+        qputenv("SOLOIST_API_KEY", "test-api-key");
+        qputenv("SWIFTIFY_PLAYBACK", "librespot");
+        QVERIFY(!SoloistCore::detect().has_value());
+
+        qunsetenv("SWIFTIFY_PLAYBACK");
+        const auto detected = SoloistCore::detect();
+        QVERIFY(detected.has_value());
+        QCOMPARE(detected->program, m_program);
+        QCOMPARE(detected->apiKey, QStringLiteral("test-api-key"));
+        qunsetenv("SWIFTIFY_SOLOIST");
+        qunsetenv("SOLOIST_API_KEY");
     }
 
     void settingVolumeSendsSetVolumeToSoloist()

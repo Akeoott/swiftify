@@ -428,6 +428,15 @@ impl SpotifyCore {
         self.reset_timeline();
     }
 
+    /// overall gain applied before the equalizer, in decibels. offsets the gain
+    /// of all audio and normalization.
+    pub fn set_preamp_gain(&self, preamp_db: f32) -> Result<(), String> {
+        let mut settings = self.dsp.get();
+        settings.preamp_db = preamp_db;
+        self.dsp.set(settings);
+        Ok(())
+    }
+
     /// one gain per band, in decibels, in the order equalizer_frequencies
     /// reports. applied to streaming and file playback alike.
     pub fn set_equalizer(&self, gains_db: Vec<f32>) -> Result<(), String> {

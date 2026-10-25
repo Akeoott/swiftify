@@ -2366,6 +2366,33 @@ private slots:
         QCOMPARE(texts(saved), QStringList {QStringLiteral("Mine")});
     }
 
+    void preampGainOffsetsVolumeAndResets()
+    {
+        Rig rig;
+        QCOMPARE(rig.sound.preampGain(), 0.0);
+        QCOMPARE(rig.core.preamp, 0.0f);
+        QVERIFY(rig.sound.isNeutral());
+
+        rig.sound.setPreampGain(4.5);
+        QCOMPARE(rig.sound.preampGain(), 4.5);
+        QCOMPARE(rig.core.preamp, 4.5f);
+        QVERIFY(!rig.sound.isNeutral());
+
+        rig.sound.reset();
+        QCOMPARE(rig.sound.preampGain(), 0.0);
+        QCOMPARE(rig.core.preamp, 0.0f);
+        QVERIFY(rig.sound.isNeutral());
+
+        const auto panel = rig.show(QStringLiteral("SoundPanel"));
+        QVERIFY(panel);
+        auto *slider = panel->findChild<QQuickItem *>(QStringLiteral("immersivePreampGainSlider"));
+        QVERIFY(slider);
+        slider->setProperty("value", 3.0);
+        QMetaObject::invokeMethod(slider, "moved");
+        QCOMPARE(rig.sound.preampGain(), 3.0);
+        QCOMPARE(rig.core.preamp, 3.0f);
+    }
+
     /// every way to a new playlist, a local one, a song's info or a deletion
     /// opens its dialog in the window itself
     void theWindowOpensItsEditors()

@@ -89,9 +89,18 @@ SpotifySession *SpotifySession::create(QQmlEngine *, QJSEngine *)
 
 void SpotifySession::reportError(const QString &message)
 {
+    m_reportedError = message;
     if (m_errors) {
         m_errors->show(message);
     }
+}
+
+void SpotifySession::clearReportedError()
+{
+    if (m_errors && !m_reportedError.isEmpty() && m_errors->message() == m_reportedError) {
+        m_errors->clear();
+    }
+    m_reportedError.clear();
 }
 
 void SpotifySession::setStatus(const QString &status)
@@ -247,7 +256,7 @@ QCoro::Task<> SpotifySession::restorePlaybackSession(StoredCredentials)
         throwIfStale(generation);
         setStatus(QStringLiteral("Connected"));
         setConnected(true);
-        m_errors->clear();
+        clearReportedError();
     } catch (const Cancelled &) {
         co_return;
     } catch (const SpotifyError &error) {
@@ -281,7 +290,7 @@ QCoro::Task<> SpotifySession::restoreLibrarySession(StoredCredentials credential
         throwIfStale(generation);
         setLibraryStatus(m_libraryNeedsUpgrade ? QStringLiteral("Reconnect for full access") : QStringLiteral("Connected"));
         setLibraryConnected(true, m_libraryNeedsUpgrade);
-        m_errors->clear();
+        clearReportedError();
         if (m_loadInitialLibrary) {
             co_await m_loadInitialLibrary();
         }
@@ -644,7 +653,7 @@ QCoro::Task<> SpotifySession::ensureFreshPlaybackConnection(bool force)
         co_await reconnectPlayback();
         setStatus(QStringLiteral("Connected"));
         setConnected(true);
-        m_errors->clear();
+        clearReportedError();
     }
     m_playbackConnectionIsSuspect = false;
 }

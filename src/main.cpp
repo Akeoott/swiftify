@@ -270,10 +270,10 @@ int main(int argc, char *argv[])
     fonts::loadIconFont();
     fonts::loadInterfaceFont();
 
+    ErrorCenter errors(nullptr);
     Settings settings(nullptr);
     Translations translations(&settings);
     Theme theme(&settings);
-    ErrorCenter errors(nullptr);
     QNetworkAccessManager network;
     RustCore rustCore;
 #ifdef SWIFTIFY_HAS_SOLOIST

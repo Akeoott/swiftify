@@ -1,4 +1,6 @@
 #include "app/Settings.h"
+#include "app/ErrorCenter.h"
+#include "app/Translations.h"
 
 #include <QQmlEngine>
 #include <QRegularExpression>
@@ -178,8 +180,21 @@ void Settings::load()
     if (QRegularExpression(QStringLiteral("^[0-9]{17,20}$")).match(id).hasMatch()) {
         m_discordApplicationId = id;
     }
-    m_language = oneOf(stored<QString>(m_store, "language", m_language),
-                      {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+    const QString configuredLanguage = oneOf(
+        stored<QString>(m_store, "language", m_language),
+        {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")},
+        QStringLiteral("system"));
+    if (!Translations::isLanguageEnabled(configuredLanguage)) {
+        m_language = QStringLiteral("en");
+        m_store.setValue(QStringLiteral("language"), m_language);
+        m_revertedDisabledLanguage = true;
+        if (auto *errors = ErrorCenter::instance()) {
+            errors->show(Translations::disabledLanguageErrorMessage());
+            m_revertedDisabledLanguage = false;
+        }
+    } else {
+        m_language = configuredLanguage;
+    }
 
 }
 
@@ -577,11 +592,54 @@ void Settings::setDiscordApplicationId(const QString &raw)
 }
 void Settings::setLanguage(const QString &raw)
 {
-    const QString value = oneOf(raw, {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+    QString value = oneOf(raw, {QStringLiteral("system"), QStringLiteral("en"), QStringLiteral("ru")}, QStringLiteral("system"));
+    if (!Translations::isLanguageEnabled(value)) {
+        value = QStringLiteral("en");
+    }
     if (m_language == value) return;
     m_language = value;
     m_store.setValue(QStringLiteral("language"), value);
     emit languageChanged();
+}
+
+bool Settings::isRussianEnabled() const
+{
+    return Translations::isLanguageEnabled(QStringLiteral("ru"));
+}
+
+QString Settings::disabledLanguageMessage() const
+{
+    return Translations::disabledLanguageMessage();
+}
+
+bool Settings::isLanguageEnabled(const QString &language) const
+{
+    return Translations::isLanguageEnabled(language);
+}
+
+void Settings::enforceEnabledLanguage()
+{
+    const bool reverted = !Translations::isLanguageEnabled(m_language);
+    if (reverted) {
+        m_language = QStringLiteral("en");
+        m_store.setValue(QStringLiteral("language"), m_language);
+        m_revertedDisabledLanguage = true;
+        if (auto *errors = ErrorCenter::instance()) {
+            errors->show(Translations::disabledLanguageErrorMessage());
+            m_revertedDisabledLanguage = false;
+        }
+    }
+    emit languageAvailabilityChanged();
+    if (reverted) {
+        emit languageChanged();
+    }
+}
+
+bool Settings::takeRevertedDisabledLanguage()
+{
+    const bool reverted = m_revertedDisabledLanguage;
+    m_revertedDisabledLanguage = false;
+    return reverted;
 }
 
 

@@ -69,6 +69,8 @@ class Settings : public QObject {
     Q_PROPERTY(bool discordEnabled READ discordEnabled WRITE setDiscordEnabled NOTIFY discordEnabledChanged FINAL)
     Q_PROPERTY(QString discordApplicationId READ discordApplicationId WRITE setDiscordApplicationId NOTIFY discordApplicationIdChanged FINAL)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged FINAL)
+    Q_PROPERTY(bool russianEnabled READ isRussianEnabled NOTIFY languageAvailabilityChanged FINAL)
+    Q_PROPERTY(QString disabledLanguageMessage READ disabledLanguageMessage CONSTANT FINAL)
 
 public:
     /// the default file, ~/.config/Swiftify/Swiftify.conf. no default argument:
@@ -184,6 +186,11 @@ public:
     void setDiscordApplicationId(const QString &value);
     QString language() const { return m_language; }
     void setLanguage(const QString &value);
+    bool isRussianEnabled() const;
+    QString disabledLanguageMessage() const;
+    Q_INVOKABLE bool isLanguageEnabled(const QString &language) const;
+    void enforceEnabledLanguage();
+    bool takeRevertedDisabledLanguage();
 
 signals:
     void visualizersEnabledChanged();
@@ -225,6 +232,7 @@ signals:
     void discordEnabledChanged();
     void discordApplicationIdChanged();
     void languageChanged();
+    void languageAvailabilityChanged();
 
 private:
     void load();
@@ -274,6 +282,7 @@ private:
     bool m_discordEnabled = false;
     QString m_discordApplicationId;
     QString m_language = QStringLiteral("system");
+    bool m_revertedDisabledLanguage = false;
 };
 
 } // namespace swiftify

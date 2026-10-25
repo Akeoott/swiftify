@@ -1,4 +1,5 @@
 #include "app/Settings.h"
+#include "app/Translations.h"
 
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -37,6 +38,9 @@ private slots:
 
     void languagePreferencePersists()
     {
+        if (!swiftify::kRussianTranslationEnabled) {
+            QSKIP("Russian translation is disabled.");
+        }
         QTemporaryDir directory;
         const QString path = directory.filePath(QStringLiteral("swiftify.conf"));
         {

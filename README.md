@@ -15,8 +15,6 @@ id recommend turning the visualizers and background off if the app runs in the b
 
 ***anyways runs on linux (made for wayland and hyprland) macos, and windows.***
 
-you can download swiftify for your operating system at [https://shredos.dev](https://shredos.dev/#download)
-
 ## previews
 first image shows equalizer, tempo and pitch settings. second picture shows how the immersive player and the visualizer/lyrics look
 <table border="0">
@@ -25,6 +23,14 @@ first image shows equalizer, tempo and pitch settings. second picture shows how 
     <td><img src="/assets/immersive.png" alt="immersive player with visualizers" width="400"/></td>
   </tr>
 </table>
+
+## download
+
+you can download swiftify for your operating system at [https://shredos.dev](https://shredos.dev/#download)
+
+<br/>
+
+## Contents
 
 - [Before you start](#before-you-start)
 - [Prebuilt builds](#prebuilt-builds)

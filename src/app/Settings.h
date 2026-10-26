@@ -68,6 +68,10 @@ class Settings : public QObject {
     Q_PROPERTY(double zoom READ zoom WRITE setZoom NOTIFY zoomChanged FINAL)
     Q_PROPERTY(bool discordEnabled READ discordEnabled WRITE setDiscordEnabled NOTIFY discordEnabledChanged FINAL)
     Q_PROPERTY(QString discordApplicationId READ discordApplicationId WRITE setDiscordApplicationId NOTIFY discordApplicationIdChanged FINAL)
+    Q_PROPERTY(bool loggingEnabled READ isLoggingEnabled WRITE setLoggingEnabled NOTIFY loggingEnabledChanged FINAL)
+    Q_PROPERTY(bool loggingActive READ isLoggingActive CONSTANT FINAL)
+    Q_PROPERTY(QString logDirectory READ logDirectory CONSTANT FINAL)
+    Q_PROPERTY(QString logFilePath READ logFilePath CONSTANT FINAL)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged FINAL)
     Q_PROPERTY(bool russianEnabled READ isRussianEnabled NOTIFY languageAvailabilityChanged FINAL)
     Q_PROPERTY(QString disabledLanguageMessage READ disabledLanguageMessage CONSTANT FINAL)
@@ -186,6 +190,13 @@ public:
     void setDiscordApplicationId(const QString &value);
     QString language() const { return m_language; }
     void setLanguage(const QString &value);
+    bool isLoggingEnabled() const { return m_loggingEnabled; }
+    void setLoggingEnabled(bool value);
+    bool isLoggingActive() const;
+    QString logDirectory() const;
+    QString logFilePath() const;
+    Q_INVOKABLE void openLogsFolder() const;
+    Q_INVOKABLE void openLogFile() const;
     bool isRussianEnabled() const;
     QString disabledLanguageMessage() const;
     Q_INVOKABLE bool isLanguageEnabled(const QString &language) const;
@@ -231,6 +242,7 @@ signals:
     void zoomChanged();
     void discordEnabledChanged();
     void discordApplicationIdChanged();
+    void loggingEnabledChanged();
     void languageChanged();
     void languageAvailabilityChanged();
 
@@ -282,6 +294,7 @@ private:
     bool m_discordEnabled = false;
     QString m_discordApplicationId;
     QString m_language = QStringLiteral("system");
+    bool m_loggingEnabled = false;
     bool m_revertedDisabledLanguage = false;
 };
 

@@ -1004,8 +1004,7 @@ void SoloistCore::setSpectrumEnabled(bool enabled)
 
 int SoloistCore::spectrumLevels(float *out, int capacity) const
 {
-    // unrouted, soloist's audio goes straight to pipewire, past the analyser
-    return m_localActive || m_routed ? m_fallback->spectrumLevels(out, capacity) : 0;
+    return m_fallback->spectrumLevels(out, capacity);
 }
 
 } // namespace swiftify

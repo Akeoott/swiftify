@@ -827,11 +827,29 @@ Item {
                     text: qsTr("Adds a seconds dial to the sleep timer, so a fade can be watched without waiting out a long ass timer")
                 }
 
+                ConfigSwitch {
+                    text: qsTr("Enable logging for next launch")
+                    checked: Settings.loggingEnabled
+                    onToggledTo: (checked) => Settings.loggingEnabled = checked
+                }
+                NoteText {
+                    text: Settings.loggingActive
+                        ? qsTr("Logging is active for this session. Logs are saved to %1").arg(Settings.logFilePath)
+                        : qsTr("Sets the OS logging variables and writes logs to %1 on the next launch").arg(Settings.logFilePath)
+                }
+
                 Flow {
                     x: 8
                     width: parent.width - 16
                     spacing: 8
                     topPadding: 4
+
+                    TextButton {
+                        variant: TextButton.Tonal
+                        symbol: "folder_open"
+                        text: qsTr("Open Logs Folder")
+                        onClicked: Settings.openLogsFolder()
+                    }
 
                     TextButton {
                         variant: TextButton.Tonal

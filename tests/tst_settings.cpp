@@ -57,10 +57,30 @@ private slots:
         QCOMPARE(reopened.language(), QStringLiteral("system"));
     }
 
+    void loggingPreferencePersists()
+    {
+        QTemporaryDir directory;
+        const QString path = directory.filePath(QStringLiteral("swiftify.conf"));
+        {
+            Settings settings(path);
+            QVERIFY(!settings.isLoggingEnabled());
+            QSignalSpy loggingSpy(&settings, &Settings::loggingEnabledChanged);
+            settings.setLoggingEnabled(true);
+            settings.setLoggingEnabled(true);
+            QCOMPARE(loggingSpy.count(), 1);
+            QVERIFY(settings.isLoggingEnabled());
+        }
+        Settings reopened(path);
+        QVERIFY(reopened.isLoggingEnabled());
+        reopened.setLoggingEnabled(false);
+        QVERIFY(!reopened.isLoggingEnabled());
+    }
+
     void defaultsMatchTheMacApp()
     {
         QTemporaryDir directory;
         Settings settings(directory.filePath(QStringLiteral("swiftify.conf")));
+        QCOMPARE(settings.isLoggingEnabled(), false);
         QCOMPARE(settings.visualizersEnabled(), true);
         QCOMPARE(settings.playerBarVisualizer(), true);
         QCOMPARE(settings.trackListVisualizer(), true);

@@ -1,6 +1,7 @@
 #include "app/AppController.h"
 #include "app/ErrorCenter.h"
 #include "app/Fonts.h"
+#include "app/Logging.h"
 #include "app/Paths.h"
 #include "app/Settings.h"
 #include "system/DiscordPresence.h"
@@ -225,14 +226,15 @@ void setupAudioEnvironment()
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_MACOS
+    startCompact(argv);
+#endif
+    logging::setupLogging();
 #ifdef Q_OS_WIN
     WindowsIntegration::initializeProcess();
 #endif
 #ifdef Q_OS_LINUX
     setupAudioEnvironment();
-#endif
-#ifdef Q_OS_MACOS
-    startCompact(argv);
 #endif
     tuneSceneGraph();
     QGuiApplication::setApplicationName(QStringLiteral("Swiftify"));

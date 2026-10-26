@@ -1,9 +1,13 @@
 #include "app/Settings.h"
 #include "app/ErrorCenter.h"
+#include "app/Logging.h"
+#include "app/Paths.h"
 #include "app/Translations.h"
 
+#include <QDesktopServices>
 #include <QQmlEngine>
 #include <QRegularExpression>
+#include <QUrl>
 
 #include <algorithm>
 #include <initializer_list>
@@ -136,6 +140,7 @@ void Settings::load()
         m_backdropReactivity = std::clamp(raw, 0.0, 3.0);
     }
     m_debuggingEnabled = stored<bool>(m_store, "debuggingEnabled", m_debuggingEnabled);
+    m_loggingEnabled = stored<bool>(m_store, "loggingEnabled", m_loggingEnabled);
     m_pinnedPlaylistsExpanded = stored<bool>(m_store, "pinnedPlaylistsExpanded", m_pinnedPlaylistsExpanded);
     m_allPlaylistsExpanded = stored<bool>(m_store, "allPlaylistsExpanded", m_allPlaylistsExpanded);
     {
@@ -642,6 +647,42 @@ bool Settings::takeRevertedDisabledLanguage()
     return reverted;
 }
 
+void Settings::setLoggingEnabled(bool value)
+{
+    if (m_loggingEnabled == value) {
+        return;
+    }
+    m_loggingEnabled = value;
+    m_store.setValue(QStringLiteral("loggingEnabled"), value);
+    if (value) {
+        logging::applyEnvironmentVariables();
+    }
+    emit loggingEnabledChanged();
+}
 
+bool Settings::isLoggingActive() const
+{
+    return logging::isActive();
+}
+
+QString Settings::logDirectory() const
+{
+    return paths::logDirectory();
+}
+
+QString Settings::logFilePath() const
+{
+    return paths::logFilePath();
+}
+
+void Settings::openLogsFolder() const
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(paths::logDirectory()));
+}
+
+void Settings::openLogFile() const
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(paths::logFilePath()));
+}
 
 } // namespace swiftify

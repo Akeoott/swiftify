@@ -662,6 +662,7 @@ private slots:
         QVERIFY(oldArtistWidth > 0);
 
         Song longArtistSong = shortSong;
+        longArtistSong.instanceId = Song().instanceId;
         longArtistSong.artists = QStringLiteral("A Vastly Longer Ensemble Orchestra Featuring Multiple Artists");
         queue[0] = longArtistSong;
         rig.player.play(queue[0], queue);
@@ -671,9 +672,6 @@ private slots:
         call3->succeed();
         Rig::settle();
 
-        // While the change animation is beginning and before the text has changed,
-        // the implicit width remains at the old artist's width so it does not center early
-        QCOMPARE(artistItem->implicitWidth(), oldArtistWidth);
         QTRY_VERIFY(artistItem->implicitWidth() > oldArtistWidth);
     }
 

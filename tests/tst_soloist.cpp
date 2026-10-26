@@ -474,6 +474,22 @@ private slots:
         QCOMPARE(m_core->volume(), 0.63f);
     }
 
+    void spectrumLevelsForwardsToFallback()
+    {
+        m_fallback->musicLevels = true;
+        float levels[48]{};
+        const int count = m_core->spectrumLevels(levels, 48);
+        QCOMPARE(count, 48);
+        bool hasNonZero = false;
+        for (float level : levels) {
+            if (level > 0.0f) {
+                hasNonZero = true;
+                break;
+            }
+        }
+        QVERIFY(hasNonZero);
+    }
+
 private:
     std::unique_ptr<QTemporaryDir> m_dir;
     QString m_program;
